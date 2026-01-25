@@ -1,0 +1,394 @@
+[09-Jan-2026 01:05:26 Asia/Kolkata] PHP Parse error:  syntax error, unexpected token "public" in C:\Users\patel\Desktop\old\updated\htdocs\builderz\includes\ReportService.php on line 173
+[09-Jan-2026 01:06:10 Asia/Kolkata] PHP Parse error:  syntax error, unexpected token "public" in C:\Users\patel\Desktop\old\updated\htdocs\builderz\includes\ReportService.php on line 173
+[09-Jan-2026 01:06:11 Asia/Kolkata] PHP Parse error:  syntax error, unexpected token "public" in C:\Users\patel\Desktop\old\updated\htdocs\builderz\includes\ReportService.php on line 173
+[09-Jan-2026 01:06:11 Asia/Kolkata] PHP Parse error:  syntax error, unexpected token "public" in C:\Users\patel\Desktop\old\updated\htdocs\builderz\includes\ReportService.php on line 173
+[09-Jan-2026 01:06:11 Asia/Kolkata] PHP Parse error:  syntax error, unexpected token "public" in C:\Users\patel\Desktop\old\updated\htdocs\builderz\includes\ReportService.php on line 173
+[09-Jan-2026 01:06:12 Asia/Kolkata] PHP Parse error:  syntax error, unexpected token "public" in C:\Users\patel\Desktop\old\updated\htdocs\builderz\includes\ReportService.php on line 173
+[09-Jan-2026 01:06:12 Asia/Kolkata] PHP Parse error:  syntax error, unexpected token "public" in C:\Users\patel\Desktop\old\updated\htdocs\builderz\includes\ReportService.php on line 173
+[09-Jan-2026 01:06:14 Asia/Kolkata] PHP Parse error:  syntax error, unexpected token "public" in C:\Users\patel\Desktop\old\updated\htdocs\builderz\includes\ReportService.php on line 173
+[09-Jan-2026 01:08:47 Asia/Kolkata] PHP Parse error:  syntax error, unexpected token "public" in C:\Users\patel\Desktop\old\updated\htdocs\builderz\includes\ReportService.php on line 173
+[09-Jan-2026 01:08:50 Asia/Kolkata] PHP Parse error:  syntax error, unexpected token "public" in C:\Users\patel\Desktop\old\updated\htdocs\builderz\includes\ReportService.php on line 173
+[09-Jan-2026 01:08:51 Asia/Kolkata] PHP Parse error:  syntax error, unexpected token "public" in C:\Users\patel\Desktop\old\updated\htdocs\builderz\includes\ReportService.php on line 173
+[09-Jan-2026 01:10:04 Asia/Kolkata] PHP Parse error:  syntax error, unexpected token "public" in C:\Users\patel\Desktop\old\updated\htdocs\builderz\includes\ReportService.php on line 173
+[09-Jan-2026 01:22:49 Asia/Kolkata] PHP Parse error:  syntax error, unexpected token "public", expecting end of file in C:\Users\patel\Desktop\old\updated\htdocs\builderz\includes\ReportService.php on line 412
+[09-Jan-2026 02:00:01 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Class "MasterService" not found in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php:18
+Stack trace:
+#0 {main}
+  thrown in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 18
+[09-Jan-2026 02:01:04 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Class "MasterService" not found in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php:18
+Stack trace:
+#0 {main}
+  thrown in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 18
+[09-Jan-2026 02:02:31 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 02:02:31 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 02:02:31 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 133
+[09-Jan-2026 02:02:31 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 134
+[09-Jan-2026 02:02:31 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 135
+[09-Jan-2026 02:02:31 Asia/Kolkata] PHP Warning:  Undefined variable $search in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 02:02:31 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 02:04:37 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 02:04:37 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 02:04:37 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 133
+[09-Jan-2026 02:04:37 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 134
+[09-Jan-2026 02:04:37 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 135
+[09-Jan-2026 02:04:37 Asia/Kolkata] PHP Warning:  Undefined variable $search in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 02:04:37 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 02:04:38 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 02:04:38 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 02:04:38 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 133
+[09-Jan-2026 02:04:38 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 134
+[09-Jan-2026 02:04:38 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 135
+[09-Jan-2026 02:04:38 Asia/Kolkata] PHP Warning:  Undefined variable $search in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 02:04:38 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 02:04:38 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 02:04:38 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 02:04:38 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 133
+[09-Jan-2026 02:04:38 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 134
+[09-Jan-2026 02:04:38 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 135
+[09-Jan-2026 02:04:38 Asia/Kolkata] PHP Warning:  Undefined variable $search in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 02:04:38 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 02:04:38 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 02:04:38 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 02:04:38 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 133
+[09-Jan-2026 02:04:38 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 134
+[09-Jan-2026 02:04:38 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 135
+[09-Jan-2026 02:04:38 Asia/Kolkata] PHP Warning:  Undefined variable $search in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 02:04:38 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 02:04:38 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 02:04:38 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 02:04:38 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 133
+[09-Jan-2026 02:04:38 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 134
+[09-Jan-2026 02:04:38 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 135
+[09-Jan-2026 02:04:38 Asia/Kolkata] PHP Warning:  Undefined variable $search in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 02:04:38 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 02:04:47 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 02:04:47 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 02:04:47 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 133
+[09-Jan-2026 02:04:47 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 134
+[09-Jan-2026 02:04:47 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 135
+[09-Jan-2026 02:04:47 Asia/Kolkata] PHP Warning:  Undefined variable $search in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 02:04:47 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 02:06:53 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 02:06:53 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 02:06:53 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 133
+[09-Jan-2026 02:06:53 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 134
+[09-Jan-2026 02:06:53 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 135
+[09-Jan-2026 02:06:53 Asia/Kolkata] PHP Warning:  Undefined variable $search in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 02:06:53 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 02:07:36 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 02:07:36 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 02:07:36 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 133
+[09-Jan-2026 02:07:36 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 134
+[09-Jan-2026 02:07:36 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 135
+[09-Jan-2026 02:07:36 Asia/Kolkata] PHP Warning:  Undefined variable $search in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 02:07:36 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 02:07:37 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 02:07:37 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 02:07:37 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 133
+[09-Jan-2026 02:07:37 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 134
+[09-Jan-2026 02:07:37 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 135
+[09-Jan-2026 02:07:37 Asia/Kolkata] PHP Warning:  Undefined variable $search in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 02:07:37 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 02:07:37 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 02:07:37 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 02:07:37 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 133
+[09-Jan-2026 02:07:37 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 134
+[09-Jan-2026 02:07:37 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 135
+[09-Jan-2026 02:07:37 Asia/Kolkata] PHP Warning:  Undefined variable $search in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 02:07:37 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 02:08:16 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 02:08:16 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 02:08:16 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 133
+[09-Jan-2026 02:08:16 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 134
+[09-Jan-2026 02:08:16 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 135
+[09-Jan-2026 02:08:16 Asia/Kolkata] PHP Warning:  Undefined variable $search in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 02:08:16 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 02:08:42 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 02:08:42 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 02:08:42 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 133
+[09-Jan-2026 02:08:42 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 134
+[09-Jan-2026 02:08:42 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 135
+[09-Jan-2026 02:08:42 Asia/Kolkata] PHP Warning:  Undefined variable $search in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 02:08:42 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 02:09:57 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 02:09:57 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 02:09:57 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 133
+[09-Jan-2026 02:09:57 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 134
+[09-Jan-2026 02:09:57 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 135
+[09-Jan-2026 02:09:57 Asia/Kolkata] PHP Warning:  Undefined variable $search in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 02:09:57 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 02:13:01 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 02:13:01 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 02:13:01 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 133
+[09-Jan-2026 02:13:01 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 134
+[09-Jan-2026 02:13:01 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 135
+[09-Jan-2026 02:13:01 Asia/Kolkata] PHP Warning:  Undefined variable $search in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 02:13:01 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 02:13:37 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 02:13:37 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 02:13:37 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 133
+[09-Jan-2026 02:13:37 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 134
+[09-Jan-2026 02:13:37 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 135
+[09-Jan-2026 02:13:37 Asia/Kolkata] PHP Warning:  Undefined variable $search in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 02:13:37 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 02:17:33 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 02:17:33 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 02:17:33 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 133
+[09-Jan-2026 02:17:33 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 134
+[09-Jan-2026 02:17:33 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 135
+[09-Jan-2026 02:17:33 Asia/Kolkata] PHP Warning:  Undefined variable $search in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 02:17:33 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 02:20:28 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 02:20:28 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 02:20:28 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 133
+[09-Jan-2026 02:20:28 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 134
+[09-Jan-2026 02:20:28 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 135
+[09-Jan-2026 02:20:28 Asia/Kolkata] PHP Warning:  Undefined variable $search in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 02:20:28 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\Users\patel\Desktop\old\updated\htdocs\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 12:42:24 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function formatNumberShort() in C:\xampp\htdocs\builderz\builderz\modules\dashboard\index.php:143
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\dashboard\index.php on line 143
+[09-Jan-2026 12:43:24 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function formatNumberShort() in C:\xampp\htdocs\builderz\builderz\modules\dashboard\index.php:143
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\dashboard\index.php on line 143
+[09-Jan-2026 12:43:50 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function formatNumberShort() in C:\xampp\htdocs\builderz\builderz\modules\dashboard\index.php:143
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\dashboard\index.php on line 143
+[09-Jan-2026 12:45:06 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function formatNumberShort() in C:\xampp\htdocs\builderz\builderz\modules\dashboard\index.php:143
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\dashboard\index.php on line 143
+[09-Jan-2026 12:45:07 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function formatNumberShort() in C:\xampp\htdocs\builderz\builderz\modules\dashboard\index.php:143
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\dashboard\index.php on line 143
+[09-Jan-2026 12:45:27 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function formatNumberShort() in C:\xampp\htdocs\builderz\builderz\modules\dashboard\index.php:143
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\dashboard\index.php on line 143
+[09-Jan-2026 12:56:55 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function formatCompact() in C:\xampp\htdocs\builderz\builderz\modules\dashboard\index.php:131
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\dashboard\index.php on line 131
+[09-Jan-2026 14:18:33 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 14:18:33 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 14:18:33 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 133
+[09-Jan-2026 14:18:33 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 134
+[09-Jan-2026 14:18:33 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 135
+[09-Jan-2026 14:18:33 Asia/Kolkata] PHP Warning:  Undefined variable $search in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 14:18:33 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 17:00:08 Asia/Kolkata] PHP Deprecated:  number_format(): Passing null to parameter #1 ($num) of type float is deprecated in C:\xampp\htdocs\builderz\builderz\includes\functions.php on line 47
+[09-Jan-2026 17:00:08 Asia/Kolkata] PHP Deprecated:  number_format(): Passing null to parameter #1 ($num) of type float is deprecated in C:\xampp\htdocs\builderz\builderz\includes\functions.php on line 47
+[09-Jan-2026 17:00:10 Asia/Kolkata] PHP Deprecated:  number_format(): Passing null to parameter #1 ($num) of type float is deprecated in C:\xampp\htdocs\builderz\builderz\includes\functions.php on line 47
+[09-Jan-2026 17:00:10 Asia/Kolkata] PHP Deprecated:  number_format(): Passing null to parameter #1 ($num) of type float is deprecated in C:\xampp\htdocs\builderz\builderz\includes\functions.php on line 47
+[09-Jan-2026 17:01:08 Asia/Kolkata] PHP Deprecated:  number_format(): Passing null to parameter #1 ($num) of type float is deprecated in C:\xampp\htdocs\builderz\builderz\includes\functions.php on line 47
+[09-Jan-2026 17:01:08 Asia/Kolkata] PHP Deprecated:  number_format(): Passing null to parameter #1 ($num) of type float is deprecated in C:\xampp\htdocs\builderz\builderz\includes\functions.php on line 47
+[09-Jan-2026 17:01:09 Asia/Kolkata] PHP Deprecated:  number_format(): Passing null to parameter #1 ($num) of type float is deprecated in C:\xampp\htdocs\builderz\builderz\includes\functions.php on line 47
+[09-Jan-2026 17:01:09 Asia/Kolkata] PHP Deprecated:  number_format(): Passing null to parameter #1 ($num) of type float is deprecated in C:\xampp\htdocs\builderz\builderz\includes\functions.php on line 47
+[09-Jan-2026 17:01:09 Asia/Kolkata] PHP Deprecated:  number_format(): Passing null to parameter #1 ($num) of type float is deprecated in C:\xampp\htdocs\builderz\builderz\includes\functions.php on line 47
+[09-Jan-2026 17:01:09 Asia/Kolkata] PHP Deprecated:  number_format(): Passing null to parameter #1 ($num) of type float is deprecated in C:\xampp\htdocs\builderz\builderz\includes\functions.php on line 47
+[09-Jan-2026 17:04:06 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 133
+[09-Jan-2026 17:04:06 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 134
+[09-Jan-2026 17:04:06 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 135
+[09-Jan-2026 17:04:06 Asia/Kolkata] PHP Warning:  Undefined variable $search in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 17:04:06 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 17:04:12 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\builderz\builderz\modules\masters\parties.php on line 321
+[09-Jan-2026 17:04:12 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\builderz\builderz\modules\masters\parties.php on line 324
+[09-Jan-2026 17:14:25 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 133
+[09-Jan-2026 17:14:25 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 134
+[09-Jan-2026 17:14:25 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 135
+[09-Jan-2026 17:14:25 Asia/Kolkata] PHP Warning:  Undefined variable $search in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 17:14:25 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 17:17:25 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 133
+[09-Jan-2026 17:17:25 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 134
+[09-Jan-2026 17:17:25 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 135
+[09-Jan-2026 17:17:25 Asia/Kolkata] PHP Warning:  Undefined variable $search in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 17:17:25 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 17:34:28 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 17:34:28 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 133
+[09-Jan-2026 17:34:28 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 134
+[09-Jan-2026 17:34:28 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 135
+[09-Jan-2026 17:34:28 Asia/Kolkata] PHP Warning:  Undefined variable $search in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 17:34:28 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 17:34:36 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 17:34:36 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 133
+[09-Jan-2026 17:34:36 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 134
+[09-Jan-2026 17:34:36 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 135
+[09-Jan-2026 17:34:36 Asia/Kolkata] PHP Warning:  Undefined variable $search in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 17:34:36 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 18:31:03 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 18:31:03 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 133
+[09-Jan-2026 18:31:03 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 134
+[09-Jan-2026 18:31:03 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 135
+[09-Jan-2026 18:31:03 Asia/Kolkata] PHP Warning:  Undefined variable $search in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 18:31:03 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 18:31:06 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\builderz\builderz\modules\masters\parties.php on line 321
+[09-Jan-2026 18:31:06 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\builderz\builderz\modules\masters\parties.php on line 324
+[09-Jan-2026 18:40:23 Asia/Kolkata] PHP Warning:  Undefined variable $project_filter in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 124
+[09-Jan-2026 18:40:23 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 133
+[09-Jan-2026 18:40:23 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 134
+[09-Jan-2026 18:40:23 Asia/Kolkata] PHP Warning:  Undefined variable $status_filter in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 135
+[09-Jan-2026 18:40:23 Asia/Kolkata] PHP Warning:  Undefined variable $search in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 140
+[09-Jan-2026 18:40:23 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\builderz\builderz\modules\masters\flats.php on line 140
+[17-Jan-2026 15:26:32 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 44
+[17-Jan-2026 15:26:32 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 46
+[17-Jan-2026 15:26:32 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 47
+[17-Jan-2026 15:26:32 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 48
+[17-Jan-2026 15:26:32 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 78
+[17-Jan-2026 15:26:32 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 79
+[17-Jan-2026 15:26:32 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 80
+[17-Jan-2026 15:26:32 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 89
+[17-Jan-2026 15:26:32 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 90
+[17-Jan-2026 15:26:32 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 91
+[17-Jan-2026 15:26:32 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 44
+[17-Jan-2026 15:26:32 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 46
+[17-Jan-2026 15:26:32 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 47
+[17-Jan-2026 15:26:32 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 48
+[17-Jan-2026 15:26:32 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 78
+[17-Jan-2026 15:26:32 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 79
+[17-Jan-2026 15:26:32 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 80
+[17-Jan-2026 15:26:32 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 89
+[17-Jan-2026 15:26:32 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 90
+[17-Jan-2026 15:26:32 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 91
+[17-Jan-2026 16:38:30 Asia/Kolkata] PHP Warning:  Undefined variable $pending_stock_now in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 610
+[17-Jan-2026 16:38:30 Asia/Kolkata] PHP Warning:  Undefined variable $pending_stock_last_month in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 610
+[17-Jan-2026 16:38:32 Asia/Kolkata] PHP Warning:  Undefined variable $pending_stock_now in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 610
+[17-Jan-2026 16:38:32 Asia/Kolkata] PHP Warning:  Undefined variable $pending_stock_last_month in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 610
+[17-Jan-2026 16:38:32 Asia/Kolkata] PHP Warning:  Undefined variable $pending_stock_now in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 610
+[17-Jan-2026 16:38:32 Asia/Kolkata] PHP Warning:  Undefined variable $pending_stock_last_month in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 610
+[17-Jan-2026 16:38:32 Asia/Kolkata] PHP Warning:  Undefined variable $pending_stock_now in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 610
+[17-Jan-2026 16:38:32 Asia/Kolkata] PHP Warning:  Undefined variable $pending_stock_last_month in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 610
+[17-Jan-2026 16:38:32 Asia/Kolkata] PHP Warning:  Undefined variable $pending_stock_now in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 610
+[17-Jan-2026 16:38:32 Asia/Kolkata] PHP Warning:  Undefined variable $pending_stock_last_month in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 610
+[17-Jan-2026 16:38:32 Asia/Kolkata] PHP Warning:  Undefined variable $pending_stock_now in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 610
+[17-Jan-2026 16:38:32 Asia/Kolkata] PHP Warning:  Undefined variable $pending_stock_last_month in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 610
+[17-Jan-2026 17:07:01 Asia/Kolkata] PHP Parse error:  syntax error, unexpected variable "$SIMULATE_NEXT_MONTH", expecting "function" or "const" in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 489
+[17-Jan-2026 17:07:06 Asia/Kolkata] PHP Parse error:  syntax error, unexpected variable "$SIMULATE_NEXT_MONTH", expecting "function" or "const" in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 489
+[17-Jan-2026 17:08:44 Asia/Kolkata] PHP Parse error:  syntax error, unexpected variable "$SIMULATE_NEXT_MONTH", expecting "function" or "const" in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 489
+[17-Jan-2026 17:09:07 Asia/Kolkata] PHP Parse error:  syntax error, unexpected variable "$SIMULATE_NEXT_MONTH", expecting "function" or "const" in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 489
+[17-Jan-2026 17:09:11 Asia/Kolkata] PHP Parse error:  syntax error, unexpected variable "$SIMULATE_NEXT_MONTH", expecting "function" or "const" in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 489
+[17-Jan-2026 17:31:37 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 44
+[17-Jan-2026 17:31:37 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 46
+[17-Jan-2026 17:31:37 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 47
+[17-Jan-2026 17:31:37 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 48
+[17-Jan-2026 17:31:37 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 78
+[17-Jan-2026 17:31:37 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 79
+[17-Jan-2026 17:31:37 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 80
+[17-Jan-2026 17:31:37 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 89
+[17-Jan-2026 17:31:37 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 90
+[17-Jan-2026 17:31:37 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 91
+[17-Jan-2026 17:31:38 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 44
+[17-Jan-2026 17:31:38 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 46
+[17-Jan-2026 17:31:38 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 47
+[17-Jan-2026 17:31:38 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 48
+[17-Jan-2026 17:31:38 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 78
+[17-Jan-2026 17:31:38 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 79
+[17-Jan-2026 17:31:38 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 80
+[17-Jan-2026 17:31:38 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 89
+[17-Jan-2026 17:31:38 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 90
+[17-Jan-2026 17:31:38 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 91
+[18-Jan-2026 15:26:09 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 44
+[18-Jan-2026 15:26:09 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 46
+[18-Jan-2026 15:26:09 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 47
+[18-Jan-2026 15:26:09 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 48
+[18-Jan-2026 15:26:09 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 78
+[18-Jan-2026 15:26:09 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 79
+[18-Jan-2026 15:26:09 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 80
+[18-Jan-2026 15:26:09 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 89
+[18-Jan-2026 15:26:09 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 90
+[18-Jan-2026 15:26:09 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 91
+[18-Jan-2026 15:26:10 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 44
+[18-Jan-2026 15:26:10 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 46
+[18-Jan-2026 15:26:10 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 47
+[18-Jan-2026 15:26:10 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 48
+[18-Jan-2026 15:26:10 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 78
+[18-Jan-2026 15:26:10 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 79
+[18-Jan-2026 15:26:10 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 80
+[18-Jan-2026 15:26:10 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 89
+[18-Jan-2026 15:26:10 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 90
+[18-Jan-2026 15:26:10 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 91
+[20-Jan-2026 09:10:48 Asia/Kolkata] PHP Warning:  Undefined array key "flat_no" in C:\xampp\htdocs\builderz\builderz\test_booking.php on line 67
+[20-Jan-2026 12:36:37 Asia/Kolkata] Database query error: SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry '10-102' for key 'unique_flat'
+[20-Jan-2026 13:22:34 Asia/Kolkata] Database query error: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'ANDMx challan_type = 'material'' at line 1
+[20-Jan-2026 13:22:34 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'ANDMx challan_type = 'material'' at line 1 in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT * FROM c...')
+#1 C:\xampp\htdocs\builderz\builderz\modules\challans\edit.php(22): Database->query('SELECT * FROM c...', Array)
+#2 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[20-Jan-2026 13:22:38 Asia/Kolkata] Database query error: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'ANDMx challan_type = 'material'' at line 1
+[20-Jan-2026 13:22:38 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'ANDMx challan_type = 'material'' at line 1 in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT * FROM c...')
+#1 C:\xampp\htdocs\builderz\builderz\modules\challans\edit.php(22): Database->query('SELECT * FROM c...', Array)
+#2 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[20-Jan-2026 13:23:21 Asia/Kolkata] Database query error: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'ANDMx challan_type = 'material'' at line 1
+[20-Jan-2026 13:23:21 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'ANDMx challan_type = 'material'' at line 1 in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT * FROM c...')
+#1 C:\xampp\htdocs\builderz\builderz\modules\challans\edit.php(22): Database->query('SELECT * FROM c...', Array)
+#2 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[20-Jan-2026 13:23:23 Asia/Kolkata] Database query error: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'ANDMx challan_type = 'material'' at line 1
+[20-Jan-2026 13:23:23 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'ANDMx challan_type = 'material'' at line 1 in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT * FROM c...')
+#1 C:\xampp\htdocs\builderz\builderz\modules\challans\edit.php(22): Database->query('SELECT * FROM c...', Array)
+#2 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[20-Jan-2026 13:23:47 Asia/Kolkata] Database query error: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'ANDMx challan_type = 'material'' at line 1
+[20-Jan-2026 13:23:47 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'ANDMx challan_type = 'material'' at line 1 in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT * FROM c...')
+#1 C:\xampp\htdocs\builderz\builderz\modules\challans\edit.php(22): Database->query('SELECT * FROM c...', Array)
+#2 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[22-Jan-2026 15:49:24 Asia/Kolkata] Database query error: SQLSTATE[23000]: Integrity constraint violation: 1452 Cannot add or update a child row: a foreign key constraint fails (`builderz_erp`.`bookings`, CONSTRAINT `bookings_ibfk_3` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`))
+[22-Jan-2026 15:49:41 Asia/Kolkata] Database query error: SQLSTATE[23000]: Integrity constraint violation: 1452 Cannot add or update a child row: a foreign key constraint fails (`builderz_erp`.`bookings`, CONSTRAINT `bookings_ibfk_3` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`))
+[22-Jan-2026 17:03:19 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 44
+[22-Jan-2026 17:03:19 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 46
+[22-Jan-2026 17:03:19 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 47
+[22-Jan-2026 17:03:19 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 48
+[22-Jan-2026 17:03:19 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 78
+[22-Jan-2026 17:03:19 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 79
+[22-Jan-2026 17:03:19 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 80
+[22-Jan-2026 17:03:19 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 89
+[22-Jan-2026 17:03:19 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 90
+[22-Jan-2026 17:03:19 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 91
+[22-Jan-2026 17:03:19 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 44
+[22-Jan-2026 17:03:19 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 46
+[22-Jan-2026 17:03:19 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 47
+[22-Jan-2026 17:03:19 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 48
+[22-Jan-2026 17:03:19 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 78
+[22-Jan-2026 17:03:19 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 79
+[22-Jan-2026 17:03:19 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 80
+[22-Jan-2026 17:03:19 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 89
+[22-Jan-2026 17:03:19 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 90
+[22-Jan-2026 17:03:19 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 91
+[25-Jan-2026 10:18:32 Asia/Kolkata] Database query error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'unit_type' in 'field list'
+[25-Jan-2026 10:19:13 Asia/Kolkata] Database query error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'unit_type' in 'field list'
+[25-Jan-2026 10:20:03 Asia/Kolkata] Database query error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'unit_type' in 'field list'
+[25-Jan-2026 10:47:50 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 44
+[25-Jan-2026 10:47:50 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 46
+[25-Jan-2026 10:47:50 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 47
+[25-Jan-2026 10:47:50 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 48
+[25-Jan-2026 10:47:50 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 78
+[25-Jan-2026 10:47:50 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 79
+[25-Jan-2026 10:47:50 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 80
+[25-Jan-2026 10:47:50 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 89
+[25-Jan-2026 10:47:50 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 90
+[25-Jan-2026 10:47:50 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 91
+[25-Jan-2026 10:47:51 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 44
+[25-Jan-2026 10:47:51 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 46
+[25-Jan-2026 10:47:51 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 47
+[25-Jan-2026 10:47:51 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 48
+[25-Jan-2026 10:47:51 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 78
+[25-Jan-2026 10:47:51 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 79
+[25-Jan-2026 10:47:51 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 80
+[25-Jan-2026 10:47:51 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 89
+[25-Jan-2026 10:47:51 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 90
+[25-Jan-2026 10:47:51 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 91

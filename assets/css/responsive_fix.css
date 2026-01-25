@@ -1,0 +1,68 @@
+/* Responsive Table Adjustments for Laptops */
+@media (max-width: 1400px) {
+
+    /* Reduce Sidebar to make room */
+    :root {
+        --sidebar-width: 200px;
+    }
+
+    .sidebar {
+        width: var(--sidebar-width);
+    }
+
+    .main-content {
+        margin-left: var(--sidebar-width);
+    }
+
+    /* Compact Table Styling */
+    .table-responsive table th,
+    .table-responsive table td {
+        padding: 6px 4px !important;
+        /* Force tighter padding */
+        font-size: 11px !important;
+        /* Smaller font */
+        white-space: nowrap;
+        /* Prevent wrapping taking up vertical space, but implies width... */
+    }
+
+    /* Allow wrapping for specific text columns to save width */
+    .table-responsive table td:nth-child(2),
+    /* Project Name */
+    .table-responsive table td:nth-child(3)
+
+    /* Location */
+        {
+        white-space: normal;
+        min-width: 80px;
+    }
+
+    .card-body {
+        padding: 10px;
+        /* Reduce padding around table */
+    }
+
+    .content-wrapper {
+        padding: 15px;
+    }
+}
+
+/* Ensure Page doesn't scroll, only table if absolutely necessary */
+body,
+html {
+    overflow-x: hidden;
+    width: 100%;
+}
+
+.main-content {
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
+}
+
+.table-responsive {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    /* Enable inner scrolling if needed */
+    -webkit-overflow-scrolling: touch;
+}

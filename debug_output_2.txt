@@ -1,0 +1,8 @@
+Testing Booking Creation with Deduction Charges...
+Using Project ID: 10
+Using Flat ID: 326
+Booking Created Successfully. ID: 10
+Verifying saved data:
+Development Charge: 5000.00
+Parking Charge: 2000.00
+Society Charge: 3000.00
