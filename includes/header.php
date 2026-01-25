@@ -51,7 +51,12 @@
                         <i class="fas fa-money-bill-wave"></i> <span>Payments</span>
                     </a>
                 </li>
-                
+                <li>
+                    <a href="<?= BASE_URL ?>modules/investments/index.php" class="<?= ($current_page ?? '') === 'investments' ? 'active' : '' ?>">
+                        <i class="fas fa-hand-holding-usd"></i> <span>Investments</span>
+                    </a>
+                </li>
+
                 <li class="menu-section">MASTERS</li>
                 <li>
                     <a href="<?= BASE_URL ?>modules/masters/projects.php" class="<?= ($current_page ?? '') === 'projects' ? 'active' : '' ?>">
@@ -66,6 +71,11 @@
                 <li>
                     <a href="<?= BASE_URL ?>modules/masters/parties.php" class="<?= ($current_page ?? '') === 'parties' ? 'active' : '' ?>">
                         <i class="fas fa-users"></i> <span>Parties</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="<?= BASE_URL ?>modules/vendors/index.php" class="<?= ($current_page ?? '') === 'vendors' ? 'active' : '' ?>">
+                        <i class="fas fa-truck"></i> <span>Vendors</span>
                     </a>
                 </li>
 

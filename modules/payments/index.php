@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $payment_data = [
                 'payment_type' => $payment_type,
-                'reference_type' => $payment_type === 'customer_receipt' ? 'booking' : 'challan',
+                'reference_type' => $payment_type === 'customer_receipt' ? 'booking' : ($payment_type === 'vendor_bill_payment' ? 'bill' : 'challan'),
                 'reference_id' => $reference_id,
                 'party_id' => $party_id,
                 'payment_date' => $payment_date,
@@ -49,6 +49,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Update totals based on payment type
             if ($payment_type === 'customer_receipt') {
                 updateBookingTotals($reference_id);
+            } elseif ($payment_type === 'vendor_bill_payment') {
+                updateBillPaidAmount($reference_id);
             } else {
                 updateChallanPaidAmount($reference_id);
             }
@@ -74,31 +76,41 @@ $payment_type_filter = $_GET['type'] ?? '';
 $date_from = $_GET['date_from'] ?? '';
 $date_to = $_GET['date_to'] ?? '';
 
-// Fetch pending items for payment
-$pending_bookings = $db->query("SELECT b.id, b.booking_date, b.agreement_value, b.total_received, b.total_pending,
-                                        f.flat_no, p.name as customer_name, p.id as party_id, pr.project_name, pr.id as project_id, p.id as customer_id
-                                 FROM bookings b
-                                 JOIN flats f ON b.flat_id = f.id
-                                 JOIN parties p ON b.customer_id = p.id
-                                 JOIN projects pr ON b.project_id = pr.id
-                                 WHERE b.total_pending > 0 AND b.status = 'active'
-                                 ORDER BY b.booking_date DESC")->fetchAll();
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 
-$pending_vendor_challans = $db->query("SELECT c.id, c.challan_no, c.challan_date, c.total_amount, c.paid_amount, c.pending_amount,
-                                              p.name as vendor_name, p.id as party_id, pr.project_name, pr.id as project_id
-                                       FROM challans c
-                                       JOIN parties p ON c.party_id = p.id
-                                       JOIN projects pr ON c.project_id = pr.id
-                                       WHERE c.challan_type = 'material' AND c.pending_amount > 0 AND c.status IN ('approved', 'partial')
-                                       ORDER BY c.challan_date")->fetchAll();
+try {
+    // Fetch pending items for payment
+    $pending_bookings = $db->query("SELECT b.id, b.booking_date, b.agreement_value, b.total_received, b.total_pending,
+                                            f.flat_no, p.name as customer_name, p.id as party_id, pr.project_name, pr.id as project_id, p.id as customer_id
+                                     FROM bookings b
+                                     JOIN flats f ON b.flat_id = f.id
+                                     JOIN parties p ON b.customer_id = p.id
+                                     JOIN projects pr ON b.project_id = pr.id
+                                     WHERE b.total_pending > 0 AND b.status = 'active'
+                                     ORDER BY b.booking_date DESC")->fetchAll();
 
-$pending_labour_challans = $db->query("SELECT c.id, c.challan_no, c.challan_date, c.total_amount, c.paid_amount, c.pending_amount,
-                                              p.name as labour_name, p.id as party_id, pr.project_name, pr.id as project_id
-                                       FROM challans c
-                                       JOIN parties p ON c.party_id = p.id
-                                       JOIN projects pr ON c.project_id = pr.id
-                                       WHERE c.challan_type = 'labour' AND c.pending_amount > 0 AND c.status IN ('approved', 'partial')
-                                       ORDER BY c.challan_date")->fetchAll();
+    // Fetch Pending Bills (Replaces Vendor Challans)
+    $pending_vendor_bills = $db->query("SELECT b.id, b.bill_no, b.bill_date, b.amount as total_amount, b.paid_amount, (b.amount - b.paid_amount) as pending_amount,
+                                          p.name as vendor_name, p.id as party_id, c.challan_no
+                                   FROM bills b
+                                   JOIN parties p ON b.party_id = p.id
+                                   LEFT JOIN challans c ON b.challan_id = c.id
+                                   WHERE b.status IN ('pending', 'partial')
+                                   ORDER BY b.bill_date")->fetchAll();
+
+    $pending_labour_challans = $db->query("SELECT c.id, c.challan_no, c.challan_date, c.total_amount, c.paid_amount, c.pending_amount,
+                                                  p.name as labour_name, p.id as party_id, pr.project_name, pr.id as project_id
+                                           FROM challans c
+                                           JOIN parties p ON c.party_id = p.id
+                                           JOIN projects pr ON c.project_id = pr.id
+                                           WHERE c.challan_type = 'labour' AND c.pending_amount > 0 AND c.status IN ('approved', 'partial')
+                                           ORDER BY c.challan_date")->fetchAll();
+
+} catch (Exception $e) {
+    die("Error fetching data: " . $e->getMessage());
+}
 
 // Fetch recent payments with filters
 $where = '1=1';
@@ -410,8 +422,8 @@ include __DIR__ . '/../../includes/header.php';
                         <span class="tab-badge"><?= count($pending_bookings) ?></span>
                     </button>
                     <button class="modern-tab" onclick="switchTab('vendor')">
-                        <i class="fas fa-truck"></i> Vendor Payments
-                        <span class="tab-badge"><?= count($pending_vendor_challans) ?></span>
+                        <i class="fas fa-truck"></i> Vendor Bills
+                        <span class="tab-badge"><?= count($pending_vendor_bills) ?></span>
                     </button>
                     <button class="modern-tab" onclick="switchTab('labour')">
                         <i class="fas fa-hard-hat"></i> Labour Payments
@@ -488,20 +500,20 @@ include __DIR__ . '/../../includes/header.php';
 
                 <!-- Vendor Payments Tab -->
                 <div id="vendor-tab" class="tab-content" style="display: none;">
-                    <?php if (empty($pending_vendor_challans)): ?>
+                    <?php if (empty($pending_vendor_bills)): ?>
                         <div style="text-align: center; padding: 60px 20px; color: #94a3b8;">
                             <i class="fas fa-check-circle" style="font-size: 48px; color: #10b981; margin-bottom: 20px;"></i>
-                            <p style="font-size: 16px; font-weight: 500;">No pending vendor payments.</p>
+                            <p style="font-size: 16px; font-weight: 500;">No pending vendor bills.</p>
                         </div>
                     <?php else: ?>
                         <div class="table-responsive">
                             <table class="modern-table">
                                 <thead>
                                     <tr>
-                                        <th>PROJECT</th>
                                         <th>VENDOR</th>
-                                        <th>CHALLAN NO</th>
+                                        <th>BILL NO</th>
                                         <th>DATE</th>
+                                        <th>CHALLAN NO</th>
                                         <th>TOTAL</th>
                                         <th>PAID</th>
                                         <th>PENDING</th>
@@ -510,33 +522,32 @@ include __DIR__ . '/../../includes/header.php';
                                 </thead>
                                 <tbody>
                                     <?php 
-                                    foreach ($pending_vendor_challans as $challan): 
-                                        $color = ColorHelper::getProjectColor($challan['project_id']);
-                                        $initial = ColorHelper::getInitial($challan['project_name']);
-                                        
-                                        $vendorColor = ColorHelper::getCustomerColor($challan['party_id']);
-                                        $vendorInitial = ColorHelper::getInitial($challan['vendor_name']);
+                                    foreach ($pending_vendor_bills as $bill): 
+                                        $vendorColor = ColorHelper::getCustomerColor($bill['party_id']);
+                                        $vendorInitial = ColorHelper::getInitial($bill['vendor_name']);
                                     ?>
                                     <tr>
                                         <td>
                                             <div style="display:flex; align-items:center;">
-                                                <div class="avatar-square" style="background: <?= $color ?>"><?= $initial ?></div>
-                                                <span style="font-weight:700;"><?= htmlspecialchars($challan['project_name']) ?></span>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div style="display:flex; align-items:center;">
                                                 <div class="avatar-circle" style="background: <?= $vendorColor ?>; color: #fff; width:28px; height:28px; font-size:11px; margin-right:8px;"><?= $vendorInitial ?></div>
-                                                <div style="font-weight: 600; color: #1e293b;"><?= htmlspecialchars($challan['vendor_name']) ?></div>
+                                                <div style="font-weight: 600; color: #1e293b;"><?= htmlspecialchars($bill['vendor_name']) ?></div>
                                             </div>
                                         </td>
-                                        <td><strong><?= htmlspecialchars($challan['challan_no']) ?></strong></td>
-                                        <td><?= formatDate($challan['challan_date']) ?></td>
-                                        <td><?= formatCurrency($challan['total_amount']) ?></td>
-                                        <td><span style="color: #10b981;"><?= formatCurrency($challan['paid_amount']) ?></span></td>
-                                        <td><span style="color: #f59e0b; font-weight: 600;"><?= formatCurrency($challan['pending_amount']) ?></span></td>
+                                        <td><strong><?= htmlspecialchars($bill['bill_no']) ?></strong></td>
+                                        <td><?= formatDate($bill['bill_date']) ?></td>
                                         <td>
-                                            <button class="modern-btn" onclick="showPaymentModal('vendor_payment', <?= $challan['id'] ?>, <?= $challan['party_id'] ?>, <?= $challan['pending_amount'] ?>, '<?= htmlspecialchars(addslashes($challan['vendor_name'])) ?>')" style="padding: 6px 12px; font-size: 11px;">
+                                            <?php if($bill['challan_no']): ?>
+                                                <span class="badge-pill blue"><?= htmlspecialchars($bill['challan_no']) ?></span>
+                                            <?php else: ?>
+                                                <span style="color:#cbd5e1">-</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td><?= formatCurrency($bill['total_amount']) ?></td>
+                                        <td><span style="color: #10b981;"><?= formatCurrency($bill['paid_amount']) ?></span></td>
+                                        <td><span style="color: #f59e0b; font-weight: 600;"><?= formatCurrency($bill['pending_amount']) ?></span></td>
+                                        <td>
+                                            <!-- Payment Type changed to 'vendor_bill_payment' -->
+                                            <button class="modern-btn" onclick="showPaymentModal('vendor_bill_payment', <?= $bill['id'] ?>, <?= $bill['party_id'] ?>, <?= $bill['pending_amount'] ?>, '<?= htmlspecialchars(addslashes($bill['vendor_name'])) ?>')" style="padding: 6px 12px; font-size: 11px;">
                                                 <i class="fas fa-file-invoice-dollar"></i> Pay
                                             </button>
                                         </td>
@@ -620,7 +631,8 @@ include __DIR__ . '/../../includes/header.php';
                                 <option value="">All Payment Types</option>
                                 <option value="customer_receipt" <?= $payment_type_filter === 'customer_receipt' ? 'selected' : '' ?>>Customer Receipt</option>
                                 <option value="customer_refund" <?= $payment_type_filter === 'customer_refund' ? 'selected' : '' ?>>Customer Refund</option>
-                                <option value="vendor_payment" <?= $payment_type_filter === 'vendor_payment' ? 'selected' : '' ?>>Vendor Payment</option>
+                                <option value="vendor_payment" <?= $payment_type_filter === 'vendor_payment' ? 'selected' : '' ?>>Vendor Payment (Old)</option>
+                                <option value="vendor_bill_payment" <?= $payment_type_filter === 'vendor_bill_payment' ? 'selected' : '' ?>>Vendor Bill</option>
                                 <option value="labour_payment" <?= $payment_type_filter === 'labour_payment' ? 'selected' : '' ?>>Labour Payment</option>
                             </select>
                             
@@ -663,6 +675,7 @@ include __DIR__ . '/../../includes/header.php';
                                         $typeLabel = 'Other';
                                         if($payment['payment_type'] === 'customer_receipt') { $typeClass = 'green'; $typeLabel = 'Receipt'; }
                                         if($payment['payment_type'] === 'vendor_payment') { $typeClass = 'blue'; $typeLabel = 'Vendor Pay'; }
+                                        if($payment['payment_type'] === 'vendor_bill_payment') { $typeClass = 'blue'; $typeLabel = 'Bill Pay'; }
                                         if($payment['payment_type'] === 'labour_payment') { $typeClass = 'orange'; $typeLabel = 'Labour Pay'; }
                                     ?>
                                     <tr>

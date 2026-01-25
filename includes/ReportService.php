@@ -365,16 +365,17 @@ class ReportService {
 
 
     public function getVendorOutstanding() {
+        // Updated to use the 'bills' table instead of 'challans'
         $sql = "SELECT p.id as vendor_id, p.name as vendor_name, p.mobile, p.gst_number,
-                   COUNT(c.id) as total_challans,
-                   SUM(c.total_amount) as total_amount,
-                   SUM(c.paid_amount) as paid_amount,
-                   SUM(c.pending_amount) as pending_amount
+                   COUNT(b.id) as total_bills,
+                   COALESCE(SUM(b.amount), 0) as total_amount,
+                   COALESCE(SUM(b.paid_amount), 0) as paid_amount,
+                   COALESCE(SUM(b.amount - b.paid_amount), 0) as pending_amount
             FROM parties p
-            LEFT JOIN challans c ON p.id = c.party_id AND c.challan_type = 'material'
+            LEFT JOIN bills b ON p.id = b.party_id AND b.status != 'paid'
             WHERE p.party_type = 'vendor'
             GROUP BY p.id
-            HAVING pending_amount > 0 OR total_challans > 0
+            HAVING pending_amount > 0
             ORDER BY pending_amount DESC, p.name";
 
         $vendors = $this->db->query($sql)->fetchAll();

@@ -240,6 +240,35 @@ function updateChallanPaidAmount($challan_id) {
         'id = ?', 
         ['id' => $challan_id]
     );
+
+}
+
+function updateBillPaidAmount($bill_id) {
+    $db = Database::getInstance();
+    
+    $sql = "SELECT COALESCE(SUM(amount), 0) as paid_amount 
+            FROM payments 
+            WHERE reference_type = 'bill' AND reference_id = ?";
+    $stmt = $db->query($sql, [$bill_id]);
+    $result = $stmt->fetch();
+    
+    $paid_amount = $result['paid_amount'];
+    
+    $stmt = $db->select('bills', 'id = ?', [$bill_id], 'amount');
+    $bill = $stmt->fetch();
+    
+    $status = 'pending';
+    if ($paid_amount >= $bill['amount']) {
+        $status = 'paid';
+    } elseif ($paid_amount > 0) {
+        $status = 'partial';
+    }
+    
+    $db->update('bills', 
+        ['paid_amount' => $paid_amount, 'status' => $status], 
+        'id = ?', 
+        ['id' => $bill_id]
+    );
 }
 
 function updateMaterialStock($material_id, $quantity, $add = true) {

@@ -392,3 +392,368 @@ Stack trace:
 [25-Jan-2026 10:47:51 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 89
 [25-Jan-2026 10:47:51 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 90
 [25-Jan-2026 10:47:51 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 91
+[25-Jan-2026 13:16:12 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:48
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 48
+[25-Jan-2026 13:17:08 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:48
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 48
+[25-Jan-2026 13:17:09 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:48
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 48
+[25-Jan-2026 13:18:47 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:47
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 47
+[25-Jan-2026 13:18:49 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:47
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 47
+[25-Jan-2026 13:18:49 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:47
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 47
+[25-Jan-2026 13:18:50 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:47
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 47
+[25-Jan-2026 13:18:51 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:47
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 47
+[25-Jan-2026 13:18:53 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:47
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 47
+[25-Jan-2026 13:18:55 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\index.php:25
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\index.php on line 25
+[25-Jan-2026 13:20:02 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:47
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 47
+[25-Jan-2026 13:20:03 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\index.php:25
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\index.php on line 25
+[25-Jan-2026 13:20:13 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:47
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 47
+[25-Jan-2026 13:20:17 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:47
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 47
+[25-Jan-2026 13:20:19 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\index.php:25
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\index.php on line 25
+[25-Jan-2026 13:20:48 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\index.php:25
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\index.php on line 25
+[25-Jan-2026 13:20:53 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\index.php:25
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\index.php on line 25
+[25-Jan-2026 13:21:46 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:47
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 47
+[25-Jan-2026 13:21:47 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:47
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 47
+[25-Jan-2026 13:21:47 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:47
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 47
+[25-Jan-2026 13:21:47 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:47
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 47
+[25-Jan-2026 13:21:48 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:47
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 47
+[25-Jan-2026 13:21:48 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:47
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 47
+[25-Jan-2026 13:21:48 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:47
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 47
+[25-Jan-2026 13:21:49 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:47
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 47
+[25-Jan-2026 13:21:49 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:47
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 47
+[25-Jan-2026 13:21:49 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:47
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 47
+[25-Jan-2026 13:21:50 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:47
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 47
+[25-Jan-2026 13:21:50 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:47
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 47
+[25-Jan-2026 13:22:20 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:66
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 66
+[25-Jan-2026 13:22:23 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:66
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 66
+[25-Jan-2026 13:22:40 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:66
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 66
+[25-Jan-2026 13:22:41 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:66
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 66
+[25-Jan-2026 13:22:42 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:66
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 66
+[25-Jan-2026 13:22:42 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:66
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 66
+[25-Jan-2026 13:22:43 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:66
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 66
+[25-Jan-2026 13:22:43 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:66
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 66
+[25-Jan-2026 13:23:07 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:66
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 66
+[25-Jan-2026 13:24:33 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:68
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 68
+[25-Jan-2026 13:24:35 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:68
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 68
+[25-Jan-2026 13:24:35 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:68
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 68
+[25-Jan-2026 13:24:35 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:68
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 68
+[25-Jan-2026 13:24:37 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\index.php:25
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\index.php on line 25
+[25-Jan-2026 13:24:45 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:68
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 68
+[25-Jan-2026 13:27:28 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:80
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 80
+[25-Jan-2026 13:27:29 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:80
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 80
+[25-Jan-2026 13:28:25 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:148
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 148
+[25-Jan-2026 13:28:38 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\index.php:25
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\index.php on line 25
+[25-Jan-2026 13:28:45 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\index.php:25
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\index.php on line 25
+[25-Jan-2026 13:29:17 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:148
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 148
+[25-Jan-2026 14:33:57 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:264
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 264
+[25-Jan-2026 14:34:05 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:264
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 264
+[25-Jan-2026 14:34:09 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\index.php:25
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\index.php on line 25
+[25-Jan-2026 14:37:08 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:194
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 194
+[25-Jan-2026 14:37:10 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:194
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 194
+[25-Jan-2026 14:37:28 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:194
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 194
+[25-Jan-2026 14:37:29 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:194
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 194
+[25-Jan-2026 14:37:30 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:194
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 194
+[25-Jan-2026 14:37:30 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:194
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 194
+[25-Jan-2026 14:37:31 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:194
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 194
+[25-Jan-2026 14:40:47 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function xss_clean() in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php:380
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\investments\select_project.php on line 380
+[25-Jan-2026 18:34:47 Asia/Kolkata] PHP Parse error:  Unclosed '{' on line 217 does not match ')' in C:\xampp\htdocs\builderz\builderz\includes\functions.php on line 243
+[25-Jan-2026 18:34:54 Asia/Kolkata] PHP Parse error:  Unclosed '{' on line 217 does not match ')' in C:\xampp\htdocs\builderz\builderz\includes\functions.php on line 243
+[25-Jan-2026 18:35:30 Asia/Kolkata] PHP Parse error:  Unclosed '{' on line 217 does not match ')' in C:\xampp\htdocs\builderz\builderz\includes\functions.php on line 243
+[25-Jan-2026 18:35:45 Asia/Kolkata] PHP Parse error:  Unclosed '{' on line 217 does not match ')' in C:\xampp\htdocs\builderz\builderz\includes\functions.php on line 243
+[25-Jan-2026 18:35:47 Asia/Kolkata] PHP Parse error:  Unclosed '{' on line 217 does not match ')' in C:\xampp\htdocs\builderz\builderz\includes\functions.php on line 243
+[25-Jan-2026 18:35:48 Asia/Kolkata] PHP Parse error:  Unclosed '{' on line 217 does not match ')' in C:\xampp\htdocs\builderz\builderz\includes\functions.php on line 243
+[25-Jan-2026 18:35:49 Asia/Kolkata] PHP Parse error:  Unclosed '{' on line 217 does not match ')' in C:\xampp\htdocs\builderz\builderz\includes\functions.php on line 243
+[25-Jan-2026 18:40:09 Asia/Kolkata] Database query error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.bills' doesn't exist
+[25-Jan-2026 18:40:09 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.bills' doesn't exist in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT b.id, b....')
+#1 C:\xampp\htdocs\builderz\builderz\modules\payments\index.php(92): Database->query('SELECT b.id, b....')
+#2 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[25-Jan-2026 18:40:10 Asia/Kolkata] Database query error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.bills' doesn't exist
+[25-Jan-2026 18:40:10 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.bills' doesn't exist in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT b.id, b....')
+#1 C:\xampp\htdocs\builderz\builderz\modules\payments\index.php(92): Database->query('SELECT b.id, b....')
+#2 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[25-Jan-2026 18:40:11 Asia/Kolkata] Database query error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.bills' doesn't exist
+[25-Jan-2026 18:40:11 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.bills' doesn't exist in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT b.id, b....')
+#1 C:\xampp\htdocs\builderz\builderz\modules\payments\index.php(92): Database->query('SELECT b.id, b....')
+#2 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[25-Jan-2026 18:40:11 Asia/Kolkata] Database query error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.bills' doesn't exist
+[25-Jan-2026 18:40:11 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.bills' doesn't exist in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT b.id, b....')
+#1 C:\xampp\htdocs\builderz\builderz\modules\payments\index.php(92): Database->query('SELECT b.id, b....')
+#2 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[25-Jan-2026 18:40:11 Asia/Kolkata] Database query error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.bills' doesn't exist
+[25-Jan-2026 18:40:11 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.bills' doesn't exist in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT b.id, b....')
+#1 C:\xampp\htdocs\builderz\builderz\modules\payments\index.php(92): Database->query('SELECT b.id, b....')
+#2 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[25-Jan-2026 18:40:11 Asia/Kolkata] Database query error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.bills' doesn't exist
+[25-Jan-2026 18:40:11 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.bills' doesn't exist in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT b.id, b....')
+#1 C:\xampp\htdocs\builderz\builderz\modules\payments\index.php(92): Database->query('SELECT b.id, b....')
+#2 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[25-Jan-2026 18:40:11 Asia/Kolkata] Database query error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.bills' doesn't exist
+[25-Jan-2026 18:40:11 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.bills' doesn't exist in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT b.id, b....')
+#1 C:\xampp\htdocs\builderz\builderz\modules\payments\index.php(92): Database->query('SELECT b.id, b....')
+#2 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[25-Jan-2026 18:40:11 Asia/Kolkata] Database query error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.bills' doesn't exist
+[25-Jan-2026 18:40:11 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.bills' doesn't exist in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT b.id, b....')
+#1 C:\xampp\htdocs\builderz\builderz\modules\payments\index.php(92): Database->query('SELECT b.id, b....')
+#2 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[25-Jan-2026 18:40:13 Asia/Kolkata] Database query error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.bills' doesn't exist
+[25-Jan-2026 18:40:13 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.bills' doesn't exist in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT b.id, b....')
+#1 C:\xampp\htdocs\builderz\builderz\modules\payments\index.php(92): Database->query('SELECT b.id, b....')
+#2 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[25-Jan-2026 18:42:37 Asia/Kolkata] Database query error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.bills' doesn't exist
+[25-Jan-2026 19:03:38 Asia/Kolkata] PHP Warning:  Undefined variable $db in C:\xampp\htdocs\builderz\builderz\modules\vendors\index.php on line 425
+[25-Jan-2026 19:03:38 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to a member function query() on null in C:\xampp\htdocs\builderz\builderz\modules\vendors\index.php:425
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\vendors\index.php on line 425
+[25-Jan-2026 19:03:39 Asia/Kolkata] PHP Warning:  Undefined variable $db in C:\xampp\htdocs\builderz\builderz\modules\vendors\index.php on line 425
+[25-Jan-2026 19:03:39 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to a member function query() on null in C:\xampp\htdocs\builderz\builderz\modules\vendors\index.php:425
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\vendors\index.php on line 425
+[25-Jan-2026 19:03:40 Asia/Kolkata] PHP Warning:  Undefined variable $db in C:\xampp\htdocs\builderz\builderz\modules\vendors\index.php on line 425
+[25-Jan-2026 19:03:40 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to a member function query() on null in C:\xampp\htdocs\builderz\builderz\modules\vendors\index.php:425
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\vendors\index.php on line 425
+[25-Jan-2026 19:03:40 Asia/Kolkata] PHP Warning:  Undefined variable $db in C:\xampp\htdocs\builderz\builderz\modules\vendors\index.php on line 425
+[25-Jan-2026 19:03:40 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to a member function query() on null in C:\xampp\htdocs\builderz\builderz\modules\vendors\index.php:425
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\vendors\index.php on line 425
+[25-Jan-2026 19:03:40 Asia/Kolkata] PHP Warning:  Undefined variable $db in C:\xampp\htdocs\builderz\builderz\modules\vendors\index.php on line 425
+[25-Jan-2026 19:03:40 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to a member function query() on null in C:\xampp\htdocs\builderz\builderz\modules\vendors\index.php:425
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\vendors\index.php on line 425
+[25-Jan-2026 19:03:41 Asia/Kolkata] PHP Warning:  Undefined variable $db in C:\xampp\htdocs\builderz\builderz\modules\vendors\index.php on line 425
+[25-Jan-2026 19:03:41 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to a member function query() on null in C:\xampp\htdocs\builderz\builderz\modules\vendors\index.php:425
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\vendors\index.php on line 425
+[25-Jan-2026 19:03:49 Asia/Kolkata] PHP Warning:  Undefined variable $db in C:\xampp\htdocs\builderz\builderz\modules\vendors\index.php on line 425
+[25-Jan-2026 19:03:49 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to a member function query() on null in C:\xampp\htdocs\builderz\builderz\modules\vendors\index.php:425
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\vendors\index.php on line 425
+[25-Jan-2026 19:04:22 Asia/Kolkata] PHP Warning:  Undefined variable $db in C:\xampp\htdocs\builderz\builderz\modules\vendors\index.php on line 425
+[25-Jan-2026 19:04:22 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to a member function query() on null in C:\xampp\htdocs\builderz\builderz\modules\vendors\index.php:425
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\vendors\index.php on line 425
+[25-Jan-2026 19:05:15 Asia/Kolkata] PHP Warning:  Undefined variable $db in C:\xampp\htdocs\builderz\builderz\modules\vendors\index.php on line 431
+[25-Jan-2026 19:05:15 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to a member function query() on null in C:\xampp\htdocs\builderz\builderz\modules\vendors\index.php:431
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\vendors\index.php on line 431
+[25-Jan-2026 19:28:19 Asia/Kolkata] PHP Warning:  Undefined array key "total_challans" in C:\xampp\htdocs\builderz\builderz\modules\reports\vendor_outstanding.php on line 255
+[25-Jan-2026 19:31:14 Asia/Kolkata] PHP Warning:  Undefined array key "total_challans" in C:\xampp\htdocs\builderz\builderz\modules\reports\vendor_outstanding.php on line 255
+[25-Jan-2026 19:32:25 Asia/Kolkata] PHP Warning:  Undefined array key "total_challans" in C:\xampp\htdocs\builderz\builderz\modules\reports\vendor_outstanding.php on line 255
+[25-Jan-2026 19:32:27 Asia/Kolkata] PHP Warning:  Undefined array key "total_challans" in C:\xampp\htdocs\builderz\builderz\modules\reports\vendor_outstanding.php on line 255
+[25-Jan-2026 19:32:27 Asia/Kolkata] PHP Warning:  Undefined array key "total_challans" in C:\xampp\htdocs\builderz\builderz\modules\reports\vendor_outstanding.php on line 255
