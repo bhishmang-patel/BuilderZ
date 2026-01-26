@@ -215,7 +215,7 @@ include __DIR__ . '/../../includes/header.php';
             <thead>
                 <tr>
                     <th style="padding-left: 25px;">Labour/Contractor</th>
-                    <th>Contact Person</th>
+
                     <th>Challans</th>
                     <th>Total Cost</th>
                     <th>Paid</th>
@@ -251,7 +251,7 @@ include __DIR__ . '/../../includes/header.php';
                                 </div>
                             </div>
                         </td>
-                        <td><?= htmlspecialchars($labour['contact_person'] ?? '-') ?></td>
+
                         <td>
                             <span style="font-weight: 600; color: #475569; background: #f1f5f9; padding: 4px 10px; border-radius: 6px; font-size: 12px;">
                                 <?= $labour['total_challans'] ?>

@@ -49,21 +49,14 @@ function formatCurrencyShort($amount) {
 
 function formatCurrencyIndian($amount) {
     $amount = (float)$amount;
+    $is_negative = $amount < 0;
+    $amount = abs($amount);
+    
     $decimal = round($amount - ($no = floor($amount)), 2) * 100;
     $hundred = null;
     $digits_length = strlen($no);
     $i = 0;
     $str = array();
-    $words = array(0 => '', 1 => 'one', 2 => 'two',
-        3 => 'three', 4 => 'four', 5 => 'five', 6 => 'six',
-        7 => 'seven', 8 => 'eight', 9 => 'nine',
-        10 => 'ten', 11 => 'eleven', 12 => 'twelve',
-        13 => 'thirteen', 14 => 'fourteen', 15 => 'fifteen',
-        16 => 'sixteen', 17 => 'seventeen', 18 => 'eighteen',
-        19 => 'nineteen', 20 => 'twenty', 30 => 'thirty',
-        40 => 'forty', 50 => 'fifty', 60 => 'sixty',
-        70 => 'seventy', 80 => 'eighty', 90 => 'ninety');
-    $digits = array('', 'hundred', 'thousand', 'lakh', 'crore');
     
     // Simplified logic for Indian Number format (1,50,000.00)
     $decimalPart = number_format($amount - floor($amount), 2);
@@ -88,7 +81,12 @@ function formatCurrencyIndian($amount) {
     } else {
         $thecash = $num;
     }
-    return '₹ ' . $thecash . $decimalPart;
+    
+    $result = '₹ ' . $thecash . $decimalPart;
+    if ($is_negative) {
+        return '-' . $result;
+    }
+    return $result;
 }
 
 function generateChallanNo($type, $db) {
@@ -240,35 +238,6 @@ function updateChallanPaidAmount($challan_id) {
         'id = ?', 
         ['id' => $challan_id]
     );
-
-}
-
-function updateBillPaidAmount($bill_id) {
-    $db = Database::getInstance();
-    
-    $sql = "SELECT COALESCE(SUM(amount), 0) as paid_amount 
-            FROM payments 
-            WHERE reference_type = 'bill' AND reference_id = ?";
-    $stmt = $db->query($sql, [$bill_id]);
-    $result = $stmt->fetch();
-    
-    $paid_amount = $result['paid_amount'];
-    
-    $stmt = $db->select('bills', 'id = ?', [$bill_id], 'amount');
-    $bill = $stmt->fetch();
-    
-    $status = 'pending';
-    if ($paid_amount >= $bill['amount']) {
-        $status = 'paid';
-    } elseif ($paid_amount > 0) {
-        $status = 'partial';
-    }
-    
-    $db->update('bills', 
-        ['paid_amount' => $paid_amount, 'status' => $status], 
-        'id = ?', 
-        ['id' => $bill_id]
-    );
 }
 
 function updateMaterialStock($material_id, $quantity, $add = true) {
@@ -350,5 +319,34 @@ function verify_csrf_token($token) {
 function csrf_field() {
     $token = generate_csrf_token();
     return '<input type="hidden" name="csrf_token" value="' . $token . '">';
+}
+
+
+function updateBillPaidAmount($bill_id) {
+    $db = Database::getInstance();
+    
+    $sql = "SELECT COALESCE(SUM(amount), 0) as paid_amount 
+            FROM payments 
+            WHERE reference_type = 'bill' AND reference_id = ?";
+    $stmt = $db->query($sql, [$bill_id]);
+    $result = $stmt->fetch();
+    
+    $paid_amount = $result['paid_amount'];
+    
+    $stmt = $db->select('bills', 'id = ?', [$bill_id], 'amount');
+    $bill = $stmt->fetch();
+    
+    $status = 'pending';
+    if ($paid_amount >= $bill['amount']) {
+        $status = 'paid';
+    } elseif ($paid_amount > 0) {
+        $status = 'partial';
+    }
+    
+    $db->update('bills', 
+        ['paid_amount' => $paid_amount, 'status' => $status], 
+        'id = ?', 
+        ['id' => $bill_id]
+    );
 }
 

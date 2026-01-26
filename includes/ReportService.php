@@ -73,6 +73,7 @@ class ReportService {
         $expenditure_sql = "SELECT 
             CASE 
                 WHEN p.payment_type = 'vendor_payment' THEN 'Vendor Payment'
+                WHEN p.payment_type = 'vendor_bill_payment' THEN 'Vendor Bill Payment'
                 WHEN p.payment_type = 'labour_payment' THEN 'Labour Payment'
                 WHEN p.payment_type = 'customer_refund' THEN 'Customer Refund'
             END as category,
@@ -81,15 +82,18 @@ class ReportService {
             pt.name as party_name,
             CASE 
                 WHEN p.reference_type = 'challan' THEN (SELECT pr.project_name FROM challans c JOIN projects pr ON c.project_id = pr.id WHERE c.id = p.reference_id LIMIT 1)
+                WHEN p.reference_type = 'bill' THEN (SELECT pr.project_name FROM bills b JOIN challans c ON b.challan_id = c.id JOIN projects pr ON c.project_id = pr.id WHERE b.id = p.reference_id LIMIT 1)
                 WHEN p.reference_type = 'booking_cancellation' THEN (SELECT pr.project_name FROM booking_cancellations bc JOIN bookings b ON bc.booking_id = b.id JOIN flats f ON b.flat_id = f.id JOIN projects pr ON f.project_id = pr.id WHERE bc.id = p.reference_id LIMIT 1)
                 ELSE '-'
             END as project_name
         FROM payments p
         JOIN parties pt ON p.party_id = pt.id
         LEFT JOIN challans c_ref ON p.reference_type = 'challan' AND p.reference_id = c_ref.id
-        WHERE p.payment_type IN ('vendor_payment', 'labour_payment', 'customer_refund')
+        LEFT JOIN bills b_ref ON p.reference_type = 'bill' AND p.reference_id = b_ref.id
+        LEFT JOIN challans c_bill_ref ON b_ref.challan_id = c_bill_ref.id
+        WHERE p.payment_type IN ('vendor_payment', 'labour_payment', 'customer_refund', 'vendor_bill_payment')
         AND p.payment_date BETWEEN ? AND ?
-        " . ($project_filter ? " AND c_ref.project_id = ?" : "") . "
+        " . ($project_filter ? " AND (c_ref.project_id = ? OR c_bill_ref.project_id = ?)" : "") . "
 
         UNION ALL
 
@@ -108,7 +112,8 @@ class ReportService {
         ORDER BY transaction_date DESC";
 
         $expenditure_params = [$date_from, $date_to];
-        if ($project_filter) $expenditure_params[] = $project_filter;
+        if ($project_filter) $expenditure_params[] = $project_filter; // For c_ref
+        if ($project_filter) $expenditure_params[] = $project_filter; // For c_bill_ref
         $expenditure_params = array_merge($expenditure_params, [$date_from, $date_to]);
         if ($project_filter) $expenditure_params[] = $project_filter;
 
@@ -234,12 +239,14 @@ class ReportService {
                 FROM challans c3 
                 WHERE c3.project_id = p.id AND c3.challan_type = 'labour') as labour_cost,
                 
-                -- Vendor payments
+                -- Vendor payments (Both direct old payments and new bill payments)
                (SELECT COALESCE(SUM(pay.amount), 0)
                 FROM payments pay
-                JOIN challans c ON pay.reference_type = 'challan' AND pay.reference_id = c.id
-                WHERE c.project_id = p.id
-                AND pay.payment_type = 'vendor_payment') as vendor_payments,
+                LEFT JOIN challans c ON pay.reference_type = 'challan' AND pay.reference_id = c.id
+                LEFT JOIN bills b ON pay.reference_type = 'bill' AND pay.reference_id = b.id
+                LEFT JOIN challans cb ON b.challan_id = cb.id
+                WHERE (c.project_id = p.id OR cb.project_id = p.id)
+                AND pay.payment_type IN ('vendor_payment', 'vendor_bill_payment')) as vendor_payments,
 
 
                -- Labour payments (Added for Cash Flow calculation)
@@ -336,7 +343,7 @@ class ReportService {
             } elseif ($payment['payment_type'] === 'customer_refund') {
                 $totals['refunds'] += $payment['amount'];
                 $totals['counts']['refunds']++;
-            } elseif ($payment['payment_type'] === 'vendor_payment') {
+            } elseif ($payment['payment_type'] === 'vendor_payment' || $payment['payment_type'] === 'vendor_bill_payment') {
                 $totals['payments'] += $payment['amount'];
                 $totals['counts']['vendor']++;
             } elseif ($payment['payment_type'] === 'labour_payment') {
@@ -367,16 +374,16 @@ class ReportService {
     public function getVendorOutstanding() {
         // Updated to use the 'bills' table instead of 'challans'
         $sql = "SELECT p.id as vendor_id, p.name as vendor_name, p.mobile, p.gst_number,
-                   COUNT(b.id) as total_bills,
+                   COUNT(b.id) as total_challans,
                    COALESCE(SUM(b.amount), 0) as total_amount,
                    COALESCE(SUM(b.paid_amount), 0) as paid_amount,
                    COALESCE(SUM(b.amount - b.paid_amount), 0) as pending_amount
             FROM parties p
-            LEFT JOIN bills b ON p.id = b.party_id AND b.status != 'paid'
+
+            LEFT JOIN bills b ON p.id = b.party_id
             WHERE p.party_type = 'vendor'
             GROUP BY p.id
-            HAVING pending_amount > 0
-            ORDER BY pending_amount DESC, p.name";
+            ORDER BY p.name ASC";
 
         $vendors = $this->db->query($sql)->fetchAll();
 
@@ -406,7 +413,7 @@ class ReportService {
 
 
     public function getLabourOutstanding() {
-        $sql = "SELECT p.id as labour_id, p.name as labour_name, p.mobile, p.contact_person,
+        $sql = "SELECT p.id as labour_id, p.name as labour_name, p.mobile,
                    COUNT(c.id) as total_challans,
                    SUM(c.total_amount) as total_amount,
                    SUM(c.paid_amount) as paid_amount,
@@ -506,7 +513,7 @@ class ReportService {
 
         // 5. Total Expenses (Cash Basis: Vendor + Labour + Refunds)
         // Matches Payment Register logic
-        $stmt = $this->db->query("SELECT COALESCE(SUM(amount), 0) as total_expenses FROM payments WHERE payment_type IN ('vendor_payment', 'labour_payment', 'customer_refund')");
+        $stmt = $this->db->query("SELECT COALESCE(SUM(amount), 0) as total_expenses FROM payments WHERE payment_type IN ('vendor_payment', 'labour_payment', 'customer_refund', 'vendor_bill_payment')");
         $total_expenses = $stmt->fetch()['total_expenses'];
 
         // 6. Net Profit
@@ -529,7 +536,7 @@ class ReportService {
         ) i ON m.month = i.month
         LEFT JOIN (
             SELECT MONTH(payment_date) as month, SUM(amount) as expense 
-            FROM payments WHERE payment_type IN ('vendor_payment', 'labour_payment', 'customer_refund') AND YEAR(payment_date) = YEAR(CURDATE())
+            FROM payments WHERE payment_type IN ('vendor_payment', 'labour_payment', 'customer_refund', 'vendor_bill_payment') AND YEAR(payment_date) = YEAR(CURDATE())
             GROUP BY MONTH(payment_date)
         ) e ON m.month = e.month
         ORDER BY m.month")->fetchAll();
@@ -581,9 +588,9 @@ class ReportService {
         $received_growth = $this->calculateTrend($received_this_month, $received_last_month);
 
         // Expenses Trend (Using Payments table for accurate cashflow timing)
-        $stmt = $this->db->query("SELECT COALESCE(SUM(amount), 0) as val FROM payments WHERE payment_type IN ('vendor_payment', 'labour_payment', 'customer_refund') AND MONTH(payment_date) = ? AND YEAR(payment_date) = ?", [$current_month, $current_year]);
+        $stmt = $this->db->query("SELECT COALESCE(SUM(amount), 0) as val FROM payments WHERE payment_type IN ('vendor_payment', 'labour_payment', 'customer_refund', 'vendor_bill_payment') AND MONTH(payment_date) = ? AND YEAR(payment_date) = ?", [$current_month, $current_year]);
         $expense_this_month = $stmt->fetch()['val'];
-        $stmt = $this->db->query("SELECT COALESCE(SUM(amount), 0) as val FROM payments WHERE payment_type IN ('vendor_payment', 'labour_payment', 'customer_refund') AND MONTH(payment_date) = ? AND YEAR(payment_date) = ?", [$last_month, $last_month_year]);
+        $stmt = $this->db->query("SELECT COALESCE(SUM(amount), 0) as val FROM payments WHERE payment_type IN ('vendor_payment', 'labour_payment', 'customer_refund', 'vendor_bill_payment') AND MONTH(payment_date) = ? AND YEAR(payment_date) = ?", [$last_month, $last_month_year]);
         $expense_last_month = $stmt->fetch()['val'];
         $expense_growth = $this->calculateTrend($expense_this_month, $expense_last_month);
 

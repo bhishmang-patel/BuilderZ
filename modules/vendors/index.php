@@ -31,12 +31,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $data = [
                 'party_type' => 'vendor',
                 'name' => sanitize($_POST['name']),
-                'contact_person' => sanitize($_POST['contact_person']),
+                'vendor_type' => sanitize($_POST['vendor_type']),
+                'contact_person' => '', // Deprecated/Removed from Schema but good to be explicit if array strictness
                 'mobile' => sanitize($_POST['mobile']),
                 'email' => sanitize($_POST['email']),
                 'address' => sanitize($_POST['address']),
-                'gst_number' => sanitize($_POST['gst_number'])
+                'city' => sanitize($_POST['city']),
+                'gst_number' => sanitize($_POST['gst_number']),
+                'gst_status' => sanitize($_POST['gst_status']),
+                'opening_balance' => floatval($_POST['opening_balance'] ?? 0),
+                'status' => 'active' // Default active on create
             ];
+            // Remove contact_person key since it's gone from DB
+            unset($data['contact_person']);
+            
             $newVendorId = $masterService->createParty($data);
             
             // Link Challan if selected
@@ -57,11 +65,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $data = [
                 'party_type' => 'vendor',
                 'name' => sanitize($_POST['name']),
-                'contact_person' => sanitize($_POST['contact_person']),
+                'vendor_type' => sanitize($_POST['vendor_type']),
                 'mobile' => sanitize($_POST['mobile']),
                 'email' => sanitize($_POST['email']),
                 'address' => sanitize($_POST['address']),
-                'gst_number' => sanitize($_POST['gst_number'])
+                'city' => sanitize($_POST['city']),
+                'gst_number' => sanitize($_POST['gst_number']),
+                'gst_status' => sanitize($_POST['gst_status']),
+                'opening_balance' => floatval($_POST['opening_balance'] ?? 0),
+                'status' => sanitize($_POST['status'])
             ];
             $masterService->updateParty(intval($_POST['id']), $data);
             setFlashMessage('success', 'Vendor updated successfully');
@@ -80,9 +92,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Fetch all parties but filter for vendors
 $filters = [
     'type' => 'vendor',
-    'search' => $_GET['search'] ?? ''
+    'search' => $_GET['search'] ?? '',
+    'vendor_type' => $_GET['vendor_type'] ?? '',
+    'city' => $_GET['city'] ?? '',
+    'gst_status' => $_GET['gst_status'] ?? '',
+    'status' => $_GET['status'] ?? ''
 ];
-$parties = $masterService->getAllParties($filters);
+$parties = [];
+try {
+    $parties = $masterService->getAllParties($filters);
+} catch (Exception $e) {
+    // Check if it's a column not found error
+    if (strpos($e->getMessage(), 'Column not found') !== false || strpos($e->getMessage(), 'Unknown column') !== false) {
+        $errorMsg = "Database columns missing! Please run the migration script: <code>migrations/add_vendor_columns.sql</code>";
+    } else {
+        $errorMsg = "Error loading vendors: " . $e->getMessage();
+    }
+    // Set a variable to display this error in the UI
+    $fatalError = $errorMsg;
+}
 
 // Statistics (Mocking similar structure but only for vendors doesn't make much sense to break down further, so maybe just total count)
 $totalVendors = count($parties);
@@ -428,10 +456,22 @@ include __DIR__ . '/../../includes/header.php';
     position: relative;
     cursor: default;
 }
-/* Dashboard-style value hover effect */
-.stat-value .full-value { display: none; }
-.stat-value:hover .short-value { display: none; }
-.stat-value:hover .full-value { display: block; font-size: 20px; }
+/* Hover Effect for Short/Full Numbers */
+.stat-card-modern .full-value {
+    display: none;
+    font-size: 20px;
+}
+.stat-card-modern:hover .short-value {
+    display: none;
+}
+.stat-card-modern:hover .full-value {
+    display: inline-block;
+    animation: fadeIn 0.2s ease-in;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(2px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 
 .bg-blue-light { background: #eff6ff; color: #3b82f6; }
 </style>
@@ -441,6 +481,16 @@ include __DIR__ . '/../../includes/header.php';
 $stmt = $db->query("SELECT SUM(amount - paid_amount) as total_pending FROM bills WHERE status IN ('pending', 'partial')");
 $totalPending = $stmt->fetch()['total_pending'] ?? 0;
 ?>
+
+<!-- Error Alert -->
+<?php if (isset($fatalError)): ?>
+<div style="background: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 20px; border-radius: 12px; margin-bottom: 25px; display: flex; align-items: center; gap: 15px;">
+    <i class="fas fa-exclamation-triangle" style="font-size: 24px;"></i>
+    <div>
+        <strong>System Error:</strong> <?= $fatalError ?>
+    </div>
+</div>
+<?php endif; ?>
 
 <!-- Stats Grid -->
 <div class="stats-container">
@@ -495,13 +545,41 @@ $totalPending = $stmt->fetch()['total_pending'] ?? 0;
             <!-- Filter Section -->
             <div id="filterSection" style="display: <?= ($filters['search']) ? 'block' : 'none' ?>;">
                 <form method="GET" class="filter-card">
-                    <div class="filter-row">
-                        <div style="flex: 2; position: relative;">
+                    <div class="filter-row" style="flex-wrap: wrap;">
+                        <div style="flex: 2; min-width: 200px; position: relative;">
                             <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 12px;"></i>
-                            <input type="text" name="search" class="modern-input" placeholder="Search by name, mobile, email..." value="<?= htmlspecialchars($filters['search']) ?>" style="padding-left: 32px;">
+                            <input type="text" name="search" class="modern-input" placeholder="Search by name, mobile..." value="<?= htmlspecialchars($filters['search']) ?>" style="padding-left: 32px;">
                         </div>
-                        <button type="submit" class="modern-btn">Apply</button>
-                        <a href="index.php" class="modern-btn" style="background:#94a3b8;">Reset</a>
+                         <div style="flex: 1; min-width: 150px;">
+                            <select name="vendor_type" class="modern-select" style="width: 100%;">
+                                <option value="">All Types</option>
+                                <option value="supplier" <?= $filters['vendor_type'] == 'supplier' ? 'selected' : '' ?>>Supplier</option>
+                                <option value="contractor" <?= $filters['vendor_type'] == 'contractor' ? 'selected' : '' ?>>Contractor</option>
+                                <option value="service_provider" <?= $filters['vendor_type'] == 'service_provider' ? 'selected' : '' ?>>Service Provider</option>
+                            </select>
+                        </div>
+                        <div style="flex: 1; min-width: 150px;">
+                            <input type="text" name="city" class="modern-input" placeholder="City" value="<?= htmlspecialchars($filters['city']) ?>">
+                        </div>
+                         <div style="flex: 1; min-width: 150px;">
+                            <select name="gst_status" class="modern-select" style="width: 100%;">
+                                <option value="">GST Status</option>
+                                <option value="registered" <?= $filters['gst_status'] == 'registered' ? 'selected' : '' ?>>Registered</option>
+                                <option value="unregistered" <?= $filters['gst_status'] == 'unregistered' ? 'selected' : '' ?>>Unregistered</option>
+                                <option value="composition" <?= $filters['gst_status'] == 'composition' ? 'selected' : '' ?>>Composition</option>
+                            </select>
+                        </div>
+                        <div style="flex: 1; min-width: 100px;">
+                            <select name="status" class="modern-select" style="width: 100%;">
+                                <option value="">Status</option>
+                                <option value="active" <?= $filters['status'] == 'active' ? 'selected' : '' ?>>Active</option>
+                                <option value="inactive" <?= $filters['status'] == 'inactive' ? 'selected' : '' ?>>Inactive</option>
+                            </select>
+                        </div>
+                        <div style="display:flex; gap:10px;">
+                            <button type="submit" class="modern-btn">Apply</button>
+                            <a href="index.php" class="modern-btn" style="background:#94a3b8;">Reset</a>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -511,54 +589,88 @@ $totalPending = $stmt->fetch()['total_pending'] ?? 0;
                 <table class="modern-table">
                     <thead>
                         <tr>
-                            <th>Name</th>
-                            <th>Contact Person</th>
-                            <th>Contact Info</th>
-                            <th>GST Number</th>
+                            <th style="text-align: left; padding-left: 20px;">Vendor</th>
+                            <th>Type</th>
+                            <th>Location</th>
+                            <th>GST Status</th>
+                            <th style="text-align: right;">Opening Bal (₹)</th>
+                            <th style="text-align: right; padding-right: 20px;">Outstanding (₹)</th>
+                            <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if (empty($parties)): ?>
                             <tr>
-                                <td colspan="5" style="text-align: center; padding: 40px; color: #64748b;">
+                                <td colspan="8" style="text-align: center; padding: 40px; color: #64748b;">
                                     <i class="fas fa-folder-open" style="font-size: 24px; margin-bottom: 10px; display: block; opacity: 0.5;"></i>
                                     No vendors found.
                                 </td>
                             </tr>
                         <?php else: 
                             foreach ($parties as $party): 
-                                $color = ColorHelper::getCustomerColor($party['id']);
+                                $color = ColorHelper::getCustomerColor($party['name']);
                                 $initial = ColorHelper::getInitial($party['name']);
                         ?>
                         <tr>
-                            <td style="text-align: center;">
-                                <div style="display:inline-flex; align-items:center; width: 200px; text-align: left;">
+                            <td style="text-align: left; padding-left: 20px;">
+                                <div style="display:inline-flex; align-items:center; text-align: left;">
                                     <div class="avatar-square" style="background: <?= $color ?>; margin-right: 12px; flex-shrink: 0;"><?= $initial ?></div>
-                                    <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px;">
                                         <div style="font-weight:700; color:#1e293b;"><?= htmlspecialchars($party['name'] ?? '') ?></div>
                                     </div>
                                 </div>
                             </td>
                             <td>
-                                <span style="font-size:13px; font-weight:600; color:#475569;">
-                                    <?= htmlspecialchars($party['contact_person'] ?? '-') ?>
-                                </span>
+                                <?php if($party['vendor_type']): ?>
+                                    <span class="badge-pill" style="background: #f1f5f9; color: #475569; font-weight:600; text-transform: capitalize;">
+                                        <?= str_replace('_', ' ', $party['vendor_type']) ?>
+                                    </span>
+                                <?php else: ?>
+                                    <span style="color: #cbd5e1;">-</span>
+                                <?php endif; ?>
                             </td>
                             <td>
-                                <div style="display: flex; flex-direction: column; align-items: center; gap:4px;">
-                                    <?php if(!empty($party['mobile'])): ?>
-                                    <span style="font-size: 13px; color: #64748b;"><i class="fas fa-phone-alt" style="font-size:11px; margin-right:4px;"></i> <?= htmlspecialchars($party['mobile']) ?></span>
+                                <div style="font-weight: 600; color: #475569; font-size: 13px;">
+                                    <?= htmlspecialchars($party['city'] ?? '-') ?>
+                                </div>
+                            </td>
+                            <td>
+                                <div style="display: flex; flex-direction: column; gap: 2px; align-items: center;">
+                                    <span style="font-size: 12px; font-weight: 700; color: #334155; text-transform: capitalize;">
+                                        <?= htmlspecialchars($party['gst_status'] ?? 'Unregistered') ?>
+                                    </span>
+                                    <?php if(!empty($party['gst_number'])): ?>
+                                        <span style="font-size: 11px; color: #64748b; font-family: monospace;">
+                                            <?= htmlspecialchars($party['gst_number']) ?>
+                                        </span>
                                     <?php endif; ?>
-                                    <?php if(!empty($party['email'])): ?>
-                                    <span style="font-size: 13px; color: #64748b;"><i class="fas fa-envelope" style="font-size:11px; margin-right:4px;"></i> <?= htmlspecialchars($party['email']) ?></span>
+                                </div>
+                            </td>
+                            <td style="text-align: right;">
+                                <span style="font-weight: 600; color: #64748b;">
+                                    <?= formatCurrency($party['opening_balance'] ?? 0) ?>
+                                </span>
+                            </td>
+                            <td style="text-align: right; padding-right: 20px;">
+                                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
+                                    <?php if(($party['outstanding_balance'] ?? 0) > 0): ?>
+                                        <span style="color: #ef4444; font-weight: 700;">
+                                            <?= formatCurrency($party['outstanding_balance']) ?>
+                                        </span>
+                                    <?php else: ?>
+                                        <span style="color: #10b981; font-weight: 700;">
+                                            <?= formatCurrency(0) ?>
+                                        </span>
                                     <?php endif; ?>
                                 </div>
                             </td>
                             <td>
-                                <span style="font-size: 13px; font-weight:600; color: #475569;">
-                                    <?= htmlspecialchars($party['gst_number'] ?? '-') ?>
-                                </span>
+                                <?php if(($party['status'] ?? 'active') === 'active'): ?>
+                                    <span class="badge-pill stock-in">Active</span>
+                                <?php else: ?>
+                                    <span class="badge-pill" style="background: #f1f5f9; color: #94a3b8;">Inactive</span>
+                                <?php endif; ?>
                             </td>
                             <td>
                                 <button class="action-btn" onclick="viewPartyDetails(<?= htmlspecialchars(json_encode($party)) ?>)" title="View Details">
@@ -596,10 +708,6 @@ $totalPending = $stmt->fetch()['total_pending'] ?? 0;
             </div>
             
             <div style="background: #f8fafc; border-radius: 12px; padding: 10px;">
-                <div style="display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #f1f5f9;">
-                    <span style="color: #64748b; font-weight: 600; font-size: 13px;">Contact Person</span>
-                    <span style="color: #1e293b; font-weight: 600; font-size: 13px;" id="view_contact_person"></span>
-                </div>
                  <div style="display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #f1f5f9;">
                     <span style="color: #64748b; font-weight: 600; font-size: 13px;">Mobile</span>
                     <span style="color: #1e293b; font-weight: 600; font-size: 13px;" id="view_mobile"></span>
@@ -828,12 +936,30 @@ $totalPending = $stmt->fetch()['total_pending'] ?? 0;
                     </div>
 
                     <div>
-                         <label class="input-label">Contact Person</label>
-                         <input type="text" name="contact_person" id="add_contact_person" class="modern-input" placeholder="Point of contact">
+                        <label class="input-label">Vendor Type *</label>
+                        <select name="vendor_type" id="add_vendor_type" required class="modern-select" style="width: 100%;">
+                            <option value="">Select Type</option>
+                            <option value="supplier">Supplier</option>
+                            <option value="contractor">Contractor</option>
+                            <option value="service_provider">Service Provider</option>
+                        </select>
                     </div>
                      <div>
-                         <label class="input-label">GST Number</label>
-                         <input type="text" name="gst_number" id="add_gst_number" class="modern-input" placeholder="GSTIN (Optional)">
+                        <label class="input-label">Opening Balance (₹)</label>
+                        <input type="number" name="opening_balance" id="add_opening_balance" class="modern-input" placeholder="0.00" step="0.01">
+                    </div>
+
+                     <div>
+                        <label class="input-label">GST Status</label>
+                         <select name="gst_status" id="add_gst_status" class="modern-select" style="width: 100%;" onchange="toggleGstInput('add')">
+                            <option value="unregistered">Unregistered</option>
+                            <option value="registered">Registered</option>
+                            <option value="composition">Composition</option>
+                        </select>
+                    </div>
+                     <div>
+                        <label class="input-label">GST Number</label>
+                        <input type="text" name="gst_number" id="add_gst_number" class="modern-input" placeholder="GSTIN (Optional)" disabled style="background: #f1f5f9;">
                     </div>
                 </div>
 
@@ -847,6 +973,10 @@ $totalPending = $stmt->fetch()['total_pending'] ?? 0;
                      <div>
                          <label class="input-label">Email Address</label>
                          <input type="email" name="email" id="add_email" class="modern-input" placeholder="Email address">
+                    </div>
+                     <div class="full-width">
+                        <label class="input-label">City / Location</label>
+                        <input type="text" name="city" id="add_city" class="modern-input" placeholder="City">
                     </div>
                      <div class="full-width">
                         <label class="input-label">Address</label>
@@ -891,12 +1021,40 @@ $totalPending = $stmt->fetch()['total_pending'] ?? 0;
                     </div>
 
                     <div>
-                         <label class="input-label">Contact Person</label>
-                         <input type="text" name="contact_person" id="edit_contact_person" class="modern-input" placeholder="Point of contact">
+                        <label class="input-label">Vendor Type *</label>
+                        <select name="vendor_type" id="edit_vendor_type" required class="modern-select" style="width: 100%;">
+                            <option value="supplier">Supplier</option>
+                            <option value="contractor">Contractor</option>
+                            <option value="service_provider">Service Provider</option>
+                        </select>
                     </div>
                      <div>
-                         <label class="input-label">GST Number</label>
-                         <input type="text" name="gst_number" id="edit_gst_number" class="modern-input" placeholder="GSTIN (Optional)">
+                        <label class="input-label">Opening Balance (₹)</label>
+                        <input type="number" name="opening_balance" id="edit_opening_balance" class="modern-input" placeholder="0.00" step="0.01">
+                    </div>
+                    
+                     <div>
+                        <label class="input-label">Status</label>
+                        <select name="status" id="edit_status" class="modern-select" style="width: 100%;">
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                     <div>
+                         <!-- Spacer -->
+                    </div>
+
+                     <div>
+                        <label class="input-label">GST Status</label>
+                         <select name="gst_status" id="edit_gst_status" class="modern-select" style="width: 100%;" onchange="toggleGstInput('edit')">
+                            <option value="unregistered">Unregistered</option>
+                            <option value="registered">Registered</option>
+                            <option value="composition">Composition</option>
+                        </select>
+                    </div>
+                     <div>
+                        <label class="input-label">GST Number</label>
+                        <input type="text" name="gst_number" id="edit_gst_number" class="modern-input" placeholder="GSTIN (Optional)">
                     </div>
                 </div>
 
@@ -912,6 +1070,10 @@ $totalPending = $stmt->fetch()['total_pending'] ?? 0;
                          <input type="email" name="email" id="edit_email" class="modern-input" placeholder="Email address">
                     </div>
                      <div class="full-width">
+                        <label class="input-label">City / Location</label>
+                        <input type="text" name="city" id="edit_city" class="modern-input" placeholder="City">
+                    </div>
+                      <div class="full-width">
                         <label class="input-label">Address</label>
                         <textarea name="address" id="edit_address" class="modern-input" rows="3" placeholder="Full billing address"></textarea>
                     </div>
@@ -1014,21 +1176,42 @@ function openDeleteModal(id) {
     openPartyModal('deletePartyModal');
 }
 
+function toggleGstInput(prefix) {
+    const status = document.getElementById(prefix + '_gst_status').value;
+    const input = document.getElementById(prefix + '_gst_number');
+    
+    if (status === 'unregistered') {
+        input.disabled = true;
+        input.style.background = '#f1f5f9';
+        input.value = '';
+    } else {
+        input.disabled = false;
+        input.style.background = '#fff';
+    }
+}
+
 function editParty(party) {
     document.getElementById('edit_id').value = party.id;
-    // Removed type selection as it's implied
     document.getElementById('edit_name').value = party.name;
-    document.getElementById('edit_contact_person').value = party.contact_person;
+    document.getElementById('edit_vendor_type').value = party.vendor_type || 'supplier';
+    document.getElementById('edit_opening_balance').value = party.opening_balance || 0;
+    
     document.getElementById('edit_mobile').value = party.mobile;
     document.getElementById('edit_email').value = party.email;
+    
+    document.getElementById('edit_gst_status').value = party.gst_status || (party.gst_number ? 'registered' : 'unregistered');
+    toggleGstInput('edit'); // Set initial state
     document.getElementById('edit_gst_number').value = party.gst_number;
+    
+    document.getElementById('edit_city').value = party.city || '';
     document.getElementById('edit_address').value = party.address;
+    document.getElementById('edit_status').value = party.status || 'active';
+    
     openPartyModal('editPartyModal');
 }
 
 function viewPartyDetails(party) {
     document.getElementById('view_party_title').innerText = party.name;
-    document.getElementById('view_contact_person').innerText = party.contact_person || 'N/A';
     document.getElementById('view_mobile').innerText = party.mobile || 'N/A';
     document.getElementById('view_email').innerText = party.email || 'N/A';
     document.getElementById('view_gst').innerText = party.gst_number || 'N/A';
@@ -1088,7 +1271,7 @@ function loadBills(vendorId) {
                 <tr>
                     <th style="text-align:left;">Bill No</th>
                     <th>Date</th>
-                    <th>Challan</th>
+                    <th>Challan No</th>
                     <th style="text-align:right;">Amount</th>
                     <th>Status</th>
                     <th style="width: 50px;"></th>
@@ -1206,6 +1389,12 @@ function onChallanSelect(select) {
         itemsDisplay.innerText = challan.materials || 'No items';
         amountInput.value = challan.total_amount;
         if (challan.challan_date) dateInput.value = challan.challan_date;
+        
+        // Auto-fetch quantity
+        if (challan.total_quantity) {
+            document.getElementById('calc_qty').value = challan.total_quantity;
+        }
+        
         preview.style.display = 'block';
     }
 }

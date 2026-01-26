@@ -56,6 +56,11 @@ class InvestmentService {
             $params[] = "%{$filters['search']}%";
         }
 
+        if (!empty($filters['investment_type'])) {
+            $sql .= " AND i.investment_type = ?";
+            $params[] = $filters['investment_type'];
+        }
+
         $sql .= " ORDER BY i.investment_date DESC";
 
         $stmt = $this->db->query($sql, $params);

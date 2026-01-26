@@ -44,7 +44,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Fetch all investments
 $filters = [
     'search' => $_GET['search'] ?? '',
-    'project_id' => $_GET['project_id'] ?? ''
+    'project_id' => $_GET['project_id'] ?? '',
+    'investment_type' => $_GET['investment_type'] ?? ''
 ];
 $investments = $investmentService->getAllInvestments($filters);
 $projects = $masterService->getAllProjects();
@@ -327,14 +328,41 @@ include __DIR__ . '/../../includes/header.php';
     from { opacity: 0; transform: translateY(2px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+.modern-icon {
+    width: 50px;
+    height: 48px;
+    border-radius: 12px;
+    background: #ecfdf5;
+    color: #10b981;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.holding-hand {
+    margin-left: -2px;
+    transform: translateY(12px);
+    font-size: 1.5rem;
+}
+
+.inr-above {
+    font-size: 0.7em;
+    position: relative;
+    top: -20px;   /* force ABOVE the hand */
+}
+
 </style>
 
 <!-- Stats Row -->
 <div class="row" style="margin-bottom: 25px;">
     <div class="col-lg-3 col-md-6">
         <div class="stat-card-custom" style="background:white; padding:20px; border-radius:16px; display:flex; gap:15px; align-items:center; border:1px solid #f1f5f9;">
-            <div style="width:48px; height:48px; border-radius:12px; background:#ecfdf5; color:#10b981; display:flex; align-items:center; justify-content:center; font-size:20px;">
-                <i class="fas fa-hand-holding-usd"></i>
+            <div class="modern-icon">
+                <span class="fa-layers fa-fw">
+                    <i class="fas fa-hand-holding holding-hand"></i>
+                    <i class="fas fa-indian-rupee-sign inr-above"></i>
+                </span>
             </div>
             <div>
                 <div style="font-size:13px; font-weight:600; color:#64748b; text-transform:uppercase;">Total Invested</div>
@@ -355,7 +383,10 @@ include __DIR__ . '/../../includes/header.php';
             <div class="chart-header-custom" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px;">
                 <div class="chart-title-group">
                     <h3>
-                        <div style="width:36px; height:36px; background:#ecfdf5; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#10b981; margin-right:10px;"><i class="fas fa-hand-holding-usd"></i></div>
+                        <div style="width:36px; height:36px; background:#ecfdf5; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#10b981; margin-right:10px;">
+                            <i class="fas fa-hand-holding" style="transform: translateX(3px);"></i>
+                            <i class="fas fa-indian-rupee-sign" style="font-size: 0.6rem; transform: translateY(-6px); margin-left:-11px; margin-right: 11px"></i>
+                        </div>
                         Investments
                     </h3>
                     <div style="padding-left:46px; font-size:13px; color:#94a3b8; font-weight:500;">Track capital, loans, and partner contributions</div>
@@ -372,7 +403,7 @@ include __DIR__ . '/../../includes/header.php';
             </div>
 
             <!-- Filter Section -->
-            <div id="filterSection" style="display: <?= ($filters['search'] || $filters['project_id']) ? 'block' : 'none' ?>; margin-bottom:20px;">
+            <div id="filterSection" style="display: <?= ($filters['search'] || $filters['project_id'] || $filters['investment_type']) ? 'block' : 'none' ?>; margin-bottom:20px;">
                 <form method="GET" style="background: #f8fafc; border-radius: 12px; padding: 15px;">
                     <div style="display:flex; gap:10px;">
                         <div style="flex: 2; position: relative;">
@@ -384,6 +415,13 @@ include __DIR__ . '/../../includes/header.php';
                             <?php foreach ($projects as $proj): ?>
                                 <option value="<?= $proj['id'] ?>" <?= $filters['project_id'] == $proj['id'] ? 'selected' : '' ?>><?= htmlspecialchars($proj['project_name']) ?></option>
                             <?php endforeach; ?>
+                        </select>
+                        <select name="investment_type" class="modern-select" style="flex:1;">
+                            <option value="">All Types</option>
+                            <option value="loan" <?= $filters['investment_type'] === 'loan' ? 'selected' : '' ?>>Loan</option>
+                            <option value="partner" <?= $filters['investment_type'] === 'partner' ? 'selected' : '' ?>>Partner Contribution</option>
+                            <option value="personal" <?= $filters['investment_type'] === 'personal' ? 'selected' : '' ?>>Personal Capital</option>
+                            <option value="other" <?= $filters['investment_type'] === 'other' ? 'selected' : '' ?>>Other</option>
                         </select>
                         <button type="submit" class="modern-btn" style="background:#0f172a;">Apply</button>
                         <a href="index.php" class="modern-btn" style="background:#94a3b8;">Reset</a>

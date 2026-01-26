@@ -233,7 +233,31 @@ class MasterService {
             $params[] = "%{$filters['search']}%";
         }
 
-        return $this->db->select('parties', $where, $params)->fetchAll();
+        // New Vendor Filters
+        if (!empty($filters['vendor_type'])) {
+            $where .= ' AND vendor_type = ?';
+            $params[] = $filters['vendor_type'];
+        }
+        if (!empty($filters['city'])) { // Exact match for filter dropdowns
+             $where .= ' AND city = ?';
+             $params[] = $filters['city'];
+        }
+        if (!empty($filters['gst_status'])) {
+            $where .= ' AND gst_status = ?';
+            $params[] = $filters['gst_status'];
+        }
+        if (!empty($filters['status'])) {
+            $where .= ' AND status = ?';
+            $params[] = $filters['status'];
+        }
+
+
+        
+        $sql = "SELECT p.*, 
+                (p.opening_balance + (SELECT COALESCE(SUM(b.amount - b.paid_amount), 0) FROM bills b WHERE b.party_id = p.id AND b.status != 'paid')) as outstanding_balance
+                FROM parties p WHERE $where ORDER BY p.name ASC";
+        
+        return $this->db->query($sql, $params)->fetchAll();
     }
 
     public function getParty($id) {
@@ -253,8 +277,18 @@ class MasterService {
     }
 
     public function deleteParty($id) {
-        // Add check for dependencies if needed (e.g. payments, bookings)
-        // For now allowing delete as per original code logic usually
+        // Check for dependencies in Challans
+        $stmt = $this->db->select('challans', 'party_id = ?', [$id]);
+        if ($stmt->rowCount() > 0) {
+            throw new Exception("Cannot delete vendor: They have existing challans linked.");
+        }
+        
+        // Check for dependencies in Bills
+        $stmt = $this->db->select('bills', 'party_id = ?', [$id]);
+        if ($stmt->rowCount() > 0) {
+            throw new Exception("Cannot delete vendor: They have existing bills linked.");
+        }
+
         logAudit('delete', 'parties', $id);
         return $this->db->delete('parties', 'id = ?', [$id]);
     }

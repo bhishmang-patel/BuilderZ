@@ -15,6 +15,8 @@ $challan_id = intval($_GET['id'] ?? 0);
 // Fetch challan details
 $sql = "SELECT c.*, 
                p.name as party_name,
+               p.address as vendor_address,
+               p.gst_number,
                pr.project_name,
                u.full_name as created_by_name,
                au.full_name as approved_by_name
@@ -90,11 +92,12 @@ $items = $stmt->fetchAll();
     grid-template-columns: repeat(2, 1fr);
     gap: 16px;
     margin-top: 15px;
+    margin-bottom: 15px;
 }
 
 .info-item {
     background: rgba(255, 255, 255, 0.1);
-    padding: 12px 16px;
+    padding: 12px 20px;
     border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -249,7 +252,16 @@ $items = $stmt->fetchAll();
                 <div class="info-label">🏗️ Project</div>
                 <div class="info-value"><?= htmlspecialchars($challan['project_name']) ?></div>
             </div>
-        </div>
+            
+            <!-- Added details -->
+            <div class="info-item">
+                <div class="info-label">📍 Address</div>
+                <div class="info-value" style="font-size: 13px;"><?= htmlspecialchars($challan['vendor_address'] ?: 'Not provided') ?></div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">📄 GST Number</div>
+                <div class="info-value"><?= htmlspecialchars($challan['gst_number'] ?: 'N/A') ?></div>
+            </div>
     </div>
     
     <div class="details-body">

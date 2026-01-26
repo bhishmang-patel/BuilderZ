@@ -117,7 +117,7 @@ $stmt = $db->query($sql, $params);
 $challans = $stmt->fetchAll();
 
 // Get labour/contractors
-$labours = $db->query("SELECT id, name, mobile, contact_person FROM parties WHERE party_type = 'labour' ORDER BY name")->fetchAll();
+$labours = $db->query("SELECT id, name, mobile FROM parties WHERE party_type = 'labour' ORDER BY name")->fetchAll();
 
 // Get projects
 $projects = $db->query("SELECT id, project_name FROM projects WHERE status = 'active' ORDER BY project_name")->fetchAll();

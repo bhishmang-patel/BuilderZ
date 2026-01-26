@@ -133,7 +133,9 @@ $sql = "SELECT c.*,
                (SELECT GROUP_CONCAT(DISTINCT m.material_name SEPARATOR ', ') 
                 FROM challan_items ci 
                 JOIN materials m ON ci.material_id = m.id 
-                WHERE ci.challan_id = c.id) as material_names
+                WHERE ci.challan_id = c.id) as material_names,
+               (SELECT COALESCE(SUM(quantity), 0) FROM challan_items ci WHERE ci.challan_id = c.id) as total_quantity,
+               p.address as vendor_address
         FROM challans c
         JOIN parties p ON c.party_id = p.id
         JOIN projects pr ON c.project_id = pr.id
@@ -268,9 +270,8 @@ include __DIR__ . '/../../includes/header.php';
                             <th>VENDOR</th>
                             <th>MATERIALS</th>
                             <th>PROJECT</th>
-                            <th>TOTAL</th>
-                            <th>PAID</th>
-                            <th>PENDING</th>
+                            <th>QUANTITY</th>
+                            <th>ADDRESS</th>
                             <th>STATUS</th>
                             <th>ACTION</th>
                         </tr>
@@ -301,7 +302,7 @@ include __DIR__ . '/../../includes/header.php';
                             <td>
                                 <div style="display:flex; align-items:left; justify-content:left;">
                                     <?php 
-                                        $vendorColor = ColorHelper::getCustomerColor($challan['party_id']);
+                                        $vendorColor = ColorHelper::getCustomerColor($challan['vendor_name']);
                                     ?>
                                     <div class="avatar-circle" style="background: <?= $vendorColor ?>; color: #fff; width:24px; height:24px; font-size:10px; margin-right:8px;"><?= $vendorInitial ?></div>
                                     <span style="font-weight:600; font-size:13px;"><?= htmlspecialchars($challan['vendor_name']) ?></span>
@@ -312,16 +313,12 @@ include __DIR__ . '/../../includes/header.php';
                                     <?= htmlspecialchars($challan['material_names']) ?: '—' ?>
                                 </span>
                             </td>
-                            <td><span class="badge-pill gray"><?= htmlspecialchars($challan['project_name']) ?></span></td>
-                            <td><span style="font-weight:700; color:#1e293b;"><?= formatCurrency($challan['total_amount']) ?></span></td>
-                            <td><span style="color:#10b981; font-weight:600; font-size:13px;"><?= formatCurrency($challan['paid_amount']) ?></span></td>
                             <td>
-                                <?php if ($challan['pending_amount'] > 0): ?>
-                                    <span style="color:#f59e0b; font-weight:600; font-size:13px;"><?= formatCurrency($challan['pending_amount']) ?></span>
-                                <?php else: ?>
-                                    <span class="badge-pill green">Paid</span>
-                                <?php endif; ?>
+                                <?php $projColor = ColorHelper::getProjectColor($challan['project_id']); ?>
+                                <span class="badge-pill" style="background: <?= $projColor ?>; color: #fff;"><?= htmlspecialchars($challan['project_name']) ?></span>
                             </td>
+                            <td><span style="font-weight:700; color:#1e293b;"><?= number_format($challan['total_quantity'], 2) ?></span></td>
+                            <td><span style="font-size:13px; color:#64748b;"><?= htmlspecialchars($challan['vendor_address'] ?: 'N/A') ?></span></td>
                             <td><span class="badge-pill <?= $statusClass ?>"><?= ucfirst($challan['status']) ?></span></td>
                             <td>
                                 <button class="action-btn" onclick="viewChallanDetails(<?= $challan['id'] ?>)" title="View"><i class="fas fa-eye"></i></button>
@@ -439,7 +436,7 @@ include __DIR__ . '/../../includes/header.php';
 <script>
 function viewChallanDetails(challanId) {
     document.getElementById('challanDetailsModal').style.display = 'block';
-    fetch('<?= BASE_URL ?>modules/challans/get_challan_details.php?id=' + challanId)
+    fetch('<?= BASE_URL ?>modules/challans/get_challan_details.php?id=' + challanId + '&t=' + new Date().getTime())
         .then(response => response.text())
         .then(html => {
             document.getElementById('challan_details_content').innerHTML = html;

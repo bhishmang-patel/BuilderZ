@@ -26,7 +26,8 @@ try {
                    (SELECT GROUP_CONCAT(m.material_name SEPARATOR ', ') 
                     FROM challan_items ci 
                     JOIN materials m ON ci.material_id = m.id 
-                    WHERE ci.challan_id = c.id) as materials
+                    WHERE ci.challan_id = c.id) as materials,
+                   (SELECT COALESCE(SUM(quantity), 0) FROM challan_items ci WHERE ci.challan_id = c.id) as total_quantity
             FROM challans c
             WHERE c.party_id = ? 
               AND c.challan_type = 'material'

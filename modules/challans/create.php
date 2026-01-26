@@ -31,6 +31,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             if ($existing_vendor) {
                 $vendor_id = $existing_vendor['id'];
+                // Update existing keys if provided
+                $update_data = [
+                    'mobile' => sanitize($_POST['mobile']),
+                    'address' => sanitize($_POST['address']),
+                    'gst_number' => sanitize($_POST['gst_number']),
+                    'email' => sanitize($_POST['email'])
+                ];
+                if (!empty($_POST['gst_number'])) {
+                    $update_data['gst_status'] = 'registered';
+                }
+                $db->update('parties', $update_data, 'id = ?', ['id' => $vendor_id]);
             } else {
                 $vendor_data = [
                     'party_type' => 'vendor',
@@ -38,10 +49,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'mobile' => sanitize($_POST['mobile']),
                     'address' => sanitize($_POST['address']),
                     'gst_number' => sanitize($_POST['gst_number']),
+                    'gst_status' => !empty($_POST['gst_number']) ? 'registered' : 'unregistered',
                     'email' => sanitize($_POST['email'])
                 ];
                 $vendor_id = $db->insert('parties', $vendor_data);
             }
+        } else {
+            // Existing ID provided - Update details
+             $update_data = [
+                'mobile' => sanitize($_POST['mobile']),
+                'address' => sanitize($_POST['address']),
+                'gst_number' => sanitize($_POST['gst_number']),
+                'email' => sanitize($_POST['email'])
+            ];
+             if (!empty($_POST['gst_number'])) {
+                $update_data['gst_status'] = 'registered';
+            }
+            $db->update('parties', $update_data, 'id = ?', ['id' => $vendor_id]);
         } 
 
         $project_id = intval($_POST['project_id']);

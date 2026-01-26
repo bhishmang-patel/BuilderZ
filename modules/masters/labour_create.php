@@ -15,7 +15,7 @@ $page_title = 'Create Labour Pay';
 $current_page = 'labour_pay';
 
 // Fetch data
-$labours = $db->query("SELECT id, name, mobile, contact_person FROM parties WHERE party_type = 'labour' ORDER BY name")->fetchAll();
+$labours = $db->query("SELECT id, name, mobile FROM parties WHERE party_type = 'labour' ORDER BY name")->fetchAll();
 $projects = $db->query("SELECT id, project_name FROM projects WHERE status = 'active' ORDER BY project_name")->fetchAll();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'party_type' => 'labour',
                     'name' => $labour_name,
                     'mobile' => sanitize($_POST['mobile']),
-                    'contact_person' => sanitize($_POST['contact_person'])
+
                 ];
                 $labour_id = $db->insert('parties', $labour_data);
             }
@@ -297,10 +297,7 @@ include __DIR__ . '/../../includes/header.php';
                             <label class="input-label">Mobile Number</label>
                             <input type="text" name="mobile" id="labour_mobile" class="input-modern" placeholder="Enter 10-digit mobile number" pattern="\d{10}" maxlength="10" minlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '')" title="Please enter exactly 10 digits">
                         </div>
-                        <div class="input-group-modern">
-                            <label class="input-label">Contact Person</label>
-                            <input type="text" name="contact_person" id="labour_contact" class="input-modern" placeholder="Enter contact person">
-                        </div>
+
                     </div>
 
                     <!-- Work Details -->
@@ -447,7 +444,7 @@ setupAutocomplete('labour_name', 'labour_suggestions', labours, function(labour)
     document.getElementById('labour_name').value = labour.name;
     document.getElementById('labour_id').value = labour.id;
     document.getElementById('labour_mobile').value = labour.mobile || '';
-    document.getElementById('labour_contact').value = labour.contact_person || '';
+
 });
 
 document.getElementById('labour_name').addEventListener('input', function() {

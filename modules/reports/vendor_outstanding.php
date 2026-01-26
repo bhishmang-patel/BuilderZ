@@ -239,7 +239,7 @@ include __DIR__ . '/../../includes/header.php';
                     <tr>
                         <td style="padding-left: 25px;">
                             <div style="display: flex; align-items: center; gap: 12px;">
-                                <?php $vendorColor = ColorHelper::getCustomerColor($vendor['vendor_id']); ?>
+                                <?php $vendorColor = ColorHelper::getCustomerColor($vendor['vendor_name']); ?>
                                 <div style="width: 36px; height: 36px; background: <?= $vendorColor ?>; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px;">
                                     <?= strtoupper(substr($vendor['vendor_name'] ?? 'V', 0, 1)) ?>
                                 </div>

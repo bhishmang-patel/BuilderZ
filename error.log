@@ -757,3 +757,80 @@ Stack trace:
 [25-Jan-2026 19:32:25 Asia/Kolkata] PHP Warning:  Undefined array key "total_challans" in C:\xampp\htdocs\builderz\builderz\modules\reports\vendor_outstanding.php on line 255
 [25-Jan-2026 19:32:27 Asia/Kolkata] PHP Warning:  Undefined array key "total_challans" in C:\xampp\htdocs\builderz\builderz\modules\reports\vendor_outstanding.php on line 255
 [25-Jan-2026 19:32:27 Asia/Kolkata] PHP Warning:  Undefined array key "total_challans" in C:\xampp\htdocs\builderz\builderz\modules\reports\vendor_outstanding.php on line 255
+[26-Jan-2026 10:50:05 Asia/Kolkata] PHP Warning:  Undefined variable $total_invested in C:\xampp\htdocs\builderz\builderz\modules\vendors\index.php on line 476
+[26-Jan-2026 10:50:05 Asia/Kolkata] PHP Deprecated:  number_format(): Passing null to parameter #1 ($num) of type float is deprecated in C:\xampp\htdocs\builderz\builderz\includes\functions.php on line 47
+[26-Jan-2026 10:50:05 Asia/Kolkata] PHP Warning:  Undefined variable $total_invested in C:\xampp\htdocs\builderz\builderz\modules\vendors\index.php on line 477
+[26-Jan-2026 10:50:07 Asia/Kolkata] PHP Warning:  Undefined variable $total_invested in C:\xampp\htdocs\builderz\builderz\modules\vendors\index.php on line 476
+[26-Jan-2026 10:50:07 Asia/Kolkata] PHP Deprecated:  number_format(): Passing null to parameter #1 ($num) of type float is deprecated in C:\xampp\htdocs\builderz\builderz\includes\functions.php on line 47
+[26-Jan-2026 10:50:07 Asia/Kolkata] PHP Warning:  Undefined variable $total_invested in C:\xampp\htdocs\builderz\builderz\modules\vendors\index.php on line 477
+[26-Jan-2026 10:53:18 Asia/Kolkata] PHP Warning:  Undefined variable $total_invested in C:\xampp\htdocs\builderz\builderz\modules\vendors\index.php on line 477
+[26-Jan-2026 10:53:18 Asia/Kolkata] PHP Deprecated:  number_format(): Passing null to parameter #1 ($num) of type float is deprecated in C:\xampp\htdocs\builderz\builderz\includes\functions.php on line 47
+[26-Jan-2026 10:53:18 Asia/Kolkata] PHP Warning:  Undefined variable $total_invested in C:\xampp\htdocs\builderz\builderz\modules\vendors\index.php on line 478
+[26-Jan-2026 14:19:51 Asia/Kolkata] PHP Parse error:  syntax error, unexpected variable "$sql", expecting "function" or "const" in C:\xampp\htdocs\builderz\builderz\includes\MasterService.php on line 256
+[26-Jan-2026 14:19:53 Asia/Kolkata] PHP Parse error:  syntax error, unexpected variable "$sql", expecting "function" or "const" in C:\xampp\htdocs\builderz\builderz\includes\MasterService.php on line 256
+[26-Jan-2026 14:19:55 Asia/Kolkata] PHP Parse error:  syntax error, unexpected variable "$sql", expecting "function" or "const" in C:\xampp\htdocs\builderz\builderz\includes\MasterService.php on line 256
+[26-Jan-2026 14:20:35 Asia/Kolkata] PHP Parse error:  syntax error, unexpected variable "$sql", expecting "function" or "const" in C:\xampp\htdocs\builderz\builderz\includes\MasterService.php on line 256
+[26-Jan-2026 18:30:27 Asia/Kolkata] PHP Warning:  Undefined array key "total_challans" in C:\xampp\htdocs\builderz\builderz\modules\reports\vendor_outstanding.php on line 255
+[26-Jan-2026 18:30:27 Asia/Kolkata] PHP Warning:  Undefined array key "total_challans" in C:\xampp\htdocs\builderz\builderz\modules\reports\vendor_outstanding.php on line 255
+[26-Jan-2026 18:43:23 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function updateBillPaidAmount() in C:\xampp\htdocs\builderz\builderz\modules\payments\index.php:53
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\payments\index.php on line 53
+[26-Jan-2026 18:48:25 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined function updateBillPaidAmount() in C:\xampp\htdocs\builderz\builderz\modules\payments\index.php:53
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\payments\index.php on line 53
+[26-Jan-2026 18:50:51 Asia/Kolkata] PHP Warning:  Undefined array key "total_challans" in C:\xampp\htdocs\builderz\builderz\modules\reports\vendor_outstanding.php on line 255
+[26-Jan-2026 18:50:51 Asia/Kolkata] PHP Warning:  Undefined array key "total_challans" in C:\xampp\htdocs\builderz\builderz\modules\reports\vendor_outstanding.php on line 255
+[26-Jan-2026 18:51:17 Asia/Kolkata] PHP Warning:  Trying to access array offset on value of type bool in C:\xampp\htdocs\builderz\builderz\includes\functions.php on line 232
+[26-Jan-2026 18:51:17 Asia/Kolkata] PHP Warning:  Undefined array key "total_challans" in C:\xampp\htdocs\builderz\builderz\modules\reports\vendor_outstanding.php on line 255
+[26-Jan-2026 18:51:17 Asia/Kolkata] PHP Warning:  Undefined array key "total_challans" in C:\xampp\htdocs\builderz\builderz\modules\reports\vendor_outstanding.php on line 255
+[26-Jan-2026 18:51:44 Asia/Kolkata] PHP Warning:  Undefined array key "total_challans" in C:\xampp\htdocs\builderz\builderz\modules\reports\vendor_outstanding.php on line 255
+[26-Jan-2026 18:51:44 Asia/Kolkata] PHP Warning:  Undefined array key "total_challans" in C:\xampp\htdocs\builderz\builderz\modules\reports\vendor_outstanding.php on line 255
+[26-Jan-2026 18:55:05 Asia/Kolkata] PHP Warning:  Undefined array key "total_challans" in C:\xampp\htdocs\builderz\builderz\modules\reports\vendor_outstanding.php on line 255
+[26-Jan-2026 18:55:05 Asia/Kolkata] PHP Warning:  Undefined array key "total_challans" in C:\xampp\htdocs\builderz\builderz\modules\reports\vendor_outstanding.php on line 255
+[26-Jan-2026 19:15:41 Asia/Kolkata] PHP Warning:  Undefined array key "gst_number" in C:\xampp\htdocs\builderz\builderz\modules\vendors\index.php on line 73
+[26-Jan-2026 19:15:41 Asia/Kolkata] PHP Deprecated:  trim(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\builderz\builderz\includes\functions.php on line 6
+[26-Jan-2026 19:15:56 Asia/Kolkata] PHP Warning:  Undefined array key "gst_number" in C:\xampp\htdocs\builderz\builderz\modules\vendors\index.php on line 73
+[26-Jan-2026 19:15:56 Asia/Kolkata] PHP Deprecated:  trim(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\builderz\builderz\includes\functions.php on line 6
+[26-Jan-2026 19:19:30 Asia/Kolkata] PHP Warning:  Undefined array key "total_challans" in C:\xampp\htdocs\builderz\builderz\modules\reports\vendor_outstanding.php on line 255
+[26-Jan-2026 19:19:35 Asia/Kolkata] PHP Warning:  Undefined array key "total_challans" in C:\xampp\htdocs\builderz\builderz\modules\reports\vendor_outstanding.php on line 255
+[26-Jan-2026 19:19:36 Asia/Kolkata] PHP Warning:  Undefined array key "total_challans" in C:\xampp\htdocs\builderz\builderz\modules\reports\vendor_outstanding.php on line 255
+[26-Jan-2026 19:19:37 Asia/Kolkata] PHP Warning:  Undefined array key "total_challans" in C:\xampp\htdocs\builderz\builderz\modules\reports\vendor_outstanding.php on line 255
+[26-Jan-2026 19:19:38 Asia/Kolkata] PHP Warning:  Undefined array key "total_challans" in C:\xampp\htdocs\builderz\builderz\modules\reports\vendor_outstanding.php on line 255
+[26-Jan-2026 19:30:20 Asia/Kolkata] Database query error: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'FROM parties p
+            LEFT JOIN bills b ON p.id = b.party_id
+         ...' at line 7
+[26-Jan-2026 19:30:20 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'FROM parties p
+            LEFT JOIN bills b ON p.id = b.party_id
+         ...' at line 7 in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT p.id as ...')
+#1 C:\xampp\htdocs\builderz\builderz\includes\ReportService.php(388): Database->query('SELECT p.id as ...')
+#2 C:\xampp\htdocs\builderz\builderz\debug_report.php(8): ReportService->getVendorOutstanding()
+#3 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[26-Jan-2026 19:30:35 Asia/Kolkata] Database query error: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'FROM parties p
+            LEFT JOIN bills b ON p.id = b.party_id
+         ...' at line 7
+[26-Jan-2026 19:30:35 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'FROM parties p
+            LEFT JOIN bills b ON p.id = b.party_id
+         ...' at line 7 in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT p.id as ...')
+#1 C:\xampp\htdocs\builderz\builderz\includes\ReportService.php(388): Database->query('SELECT p.id as ...')
+#2 C:\xampp\htdocs\builderz\builderz\modules\reports\vendor_outstanding.php(20): ReportService->getVendorOutstanding()
+#3 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[26-Jan-2026 19:30:59 Asia/Kolkata] PHP Warning:  Undefined array key "total_challans" in C:\xampp\htdocs\builderz\builderz\modules\reports\vendor_outstanding.php on line 255
+[26-Jan-2026 19:31:22 Asia/Kolkata] PHP Warning:  Undefined array key "total_challans" in C:\xampp\htdocs\builderz\builderz\modules\reports\vendor_outstanding.php on line 255
+[26-Jan-2026 19:31:47 Asia/Kolkata] PHP Warning:  Undefined array key "total_challans" in C:\xampp\htdocs\builderz\builderz\modules\reports\vendor_outstanding.php on line 255
+[26-Jan-2026 19:32:27 Asia/Kolkata] PHP Warning:  Undefined array key "total_challans" in C:\xampp\htdocs\builderz\builderz\modules\reports\vendor_outstanding.php on line 255
+[26-Jan-2026 19:32:46 Asia/Kolkata] PHP Warning:  Undefined array key "total_challans" in C:\xampp\htdocs\builderz\builderz\modules\reports\vendor_outstanding.php on line 255
+[26-Jan-2026 19:36:21 Asia/Kolkata] PHP Warning:  Undefined array key "total_challans" in C:\xampp\htdocs\builderz\builderz\modules\reports\vendor_outstanding.php on line 255
+[26-Jan-2026 19:40:20 Asia/Kolkata] PHP Warning:  Undefined array key "total_challans" in C:\xampp\htdocs\builderz\builderz\modules\reports\vendor_outstanding.php on line 255
+[26-Jan-2026 19:43:12 Asia/Kolkata] PHP Warning:  Undefined array key "total_challans" in C:\xampp\htdocs\builderz\builderz\modules\reports\vendor_outstanding.php on line 255
+[26-Jan-2026 19:57:42 Asia/Kolkata] Database query error: SQLSTATE[23000]: Integrity constraint violation: 1451 Cannot delete or update a parent row: a foreign key constraint fails (`builderz_erp`.`challans`, CONSTRAINT `challans_ibfk_1` FOREIGN KEY (`party_id`) REFERENCES `parties` (`id`))
+[26-Jan-2026 19:57:54 Asia/Kolkata] Database query error: SQLSTATE[23000]: Integrity constraint violation: 1451 Cannot delete or update a parent row: a foreign key constraint fails (`builderz_erp`.`challans`, CONSTRAINT `challans_ibfk_1` FOREIGN KEY (`party_id`) REFERENCES `parties` (`id`))
+[26-Jan-2026 19:58:25 Asia/Kolkata] Database query error: SQLSTATE[23000]: Integrity constraint violation: 1451 Cannot delete or update a parent row: a foreign key constraint fails (`builderz_erp`.`challans`, CONSTRAINT `challans_ibfk_1` FOREIGN KEY (`party_id`) REFERENCES `parties` (`id`))
+[26-Jan-2026 20:07:10 Asia/Kolkata] PHP Warning:  Trying to access array offset on value of type bool in C:\xampp\htdocs\builderz\builderz\includes\functions.php on line 230

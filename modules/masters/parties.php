@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $data = [
                 'party_type' => $_POST['party_type'],
                 'name' => sanitize($_POST['name']),
-                'contact_person' => sanitize($_POST['contact_person']),
+
                 'mobile' => sanitize($_POST['mobile']),
                 'email' => sanitize($_POST['email']),
                 'address' => sanitize($_POST['address']),
@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $data = [
                 'party_type' => $_POST['party_type'],
                 'name' => sanitize($_POST['name']),
-                'contact_person' => sanitize($_POST['contact_person']),
+
                 'mobile' => sanitize($_POST['mobile']),
                 'email' => sanitize($_POST['email']),
                 'address' => sanitize($_POST['address']),
@@ -598,7 +598,7 @@ include __DIR__ . '/../../includes/header.php';
                     <thead>
                         <tr>
                             <th>Name</th>
-                            <th>Contact Person</th>
+
                             <th>Type</th>
                             <th>Contact Info</th>
                             <th>GST Number</th>
@@ -627,11 +627,7 @@ include __DIR__ . '/../../includes/header.php';
                                     </div>
                                 </div>
                             </td>
-                            <td>
-                                <span style="font-size:13px; font-weight:600; color:#475569;">
-                                    <?= htmlspecialchars($party['contact_person'] ?? '-') ?>
-                                </span>
-                            </td>
+
                             <td>
                                 <span class="badge-pill <?= $party['party_type'] ?>">
                                     <?= ucfirst($party['party_type']) ?>
@@ -685,10 +681,7 @@ include __DIR__ . '/../../includes/header.php';
             </div>
             
             <div style="background: #f8fafc; border-radius: 12px; padding: 10px;">
-                <div style="display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #f1f5f9;">
-                    <span style="color: #64748b; font-weight: 600; font-size: 13px;">Contact Person</span>
-                    <span style="color: #1e293b; font-weight: 600; font-size: 13px;" id="view_contact_person"></span>
-                </div>
+
                  <div style="display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #f1f5f9;">
                     <span style="color: #64748b; font-weight: 600; font-size: 13px;">Mobile</span>
                     <span style="color: #1e293b; font-weight: 600; font-size: 13px;" id="view_mobile"></span>
@@ -748,10 +741,7 @@ include __DIR__ . '/../../includes/header.php';
                         <input type="text" name="name" required class="modern-input" placeholder="Enter business or person name">
                     </div>
 
-                    <div>
-                         <label class="input-label">Contact Person</label>
-                         <input type="text" name="contact_person" class="modern-input" placeholder="Point of contact">
-                    </div>
+
                      <div>
                          <label class="input-label">GST Number</label>
                          <input type="text" name="gst_number" class="modern-input" placeholder="GSTIN (Optional)">
@@ -821,10 +811,7 @@ include __DIR__ . '/../../includes/header.php';
                         <input type="text" name="name" id="edit_name" required class="modern-input" placeholder="Enter business or person name">
                     </div>
 
-                    <div>
-                         <label class="input-label">Contact Person</label>
-                         <input type="text" name="contact_person" id="edit_contact_person" class="modern-input" placeholder="Point of contact">
-                    </div>
+
                      <div>
                          <label class="input-label">GST Number</label>
                          <input type="text" name="gst_number" id="edit_gst_number" class="modern-input" placeholder="GSTIN (Optional)">
@@ -921,7 +908,7 @@ function editParty(party) {
     document.getElementById('edit_id').value = party.id;
     document.getElementById('edit_party_type').value = party.party_type;
     document.getElementById('edit_name').value = party.name;
-    document.getElementById('edit_contact_person').value = party.contact_person;
+
     document.getElementById('edit_mobile').value = party.mobile;
     document.getElementById('edit_email').value = party.email;
     document.getElementById('edit_gst_number').value = party.gst_number;
@@ -931,7 +918,7 @@ function editParty(party) {
 
 function viewPartyDetails(party) {
     document.getElementById('view_party_title').innerText = party.name;
-    document.getElementById('view_contact_person').innerText = party.contact_person || 'N/A';
+
     document.getElementById('view_mobile').innerText = party.mobile || 'N/A';
     document.getElementById('view_email').innerText = party.email || 'N/A';
     document.getElementById('view_gst').innerText = party.gst_number || 'N/A';

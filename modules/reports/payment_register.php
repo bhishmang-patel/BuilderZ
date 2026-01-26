@@ -276,7 +276,7 @@ include __DIR__ . '/../../includes/header.php';
                             <?php else: ?>
                                 <?php foreach ($payments as $payment): 
                                     $inflow = ($payment['payment_type'] === 'customer_receipt') ? $payment['amount'] : 0;
-                                    $outflow = (in_array($payment['payment_type'], ['vendor_payment', 'labour_payment', 'customer_refund'])) ? $payment['amount'] : 0;
+                                    $outflow = (in_array($payment['payment_type'], ['vendor_payment', 'labour_payment', 'customer_refund', 'vendor_bill_payment'])) ? $payment['amount'] : 0;
                                     
                                     $partyColor = ColorHelper::getCustomerColor($payment['party_id']);
                                     $partyInitial = strtoupper(substr($payment['party_name'], 0, 1));
@@ -286,6 +286,7 @@ include __DIR__ . '/../../includes/header.php';
                                     if($payment['payment_type'] === 'customer_receipt') { $badgeClass = 'green'; $badgeLabel = 'Receipt'; }
                                     if($payment['payment_type'] === 'customer_refund') { $badgeClass = 'red'; $badgeLabel = 'Refund'; }
                                     if($payment['payment_type'] === 'vendor_payment') { $badgeClass = 'blue'; $badgeLabel = 'Vendor Pay'; }
+                                    if($payment['payment_type'] === 'vendor_bill_payment') { $badgeClass = 'blue'; $badgeLabel = 'Bill Pay'; }
                                     if($payment['payment_type'] === 'labour_payment') { $badgeClass = 'orange'; $badgeLabel = 'Labour Pay'; }
                                 ?>
                                 <tr>
