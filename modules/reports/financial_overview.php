@@ -63,6 +63,9 @@ include __DIR__ . '/../../includes/header.php';
 .stat-card-modern.income { border-bottom: 4px solid #10b981; }
 .stat-card-modern.expense { border-bottom: 4px solid #f5576c; }
 .stat-card-modern.profit { border-bottom: 4px solid #3b82f6; }
+.stat-card-modern.invested { border-bottom: 4px solid #f59e0b; }
+.stat-card-modern.roi { border-bottom: 4px solid #8b5cf6; }
+.stat-card-modern.balance { border-bottom: 4px solid #06b6d4; }
 .stat-card-modern.transactions { border-bottom: 4px solid #64748b; }
 
 .stat-label-modern {
@@ -261,6 +264,44 @@ include __DIR__ . '/../../includes/header.php';
                             <?= $total_income > 0 ? number_format(($net_profit / $total_income) * 100, 1) : 0 ?>% Net Margin
                         </div>
                     </div>
+
+                    <div class="stat-card-modern invested">
+                        <div class="stat-label-modern">
+                            Total Invested
+                            <div class="stat-icon-circle" style="background: #fffbeb; color: #f59e0b;"><i class="fas fa-hand-holding-usd"></i></div>
+                        </div>
+                        <div class="stat-value-modern" style="color: #f59e0b;">
+                            <span class="short-value"><?= formatCurrencyShort($total_invested) ?></span>
+                            <span class="full-value"><?= formatCurrencyIndian($total_invested) ?></span>
+                        </div>
+                        <div class="stat-subtext">Capital employed</div>
+                    </div>
+
+                    <?php if ($total_invested > 0): ?>
+                    <div class="stat-card-modern roi">
+                        <div class="stat-label-modern">
+                            Return on Investment
+                            <div class="stat-icon-circle" style="background: #f5f3ff; color: #8b5cf6;" title="ROI = (Net Profit / Total Invested) * 100"><i class="fas fa-percentage"></i></div>
+                        </div>
+                        <div class="stat-value-modern" style="color: #8b5cf6;">
+                            <?= number_format($roi, 1) ?>%
+                        </div>
+                        <div class="stat-subtext">Returns on capital</div>
+                    </div>
+                    <?php endif; ?>
+
+                    <div class="stat-card-modern balance">
+                        <div class="stat-label-modern">
+                            Cash Balance
+                            <div class="stat-icon-circle" style="background: #e0f2fe; color: #0ea5e9;"><i class="fas fa-coins"></i></div>
+                        </div>
+                        <div class="stat-value-modern" style="color: #0ea5e9;">
+                            <span class="short-value"><?= formatCurrencyShort($cash_balance) ?></span>
+                            <span class="full-value"><?= formatCurrencyIndian($cash_balance) ?></span>
+                        </div>
+                        <div class="stat-subtext">Invested + Income - Expenses</div>
+                    </div>
+
                     <div class="stat-card-modern transactions">
                         <div class="stat-label-modern">
                             Total Volume

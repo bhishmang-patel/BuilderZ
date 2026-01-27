@@ -577,7 +577,7 @@ include __DIR__ . '/../../includes/header.php';
                                 <tbody>
                                     <?php 
                                     foreach ($pending_vendor_bills as $bill): 
-                                        $vendorColor = ColorHelper::getCustomerColor($bill['party_id']);
+                                        $vendorColor = ColorHelper::getCustomerColor($bill['vendor_name']);
                                         $vendorInitial = ColorHelper::getInitial($bill['vendor_name']);
                                     ?>
                                     <tr>
@@ -641,7 +641,7 @@ include __DIR__ . '/../../includes/header.php';
                                         $color = ColorHelper::getProjectColor($challan['project_id']);
                                         $initial = ColorHelper::getInitial($challan['project_name']);
                                         
-                                        $labourColor = ColorHelper::getCustomerColor($challan['party_id']);
+                                        $labourColor = ColorHelper::getCustomerColor($challan['labour_name']);
                                         $labourInitial = ColorHelper::getInitial($challan['labour_name']);
                                     ?>
                                     <tr>

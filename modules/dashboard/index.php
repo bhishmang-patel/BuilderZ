@@ -26,6 +26,7 @@ $total_received = $data['total_received'];
 $total_pending = $data['total_pending'];
 $total_cancelled = $data['total_cancelled'];
 $total_expenses = $data['total_expenses'];
+$total_invested = $data['total_invested'] ?? 0;
 $net_profit = $data['net_profit'];
 $monthly_stats = $data['monthly_stats'];
 $project_stats = $data['project_stats'];
@@ -346,40 +347,14 @@ include __DIR__ . '/../../includes/header.php';
     <!-- Preserved Top Stats (Unchanged) -->
     <div class="stat-card">
         <div class="stat-header">
-            <div class="icon-box blue"><i class="fas fa-indian-rupee-sign"></i></div>
-            <div class="trend-pill <?= getTrendClass($sales_growth) ?>"><?= formatTrend($sales_growth) ?></div>
+            <div class="icon-box orange"><i class="fas fa-hand-holding-usd"></i></div>
         </div>
-        <div class="stat-label">Total Sales</div>
+        <div class="stat-label">Total Invested</div>
         <div class="stat-value">
-            <span class="short-value"><?= formatCurrencyShort($total_sales) ?></span>
-            <span class="full-value"><?= formatCurrency($total_sales) ?></span>
+            <span class="short-value"><?= formatCurrencyShort($total_invested) ?></span>
+            <span class="full-value"><?= formatCurrency($total_invested) ?></span>
         </div>
-    </div>
-    
-    <div class="stat-card">
-        <div class="stat-header">
-            <div class="icon-box green"><i class="fas fa-chart-line"></i></div>
-            <div class="trend-pill <?= getTrendClass($received_growth) ?>"><?= formatTrend($received_growth) ?></div>
-        </div>
-        <div class="stat-label">Total Received</div>
-        <div class="stat-value">
-            <span class="short-value"><?= formatCurrencyShort($total_received) ?></span>
-            <span class="full-value"><?= formatCurrency($total_received) ?></span>
-        </div>
-    </div>
-    
-    <div class="stat-card">
-        <div class="stat-header">
-            <div class="icon-box orange"><i class="fas fa-clock"></i></div>
-            <div class="trend-pill <?= getTrendClass($pending_growth) ?>"><?= formatTrend($pending_growth) ?></div>
-        </div>
-        <div class="stat-label">Total Pending</div>
-        <div class="stat-value">
-            <span class="short-value"><?= formatCurrencyShort($total_pending) ?></span>
-            <span class="full-value"><?= formatCurrency($total_pending) ?></span>
-        </div>
-    </div>
-    
+    </div>    
     <div class="stat-card">
         <div class="stat-header">
             <div class="icon-box purple"><i class="fas fa-file-invoice"></i></div>
@@ -391,7 +366,17 @@ include __DIR__ . '/../../includes/header.php';
             <span class="full-value"><?= formatCurrency($total_expenses) ?></span>
         </div>
     </div>
-    
+    <div class="stat-card">
+        <div class="stat-header">
+            <div class="icon-box blue"><i class="fas fa-indian-rupee-sign"></i></div>
+            <div class="trend-pill <?= getTrendClass($sales_growth) ?>"><?= formatTrend($sales_growth) ?></div>
+        </div>
+        <div class="stat-label">Total Sales</div>
+        <div class="stat-value">
+            <span class="short-value"><?= formatCurrencyShort($total_sales) ?></span>
+            <span class="full-value"><?= formatCurrency($total_sales) ?></span>
+        </div>
+    </div>
     <div class="stat-card">
         <div class="stat-header">
             <div class="icon-box teal"><i class="fas fa-chart-bar"></i></div>
@@ -403,6 +388,8 @@ include __DIR__ . '/../../includes/header.php';
             <span class="full-value"><?= formatCurrency($net_profit) ?></span>
         </div>
     </div>
+
+
 </div>
 
 <div class="row" style="margin-bottom: 30px;">

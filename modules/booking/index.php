@@ -332,18 +332,23 @@ include __DIR__ . '/../../includes/header.php';
 }
 </style>
 
-<!-- Logic for Stats -->
 <?php
 $total_area_sold = 0;
+$total_received_sum = 0;
+$total_pending_sum = 0;
+
 foreach($bookings as $b) {
     if(!empty($b['area_sqft'])) $total_area_sold += $b['area_sqft'];
+    $total_received_sum += $b['total_received'];
+    $total_pending_sum += $b['total_pending'];
 }
 $average_rate = ($total_area_sold > 0) ? ($total_bookings_value / $total_area_sold) : 0;
 ?>
 
 <!-- Stats Row -->
 <div class="row" style="margin-bottom: 25px;">
-    <div class="col-lg-3 col-md-6">
+    <!-- Row 1 -->
+    <div class="col-lg-4 col-md-6" style="margin-bottom: 20px;">
         <div class="stat-card-premium">
             <div class="stat-icon blue"><i class="fas fa-file-signature"></i></div>
             <div class="stat-content">
@@ -352,7 +357,7 @@ $average_rate = ($total_area_sold > 0) ? ($total_bookings_value / $total_area_so
             </div>
         </div>
     </div>
-    <div class="col-lg-3 col-md-6">
+    <div class="col-lg-4 col-md-6" style="margin-bottom: 20px;">
         <div class="stat-card-premium">
             <div class="stat-icon green"><i class="fas fa-chart-area"></i></div>
             <div class="stat-content">
@@ -361,8 +366,19 @@ $average_rate = ($total_area_sold > 0) ? ($total_bookings_value / $total_area_so
             </div>
         </div>
     </div>
-    <div class="col-lg-3 col-md-6">
+    <div class="col-lg-4 col-md-6" style="margin-bottom: 20px;">
         <div class="stat-card-premium">
+            <div class="stat-icon purple"><i class="fas fa-percent"></i></div>
+            <div class="stat-content">
+                <div class="stat-label">Average Rate</div>
+                <div class="stat-value">₹ <?= number_format($average_rate, 0) ?> <span class="unit">/sqft</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Row 2 -->
+    <div class="col-lg-4 col-md-6">
+        <div class="stat-card-premium" style="height: 95px">
             <div class="stat-icon orange"><i class="fas fa-wallet"></i></div>
             <div class="stat-content">
                 <div class="stat-label">Total Sold Value</div>
@@ -373,12 +389,27 @@ $average_rate = ($total_area_sold > 0) ? ($total_bookings_value / $total_area_so
             </div>
         </div>
     </div>
-    <div class="col-lg-3 col-md-6">
-        <div class="stat-card-premium">
-            <div class="stat-icon purple"><i class="fas fa-percent"></i></div>
+    <div class="col-lg-4 col-md-6">
+        <div class="stat-card-premium"  style="height: 95px">
+            <div class="stat-icon green"><i class="fas fa-hand-holding-usd"></i></div> <!-- Icon changed for variety -->
             <div class="stat-content">
-                <div class="stat-label">Average Rate</div>
-                <div class="stat-value">₹ <?= number_format($average_rate, 0) ?> <span class="unit">/sqft</span></div>
+                <div class="stat-label">Total Received</div>
+                <div class="stat-value hover-reveal">
+                    <span class="short-val"><?= formatCurrencyShort($total_received_sum) ?></span>
+                    <span class="full-val"><?= formatCurrency($total_received_sum) ?></span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 col-md-6"  style="height: 95px">
+        <div class="stat-card-premium">
+            <div class="stat-icon orange" style="background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);"><i class="fas fa-clock"></i></div>
+            <div class="stat-content">
+                <div class="stat-label">Total Pending</div>
+                <div class="stat-value hover-reveal">
+                    <span class="short-val"><?= formatCurrencyShort($total_pending_sum) ?></span>
+                    <span class="full-val"><?= formatCurrency($total_pending_sum) ?></span>
+                </div>
             </div>
         </div>
     </div>

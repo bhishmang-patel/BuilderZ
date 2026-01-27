@@ -326,6 +326,23 @@ include __DIR__ . '/../../includes/header.php';
                             <span class="info-value">₹ <?= number_format($booking['society_charge'], 2) ?></span>
                         </div>
                         <?php endif; ?>
+
+                        <!-- Est. Total Cost Calculation & Display -->
+                        <?php
+                            $total_charges = ($booking['development_charge'] ?? 0) + 
+                                           ($booking['parking_charge'] ?? 0) + 
+                                           ($booking['society_charge'] ?? 0);
+                            
+                            $total_taxes = ($booking['stamp_duty_registration'] ?? 0) + 
+                                         ($booking['registration_amount'] ?? 0) + 
+                                         ($booking['gst_amount'] ?? 0);
+                                         
+                            $est_total_cost = $booking['agreement_value'] - $total_charges - $total_taxes;
+                        ?>
+                        <div class="info-item" style="background-color: #f8fafc; border-radius: 8px; padding: 8px;">
+                            <span class="info-label" style="color: #0f172a; font-weight: 700;">Est. Total Cost:</span>
+                            <span class="info-value" style="color: #11998e; font-weight: 700;">₹ <?= number_format($est_total_cost, 2) ?></span>
+                        </div>
                     </div>
                 </div>
             </div>

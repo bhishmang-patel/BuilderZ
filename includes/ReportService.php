@@ -17,20 +17,10 @@ class ReportService {
      * @return array Contains income, expenditure, key totals, and daily cash flow
      */
     public function getFinancialOverview($date_from, $date_to, $project_filter = '') {
-        $income_params = [$date_from, $date_to];
-        $expenditure_params = [$date_from, $date_to];
 
-        $project_condition_income = ""; 
-        $project_condition_expense = "";
-
-        if ($project_filter) {
-            $project_condition_income = " AND pr.id = ?";
-            // For union query logic in income
-            // First part: Payment linked to Booking linked to Flat linked to Project
-            // Second part: Financial Transaction linked to Project
-        }
-
-        // --- Fetch Income ---
+        /* =========================
+        FETCH INCOME
+        ========================== */
         $income_sql = "SELECT 
             'Customer Receipt' as category,
             p.payment_date as transaction_date,
@@ -45,9 +35,9 @@ class ReportService {
         WHERE p.payment_type = 'customer_receipt'
         AND p.payment_date BETWEEN ? AND ?
         " . ($project_filter ? " AND pr.id = ?" : "") . "
-        
+
         UNION ALL
-        
+
         SELECT 
             'Cancellation Charges' as category,
             ft.transaction_date,
@@ -59,17 +49,20 @@ class ReportService {
         WHERE ft.transaction_type = 'income'
         AND ft.transaction_date BETWEEN ? AND ?
         " . ($project_filter ? " AND ft.project_id = ?" : "") . "
-        
-        ORDER BY transaction_date DESC";
 
-        $final_income_params = [$date_from, $date_to];
-        if ($project_filter) $final_income_params[] = $project_filter;
-        $final_income_params = array_merge($final_income_params, [$date_from, $date_to]);
-        if ($project_filter) $final_income_params[] = $project_filter;
+        ORDER BY transaction_date ASC";
 
-        $income_data = $this->db->query($income_sql, $final_income_params)->fetchAll();
+        $params = [$date_from, $date_to];
+        if ($project_filter) $params[] = $project_filter;
+        $params = array_merge($params, [$date_from, $date_to]);
+        if ($project_filter) $params[] = $project_filter;
 
-        // --- Fetch Expenditure ---
+        $income_data = $this->db->query($income_sql, $params)->fetchAll();
+
+
+        /* =========================
+        FETCH EXPENDITURE
+        ========================== */
         $expenditure_sql = "SELECT 
             CASE 
                 WHEN p.payment_type = 'vendor_payment' THEN 'Vendor Payment'
@@ -80,25 +73,16 @@ class ReportService {
             p.payment_date as transaction_date,
             p.amount,
             pt.name as party_name,
-            CASE 
-                WHEN p.reference_type = 'challan' THEN (SELECT pr.project_name FROM challans c JOIN projects pr ON c.project_id = pr.id WHERE c.id = p.reference_id LIMIT 1)
-                WHEN p.reference_type = 'bill' THEN (SELECT pr.project_name FROM bills b JOIN challans c ON b.challan_id = c.id JOIN projects pr ON c.project_id = pr.id WHERE b.id = p.reference_id LIMIT 1)
-                WHEN p.reference_type = 'booking_cancellation' THEN (SELECT pr.project_name FROM booking_cancellations bc JOIN bookings b ON bc.booking_id = b.id JOIN flats f ON b.flat_id = f.id JOIN projects pr ON f.project_id = pr.id WHERE bc.id = p.reference_id LIMIT 1)
-                ELSE '-'
-            END as project_name
+            '-' as project_name
         FROM payments p
         JOIN parties pt ON p.party_id = pt.id
-        LEFT JOIN challans c_ref ON p.reference_type = 'challan' AND p.reference_id = c_ref.id
-        LEFT JOIN bills b_ref ON p.reference_type = 'bill' AND p.reference_id = b_ref.id
-        LEFT JOIN challans c_bill_ref ON b_ref.challan_id = c_bill_ref.id
-        WHERE p.payment_type IN ('vendor_payment', 'labour_payment', 'customer_refund', 'vendor_bill_payment')
+        WHERE p.payment_type IN ('vendor_payment','vendor_bill_payment','labour_payment','customer_refund')
         AND p.payment_date BETWEEN ? AND ?
-        " . ($project_filter ? " AND (c_ref.project_id = ? OR c_bill_ref.project_id = ?)" : "") . "
 
         UNION ALL
 
         SELECT 
-            ft.category as category,
+            ft.category,
             ft.transaction_date,
             ft.amount,
             '-' as party_name,
@@ -108,37 +92,88 @@ class ReportService {
         WHERE ft.transaction_type = 'expenditure'
         AND ft.transaction_date BETWEEN ? AND ?
         " . ($project_filter ? " AND ft.project_id = ?" : "") . "
-        
-        ORDER BY transaction_date DESC";
 
-        $expenditure_params = [$date_from, $date_to];
-        if ($project_filter) $expenditure_params[] = $project_filter; // For c_ref
-        if ($project_filter) $expenditure_params[] = $project_filter; // For c_bill_ref
-        $expenditure_params = array_merge($expenditure_params, [$date_from, $date_to]);
-        if ($project_filter) $expenditure_params[] = $project_filter;
+        ORDER BY transaction_date ASC";
 
-        $expenditure_data = $this->db->query($expenditure_sql, $expenditure_params)->fetchAll();
+        $exp_params = [$date_from, $date_to, $date_from, $date_to];
+        if ($project_filter) $exp_params[] = $project_filter;
 
-        // --- Calculate Totals & Grouping ---
-        $total_income = array_sum(array_column(array_filter($income_data, fn($i) => $i['category'] === 'Customer Receipt'), 'amount'));
+        $expenditure_data = $this->db->query($expenditure_sql, $exp_params)->fetchAll();
+
+
+        /* =========================
+              FETCH INVESTMENTS
+        ========================== */
+        $invest_sql = "SELECT 
+            'Investment' as category,
+            investment_date as transaction_date,
+            amount,
+            investor_name as party_name,
+            p.project_name
+        FROM investments i
+        LEFT JOIN projects p ON i.project_id = p.id
+        WHERE investment_date BETWEEN ? AND ?
+        " . ($project_filter ? " AND i.project_id = ?" : "") . "
+        ORDER BY investment_date ASC";
+
+        $invest_params = [$date_from, $date_to];
+        if ($project_filter) $invest_params[] = $project_filter;
+
+        $investment_data = $this->db->query($invest_sql, $invest_params)->fetchAll();
+
+
+        /* =========================
+                CALCULATIONS 
+        ========================== */
+
+        // FIX 1: Total income must include ALL income categories
+        $total_income = array_sum(array_column($income_data, 'amount'));
+
         $total_expenditure = array_sum(array_column($expenditure_data, 'amount'));
+
+        // Profit = Performance (Investment NEVER included)
         $net_profit = $total_income - $total_expenditure;
+
+        $total_invested = array_sum(array_column($investment_data, 'amount'));
+
+        $roi = $total_invested > 0 ? ($net_profit / $total_invested) * 100 : 0;
+
+        // Period cash position (Opening balance assumed 0)
+        $cash_balance = $total_invested + $total_income - $total_expenditure;
+
+
+        /* =========================
+            GROUPING & CASHFLOW
+        ========================== */
 
         $income_by_category = $this->groupByCategory($income_data);
         $expenditure_by_category = $this->groupByCategory($expenditure_data);
-        $daily_cashflow = $this->calculateDailyCashflow($income_data, $expenditure_data);
+
+        $daily_cashflow = $this->calculateDailyCashflow(
+            $income_data,
+            $expenditure_data,
+            $investment_data
+        );
 
         return [
             'income_data' => $income_data,
             'expenditure_data' => $expenditure_data,
+            'investment_data' => $investment_data,
+
             'total_income' => $total_income,
             'total_expenditure' => $total_expenditure,
             'net_profit' => $net_profit,
+
+            'total_invested' => $total_invested,
+            'roi' => $roi,
+            'cash_balance' => $cash_balance,
+
             'income_by_category' => $income_by_category,
             'expenditure_by_category' => $expenditure_by_category,
             'daily_cashflow' => $daily_cashflow
         ];
     }
+
 
     private function groupByCategory($data) {
         $grouped = [];
@@ -153,36 +188,66 @@ class ReportService {
         return $grouped;
     }
 
-    private function calculateDailyCashflow($income_data, $expenditure_data) {
-        $daily_cashflow = [];
-        $all_transactions = array_merge($income_data, $expenditure_data);
-        
-        usort($all_transactions, function($a, $b) {
-            return strtotime($a['transaction_date']) - strtotime($b['transaction_date']);
-        });
+    private function calculateDailyCashflow($income_data, $expenditure_data, $investment_data = []) {
 
+        $transactions = [];
+
+        foreach ($income_data as $row) {
+            $transactions[] = [
+                'date' => $row['transaction_date'],
+                'amount' => $row['amount'],
+                'flow' => 'inflow'
+            ];
+        }
+
+        foreach ($investment_data as $row) {
+            $transactions[] = [
+                'date' => $row['transaction_date'],
+                'amount' => $row['amount'],
+                'flow' => 'inflow'
+            ];
+        }
+
+        foreach ($expenditure_data as $row) {
+            $transactions[] = [
+                'date' => $row['transaction_date'],
+                'amount' => $row['amount'],
+                'flow' => 'outflow'
+            ];
+        }
+
+        usort($transactions, fn($a, $b) => strtotime($a['date']) <=> strtotime($b['date']));
+
+        $daily = [];
         $running_balance = 0;
-        foreach ($all_transactions as $txn) {
-            $date = $txn['transaction_date'];
-            if (!isset($daily_cashflow[$date])) {
-                $daily_cashflow[$date] = ['inflow' => 0, 'outflow' => 0, 'net' => 0];
+
+        foreach ($transactions as $txn) {
+            $date = $txn['date'];
+
+            if (!isset($daily[$date])) {
+                $daily[$date] = [
+                    'inflow' => 0,
+                    'outflow' => 0,
+                    'net' => 0,
+                    'balance' => 0
+                ];
             }
-            
-            if ($txn['category'] === 'Customer Receipt') {
-                $daily_cashflow[$date]['inflow'] += $txn['amount'];
+
+            if ($txn['flow'] === 'inflow') {
+                $daily[$date]['inflow'] += $txn['amount'];
+                $running_balance += $txn['amount'];
             } else {
-                $daily_cashflow[$date]['outflow'] += $txn['amount'];
+                $daily[$date]['outflow'] += $txn['amount'];
+                $running_balance -= $txn['amount'];
             }
+
+            $daily[$date]['net'] = $daily[$date]['inflow'] - $daily[$date]['outflow'];
+            $daily[$date]['balance'] = $running_balance;
         }
 
-        foreach ($daily_cashflow as $date => &$flow) {
-            $flow['net'] = $flow['inflow'] - $flow['outflow'];
-            $running_balance += $flow['net'];
-            $flow['balance'] = $running_balance;
-        }
-
-        return $daily_cashflow;
+        return $daily;
     }
+
 
     public function getProjectPL() {
         $sql = "SELECT p.id, p.project_name, p.location, p.status,
@@ -519,6 +584,10 @@ class ReportService {
         // 6. Net Profit
         $net_profit = $total_received - $total_expenses;
 
+        // 7. Total Invested
+        $stmt = $this->db->query("SELECT COALESCE(SUM(amount), 0) as total_invested FROM investments");
+        $total_invested = $stmt->fetch()['total_invested'];
+
         // 7. Monthly Stats for Chart (Current Year)
         $monthly_stats = $this->db->query("SELECT 
             m.month,
@@ -625,6 +694,7 @@ class ReportService {
             'total_pending' => $total_pending,
             'total_expenses' => $total_expenses,
             'net_profit' => $net_profit,
+            'total_invested' => $total_invested,
             'monthly_stats' => $monthly_stats,
             'project_stats' => $project_stats,
             'recent_bookings' => $recent_bookings,

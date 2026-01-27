@@ -834,3 +834,11 @@ Stack trace:
 [26-Jan-2026 19:57:54 Asia/Kolkata] Database query error: SQLSTATE[23000]: Integrity constraint violation: 1451 Cannot delete or update a parent row: a foreign key constraint fails (`builderz_erp`.`challans`, CONSTRAINT `challans_ibfk_1` FOREIGN KEY (`party_id`) REFERENCES `parties` (`id`))
 [26-Jan-2026 19:58:25 Asia/Kolkata] Database query error: SQLSTATE[23000]: Integrity constraint violation: 1451 Cannot delete or update a parent row: a foreign key constraint fails (`builderz_erp`.`challans`, CONSTRAINT `challans_ibfk_1` FOREIGN KEY (`party_id`) REFERENCES `parties` (`id`))
 [26-Jan-2026 20:07:10 Asia/Kolkata] PHP Warning:  Trying to access array offset on value of type bool in C:\xampp\htdocs\builderz\builderz\includes\functions.php on line 230
+[27-Jan-2026 09:54:47 Asia/Kolkata] Database query error: SQLSTATE[HY000]: General error: 2006 MySQL server has gone away
+[27-Jan-2026 09:54:47 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY000]: General error: 2006 MySQL server has gone away in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT * FROM u...')
+#1 C:\xampp\htdocs\builderz\builderz\config\database.php(96): Database->query('SELECT * FROM u...', Array)
+#2 C:\xampp\htdocs\builderz\builderz\modules\auth\login.php(28): Database->select('users', 'username = ? AN...', Array)
+#3 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
