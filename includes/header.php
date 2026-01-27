@@ -24,40 +24,57 @@
             </div>
             
             <ul class="sidebar-menu">
+                <!-- Dashboard -->
                 <li>
                     <a href="<?= BASE_URL ?>modules/dashboard/index.php" class="<?= ($current_page ?? '') === 'dashboard' ? 'active' : '' ?>">
                         <i class="fas fa-chart-line"></i> <span>Dashboard</span>
                     </a>
                 </li>
-                
+
+                <!-- OPERATIONS -->
                 <li class="menu-section">OPERATIONS</li>
                 <li>
                     <a href="<?= BASE_URL ?>modules/booking/index.php" class="<?= ($current_page ?? '') === 'booking' ? 'active' : '' ?>">
                         <i class="fas fa-handshake"></i> <span>Bookings</span>
                     </a>
                 </li>
+                <?php if (in_array($_SESSION['user_role'], ['admin', 'project_manager', 'accountant'])): ?>
                 <li>
                     <a href="<?= BASE_URL ?>modules/challans/material.php" class="<?= ($current_page ?? '') === 'material_challan' ? 'active' : '' ?>">
                         <i class="fas fa-file-invoice"></i> <span>Delivery Challans</span>
                     </a>
                 </li>
-                <li>
-                    <a href="<?= BASE_URL ?>modules/masters/labour.php" class="<?= ($current_page ?? '') === 'labour_pay' ? 'active' : '' ?>">
-                        <i class="fas fa-hard-hat"></i> <span>Labour Pay</span>
-                    </a>
-                </li>
+                <?php endif; ?>
+
+                <!-- FINANCE -->
+                <li class="menu-section">FINANCE</li>
+                <?php if (in_array($_SESSION['user_role'], ['admin', 'accountant'])): ?>
                 <li>
                     <a href="<?= BASE_URL ?>modules/payments/index.php" class="<?= ($current_page ?? '') === 'payments' ? 'active' : '' ?>">
                         <i class="fas fa-money-bill-wave"></i> <span>Payments</span>
                     </a>
                 </li>
+                <?php endif; ?>
+
+                <?php if (in_array($_SESSION['user_role'], ['admin', 'project_manager', 'accountant'])): ?>
+                <li>
+                    <a href="<?= BASE_URL ?>modules/masters/labour.php" class="<?= ($current_page ?? '') === 'labour_pay' ? 'active' : '' ?>">
+                        <i class="fas fa-hard-hat"></i> <span>Labour</span>
+                    </a>
+                </li>
+                <?php endif; ?>
+
+                <?php if (in_array($_SESSION['user_role'], ['admin', 'accountant'])): ?>
                 <li>
                     <a href="<?= BASE_URL ?>modules/investments/index.php" class="<?= ($current_page ?? '') === 'investments' ? 'active' : '' ?>">
                         <i class="fas fa-hand-holding-usd"></i> <span>Investments</span>
                     </a>
                 </li>
+                <?php endif; ?>
 
+                <!-- MASTERS -->
                 <li class="menu-section">MASTERS</li>
+                <?php if (in_array($_SESSION['user_role'], ['admin', 'project_manager'])): ?>
                 <li>
                     <a href="<?= BASE_URL ?>modules/masters/projects.php" class="<?= ($current_page ?? '') === 'projects' ? 'active' : '' ?>">
                         <i class="fas fa-building"></i> <span>Projects</span>
@@ -65,9 +82,10 @@
                 </li>
                 <li>
                     <a href="<?= BASE_URL ?>modules/masters/flats.php" class="<?= ($current_page ?? '') === 'flats' ? 'active' : '' ?>">
-                        <i class="fas fa-door-open"></i> <span>Flats</span>
+                        <i class="fas fa-layer-group"></i> <span>Flats</span>
                     </a>
                 </li>
+                <?php endif; ?>
                 <li>
                     <a href="<?= BASE_URL ?>modules/masters/parties.php" class="<?= ($current_page ?? '') === 'parties' ? 'active' : '' ?>">
                         <i class="fas fa-users"></i> <span>Parties</span>
@@ -79,6 +97,7 @@
                     </a>
                 </li>
 
+                <!-- INVENTORY -->
                 <li class="menu-section">INVENTORY</li>
                 <li>
                     <a href="<?= BASE_URL ?>modules/inventory/index.php" class="<?= ($current_page ?? '') === 'stock' ? 'active' : '' ?>">
@@ -90,7 +109,8 @@
                         <i class="fas fa-truck-loading"></i> <span>Material Usage</span>
                     </a>
                 </li>
-                
+
+                <!-- REPORTS -->
                 <li class="menu-section">REPORTS</li>
                 <li>
                     <a href="<?= BASE_URL ?>modules/reports/customer_pending.php" class="<?= ($current_page ?? '') === 'customer_pending' ? 'active' : '' ?>">
@@ -109,7 +129,7 @@
                 </li>
                 <li>
                     <a href="<?= BASE_URL ?>modules/reports/project_pl.php" class="<?= ($current_page ?? '') === 'project_pl' ? 'active' : '' ?>">
-                        <i class="fas fa-balance-scale"></i> <span>Project P&L</span>
+                        <i class="fas fa-balance-scale"></i> <span>Project P&amp;L</span>
                     </a>
                 </li>
                 <li>
@@ -122,26 +142,8 @@
                         <i class="fas fa-chart-line"></i> <span>Financial Overview</span>
                     </a>
                 </li>
-                
-                <?php if ($_SESSION['user_role'] === 'admin'): ?>
-                <li class="menu-section">ADMIN</li>
-                <li>
-                    <a href="<?= BASE_URL ?>modules/admin/users.php" class="<?= ($current_page ?? '') === 'users' ? 'active' : '' ?>">
-                        <i class="fas fa-user-cog"></i> <span>Users</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?= BASE_URL ?>modules/admin/settings.php" class="<?= ($current_page ?? '') === 'settings' ? 'active' : '' ?>">
-                        <i class="fas fa-cog"></i> <span>Settings</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?= BASE_URL ?>modules/admin/audit.php" class="<?= ($current_page ?? '') === 'audit' ? 'active' : '' ?>">
-                        <i class="fas fa-history"></i> <span>Audit Trail</span>
-                    </a>
-                </li>
-                <?php endif; ?>
             </ul>
+
             
             <div class="sidebar-footer">
                 <button class="collapse-btn" onclick="toggleSidebar()">
@@ -173,6 +175,18 @@
                         </button>
                         <div class="profile-dropdown-menu" id="profileDropdownMenu">
                             <div class="dropdown-footer">
+                                <?php if ($_SESSION['user_role'] === 'admin'): ?>
+                                    <a href="<?= BASE_URL ?>modules/admin/users.php" class="dropdown-item">
+                                        <i class="fas fa-user-cog"></i> Users
+                                    </a>
+                                    <a href="<?= BASE_URL ?>modules/admin/settings.php" class="dropdown-item">
+                                        <i class="fas fa-cog"></i> Settings
+                                    </a>
+                                    <a href="<?= BASE_URL ?>modules/admin/audit.php" class="dropdown-item">
+                                        <i class="fas fa-history"></i> Audit Trail
+                                    </a>
+                                    <div class="dropdown-divider"></div>
+                                <?php endif; ?>
                                 <a href="<?= BASE_URL ?>modules/auth/logout.php" class="btn-logout-dropdown">
                                     <i class="fas fa-sign-out-alt"></i> Logout
                                 </a>

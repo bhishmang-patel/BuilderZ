@@ -11,6 +11,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 requireAuth();
+checkPermission(['admin', 'accountant']);
 
 $investmentService = new InvestmentService();
 $masterService = new MasterService();
@@ -434,7 +435,7 @@ include __DIR__ . '/../../includes/header.php';
                     <thead>
                         <tr>
                             <th class="text-center" style="width: 0%;">Date</th>
-                            <th class="text-center" style="width: 0%;">Project</th>
+                            <th class="text-left" style="width: 0%;">Project</th>
                             <th class="text-center" style="width: 0%;">Investor</th>
                             <th class="text-center" style="width: 0%;">Type</th>
                             <th class="text-center" style="width: 0%;">Amount</th>
@@ -458,8 +459,8 @@ include __DIR__ . '/../../includes/header.php';
                             <td class="text-center">
                                 <span style="font-size:13px; font-weight:600; color:#64748b;"><?= formatDate($inv['investment_date']) ?></span>
                             </td>
-                            <td class="text-center">
-                                <div style="display:flex; align-items:center; justify-content: center">
+                            <td class="text-left">
+                                <div style="display:flex; align-items:center; justify-content: flex-start">
                                     <div class="avatar-square" style="background: <?= $color ?>; width:32px; height:32px; border-radius: 8px; font-size:11px; font-weight:700; color:white; margin-right:12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);"><?= $initial ?></div>
                                     <span style="font-weight:600; font-size: 14px;"><?= htmlspecialchars($inv['project_name']) ?></span>
                                 </div>
