@@ -577,7 +577,7 @@ include __DIR__ . '/../../includes/header.php';
                                 <tbody>
                                     <?php 
                                     foreach ($pending_vendor_bills as $bill): 
-                                        $vendorColor = ColorHelper::getCustomerColor($bill['vendor_name']);
+                                        $vendorColor = ColorHelper::getCustomerColor($bill['party_id']);
                                         $vendorInitial = ColorHelper::getInitial($bill['vendor_name']);
                                     ?>
                                     <tr>
@@ -641,7 +641,7 @@ include __DIR__ . '/../../includes/header.php';
                                         $color = ColorHelper::getProjectColor($challan['project_id']);
                                         $initial = ColorHelper::getInitial($challan['project_name']);
                                         
-                                        $labourColor = ColorHelper::getCustomerColor($challan['labour_name']);
+                                        $labourColor = ColorHelper::getCustomerColor($challan['party_id']);
                                         $labourInitial = ColorHelper::getInitial($challan['labour_name']);
                                     ?>
                                     <tr>
@@ -735,7 +735,23 @@ include __DIR__ . '/../../includes/header.php';
                                     <tr>
                                         <td><?= formatDate($payment['payment_date']) ?></td>
                                         <td><span class="badge-pill <?= $typeClass ?>"><?= $typeLabel ?></span></td>
-                                        <td><span style="font-weight:600; color:#334155;"><?= htmlspecialchars($payment['party_name']) ?></span></td>
+                                        <td>
+                                            <div style="display:flex; align-items:center;">
+                                                <?php 
+                                                    // Match color logic with source modules:
+                                                    // Vendors module uses NAME for color.
+                                                    // Labour/Booking modules use ID for color.
+                                                    $isVendor = in_array($payment['payment_type'], ['vendor_payment', 'vendor_bill_payment']);
+                                                    
+                                                    $colorKey = $isVendor ? $payment['party_name'] : $payment['party_id'];
+                                                    $partyColor = ColorHelper::getCustomerColor($colorKey);
+                                                    
+                                                    $partyInitial = strtoupper(substr($payment['party_name'], 0, 1));
+                                                ?>
+                                                <div class="avatar-circle" style="background: <?= $partyColor ?>; color: #fff; width:32px; height:32px; font-size:12px; margin-right:10px;"><?= $partyInitial ?></div>
+                                                <span style="font-weight:600; color:#334155;"><?= htmlspecialchars($payment['party_name']) ?></span>
+                                            </div>
+                                        </td>
                                         <td><span style="font-weight: 700; color: #10b981;"><?= formatCurrency($payment['amount']) ?></span></td>
                                         <td><span style="font-size:12px; text-transform:capitalize;"><?= htmlspecialchars($payment['payment_mode']) ?></span></td>
                                         <td><span style="font-size:12px; color:#64748b;"><?= htmlspecialchars($payment['reference_no'] ?: '-') ?></span></td>

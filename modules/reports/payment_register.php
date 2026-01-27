@@ -278,7 +278,11 @@ include __DIR__ . '/../../includes/header.php';
                                     $inflow = ($payment['payment_type'] === 'customer_receipt') ? $payment['amount'] : 0;
                                     $outflow = (in_array($payment['payment_type'], ['vendor_payment', 'labour_payment', 'customer_refund', 'vendor_bill_payment'])) ? $payment['amount'] : 0;
                                     
-                                    $partyColor = ColorHelper::getCustomerColor($payment['party_id']);
+                                    // Match color logic with source modules (Vendors uses Name, others use ID)
+                                    $isVendor = in_array($payment['payment_type'], ['vendor_payment', 'vendor_bill_payment']);
+                                    $colorKey = $isVendor ? $payment['party_name'] : $payment['party_id'];
+                                    
+                                    $partyColor = ColorHelper::getCustomerColor($colorKey);
                                     $partyInitial = strtoupper(substr($payment['party_name'], 0, 1));
                                     
                                     $badgeClass = 'gray';
