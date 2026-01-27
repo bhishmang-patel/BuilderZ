@@ -28,11 +28,14 @@ $total_usage = 0;
 $low_stock_count = 0;
 
 foreach ($stock_data as $item) {
-    $current_value = $item['current_stock'] * $item['default_rate'];
+    // Dynamic stock calculation
+    $real_stock = $item['total_in'] - $item['total_out'];
+    
+    $current_value = $real_stock * $item['default_rate'];
     $total_value += $current_value;
     $total_usage += $item['total_out'];
     
-    if ($item['current_stock'] < 10) { // Assuming 10 is a low stock threshold
+    if ($real_stock < 10) { // Assuming 10 is a low stock threshold
         $low_stock_count++;
     }
 }
@@ -299,7 +302,9 @@ include __DIR__ . '/../../includes/header.php';
                             $initial = strtoupper(substr($item['material_name'], 0, 1));
                             $i++;
                             
-                            $valuation = $item['current_stock'] * $item['default_rate'];
+                            // Dynamic Calculation: Total In - Total Out
+                            $real_stock = $item['total_in'] - $item['total_out'];
+                            $valuation = $real_stock * $item['default_rate'];
                         ?>
                         <tr>
                             <td>
@@ -325,7 +330,7 @@ include __DIR__ . '/../../includes/header.php';
                             </td>
                             <td>
                                 <span style="font-size: 15px; font-weight: 700; color: #1e293b;">
-                                    <?= number_format($item['current_stock'], 2) ?>
+                                    <?= number_format($real_stock, 2) ?>
                                 </span>
                             </td>
                             <td>

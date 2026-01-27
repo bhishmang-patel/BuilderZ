@@ -24,9 +24,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $usage_date = $_POST['usage_date'];
         $remarks = sanitize($_POST['remarks'] ?? '');
         
-        // Check current stock
-        $stmt = $db->select('materials', 'id = ?', [$material_id], 'current_stock, material_name, unit');
-        $material = $stmt->fetch();
+        // Check current stock (Dynamic Calculation)
+        $stock_sql = "SELECT m.material_name, m.unit,
+                        (
+                            (SELECT COALESCE(SUM(ci.quantity), 0) FROM challan_items ci JOIN challans c ON ci.challan_id = c.id WHERE ci.material_id = m.id AND c.status != 'cancelled') 
+                            - 
+                            (SELECT COALESCE(SUM(mu.quantity), 0) FROM material_usage mu WHERE mu.material_id = m.id)
+                        ) as current_stock
+                      FROM materials m WHERE m.id = ?";
+        $material = $db->query($stock_sql, [$material_id])->fetch();
         
         if ($material['current_stock'] < $quantity) {
             setFlashMessage('error', "Insufficient stock for {$material['material_name']}. Available: {$material['current_stock']} {$material['unit']}");
@@ -70,9 +76,17 @@ $sql = "SELECT mu.*, p.project_name, m.material_name, m.unit, u.full_name as use
         ORDER BY mu.usage_date DESC, mu.created_at DESC";
 $usage_history = $db->query($sql)->fetchAll();
 
-// Fetch projects and materials for form
+// Fetch projects and materials for form (Dynamic Stock)
 $projects = $db->query("SELECT id, project_name FROM projects WHERE status = 'active' ORDER BY project_name")->fetchAll();
-$materials = $db->query("SELECT id, material_name, unit, current_stock FROM materials ORDER BY material_name")->fetchAll();
+$materials_sql = "SELECT m.id, m.material_name, m.unit, 
+                    (
+                        (SELECT COALESCE(SUM(ci.quantity), 0) FROM challan_items ci JOIN challans c ON ci.challan_id = c.id WHERE ci.material_id = m.id AND c.status != 'cancelled') 
+                        - 
+                        (SELECT COALESCE(SUM(mu.quantity), 0) FROM material_usage mu WHERE mu.material_id = m.id)
+                    ) as current_stock
+                  FROM materials m 
+                  ORDER BY m.material_name";
+$materials = $db->query($materials_sql)->fetchAll();
 
 include __DIR__ . '/../../includes/header.php';
 ?>
