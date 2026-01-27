@@ -56,14 +56,6 @@
                 </li>
                 <?php endif; ?>
 
-                <?php if (in_array($_SESSION['user_role'], ['admin', 'project_manager', 'accountant'])): ?>
-                <li>
-                    <a href="<?= BASE_URL ?>modules/masters/labour.php" class="<?= ($current_page ?? '') === 'labour_pay' ? 'active' : '' ?>">
-                        <i class="fas fa-hard-hat"></i> <span>Labour</span>
-                    </a>
-                </li>
-                <?php endif; ?>
-
                 <?php if (in_array($_SESSION['user_role'], ['admin', 'accountant'])): ?>
                 <li>
                     <a href="<?= BASE_URL ?>modules/investments/index.php" class="<?= ($current_page ?? '') === 'investments' ? 'active' : '' ?>">
@@ -93,9 +85,16 @@
                 </li>
                 <li>
                     <a href="<?= BASE_URL ?>modules/vendors/index.php" class="<?= ($current_page ?? '') === 'vendors' ? 'active' : '' ?>">
-                        <i class="fas fa-truck"></i> <span>Vendors</span>
+                        <i class="fas fa-hard-hat"></i> <span>Vendors</span>
                     </a>
                 </li>
+                <?php if (in_array($_SESSION['user_role'], ['admin', 'project_manager', 'accountant'])): ?>
+                <li>
+                    <a href="<?= BASE_URL ?>modules/masters/labour.php" class="<?= ($current_page ?? '') === 'labour_pay' ? 'active' : '' ?>">
+                        <i class="fas fa-hard-hat"></i> <span>Labour</span>
+                    </a>
+                </li>
+                <?php endif; ?>
 
                 <!-- INVENTORY -->
                 <li class="menu-section">INVENTORY</li>
