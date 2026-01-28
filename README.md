@@ -13,6 +13,8 @@
 - ✅ Session management with timeout
 - ✅ Logout functionality
 - ✅ Audit trail for all actions
+- ✅ **Enhanced Audit UI**: "Multiple" badge for bulk actions
+- ✅ **Bulk Delete**: Single log entry for batch deletions
 
 ### 🏗️ Master Data Management
 
@@ -25,6 +27,8 @@
 
 **2. Flats Module** ✅
 - **BULK CREATION**: Generate multiple flats at once!
+- **Professional Modal UI**: New, clean interface for bulk actions
+- **Multi-Tower Support**: Automatic tower prefixes (e.g., A-101, B-101)
 - Individual flat management
 - Auto-calculated total value (area × rate)
 - Status tracking (Available/Booked/Sold)
@@ -91,7 +95,13 @@
 
 ### 📊 Dashboard & Analytics
 
-**9. Dashboard** ✅
+**9. Investments Module** ✅
+- **Track Capital**: Record partner contributions, loans, and personal capital
+- **Export to CSV**: Download investment reports instantly
+- Project-wise investment tracking
+- Visual indicators for different investment types
+
+**10. Dashboard** ✅
 - **Real-time financial metrics**:
   - Total Sales
   - Total Received
@@ -148,7 +158,9 @@ builderz/
 │   ├── functions.php           ✅ Utility functions
 │   ├── auth.php                ✅ Authentication helpers
 │   ├── header.php              ✅ Layout header
-│   └── footer.php              ✅ Layout footer
+│   ├── footer.php              ✅ Layout footer
+│   ├── InvestmentService.php   ✅ Investment logic
+│   └── ColorHelper.php         ✅ UI color utilities
 │
 ├── modules/
 │   ├── auth/
@@ -165,7 +177,7 @@ builderz/
 │   │   ├── materials.php       ✅ Materials management
 │   │   └── labour.php          ✅ Labour Pay (Moved)
 │   │
-│   ├── booking/
+│   ├── bookings/
 │   │   ├── index.php           ✅ Bookings list & create
 │   │   └── view.php            ✅ Booking details & payments
 │   │
@@ -173,9 +185,10 @@ builderz/
 │   │   ├── material.php        ✅ Material challans
 │   │   └── get_challan_details.php  ✅ Challan details AJAX
 │   │
-│   ├── payments/               ⏳ Unified payment processing
-│   ├── reports/                ⏳ Financial reports
-│   └── admin/                  ⏳ Admin panel
+│   ├── payments/               ✅ Payment processing
+│   ├── reports/                ✅ Financial reports
+│   ├── admin/                  ✅ Audit & Admin panel
+│   └── investments/            ✅ Investment tracking (New)
 │
 ├── assets/
 │   ├── css/
@@ -191,10 +204,10 @@ builderz/
 
 ## 🗄️ Database Schema
 
-**11 Tables Created:**
+**12 Tables Created:**
 
 1. **users** - Authentication & roles
-2. **projects** - Project master
+2. **projects** - Project master (Added: `has_multiple_towers`)
 3. **flats** - Flat inventory (with auto-calculated total_value)
 4. **parties** - Unified customer/vendor/labour
 5. **bookings** - Flat bookings (with auto-calculated total_pending)
@@ -204,6 +217,7 @@ builderz/
 9. **payments** - All payment transactions
 10. **audit_trail** - Complete audit log
 11. **settings** - System configuration
+12. **investments** - Capital and loan tracking (New)
 
 ### Key Database Features:
 ✅ Generated columns for auto-calculations
@@ -685,6 +699,8 @@ For issues or customization requests:
 ✅ Indian currency & date formats
 ✅ Role-based access control
 ✅ Modern, professional UI
+✅ **CSV Export** for key reports
+✅ **Multi-Tower Configuration**
 
 ---
 
