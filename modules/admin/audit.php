@@ -194,9 +194,9 @@ include __DIR__ . '/../../includes/header.php';
                     <label class="filter-label">Action</label>
                     <select name="action" class="modern-select">
                         <option value="">All</option>
-                        <?php foreach (['create','update','delete','login','logout','unknown'] as $a): ?>
+                        <?php foreach (['create','update','delete','bulk_delete','login','logout','unknown'] as $a): ?>
                             <option value="<?= $a ?>" <?= $action_filter === $a ? 'selected' : '' ?>>
-                                <?= ucfirst($a) ?>
+                                <?= ucwords(str_replace('_', ' ', $a)) ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
@@ -250,7 +250,7 @@ include __DIR__ . '/../../includes/header.php';
                         $badgeClass =
                             $action === 'login'  ? 'purple' :
                             ($action === 'create' ? 'green' :
-                            ($action === 'delete' ? 'red' :
+                            ($action === 'delete' || $action === 'bulk_delete' ? 'red' :
                             ($action === 'update' ? 'blue' : 'gray')));
                     ?>
                     <tr>
@@ -258,11 +258,17 @@ include __DIR__ . '/../../includes/header.php';
                         <td><?= htmlspecialchars($log['username']) ?></td>
                         <td>
                             <span class="badge-pill <?= $badgeClass ?>" style="text-transform: capitalize;">
-                                <?= htmlspecialchars($action) ?>
+                                <?= htmlspecialchars(str_replace('_', ' ', $action)) ?>
                             </span>
                         </td>
                         <td><?= htmlspecialchars($log['table_name']) ?></td>
-                        <td>#<?= (int)$log['record_id'] ?></td>
+                        <td>
+                            <?php if ((int)$log['record_id'] === 0): ?>
+                                <span class="badge-pill gray" style="font-size: 11px;">Multiple</span>
+                            <?php else: ?>
+                                #<?= (int)$log['record_id'] ?>
+                            <?php endif; ?>
+                        </td>
                         <td>
                             <?php if ($log['new_values']): ?>
                                 <button class="modern-btn small gray"

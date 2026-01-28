@@ -842,3 +842,160 @@ Stack trace:
 #2 C:\xampp\htdocs\builderz\builderz\modules\auth\login.php(28): Database->select('users', 'username = ? AN...', Array)
 #3 {main}
   thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[28-Jan-2026 11:14:07 Asia/Kolkata] Database query error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'has_multiple_towers' in 'field list'
+[28-Jan-2026 11:14:07 Asia/Kolkata] Database query error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.has_multiple_towers' in 'field list'
+[28-Jan-2026 11:14:07 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.has_multiple_towers' in 'field list' in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT p.*, \r\n ...')
+#1 C:\xampp\htdocs\builderz\builderz\includes\MasterService.php(41): Database->query('SELECT p.*, \r\n ...', Array)
+#2 C:\xampp\htdocs\builderz\builderz\modules\masters\projects.php(48): MasterService->getAllProjects(Array)
+#3 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[28-Jan-2026 11:17:25 Asia/Kolkata] Database query error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.has_multiple_towers' in 'field list'
+[28-Jan-2026 11:17:25 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.has_multiple_towers' in 'field list' in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT p.*, \r\n ...')
+#1 C:\xampp\htdocs\builderz\builderz\includes\MasterService.php(41): Database->query('SELECT p.*, \r\n ...', Array)
+#2 C:\xampp\htdocs\builderz\builderz\modules\masters\projects.php(48): MasterService->getAllProjects(Array)
+#3 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[28-Jan-2026 11:17:26 Asia/Kolkata] Database query error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.has_multiple_towers' in 'field list'
+[28-Jan-2026 11:17:26 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.has_multiple_towers' in 'field list' in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT p.*, \r\n ...')
+#1 C:\xampp\htdocs\builderz\builderz\includes\MasterService.php(41): Database->query('SELECT p.*, \r\n ...', Array)
+#2 C:\xampp\htdocs\builderz\builderz\modules\masters\projects.php(48): MasterService->getAllProjects(Array)
+#3 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[28-Jan-2026 11:18:02 Asia/Kolkata] Database query error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.has_multiple_towers' in 'field list'
+[28-Jan-2026 11:18:02 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.has_multiple_towers' in 'field list' in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT p.*, \r\n ...')
+#1 C:\xampp\htdocs\builderz\builderz\includes\MasterService.php(41): Database->query('SELECT p.*, \r\n ...', Array)
+#2 C:\xampp\htdocs\builderz\builderz\modules\masters\projects.php(48): MasterService->getAllProjects(Array)
+#3 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[28-Jan-2026 11:18:02 Asia/Kolkata] Database query error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.has_multiple_towers' in 'field list'
+[28-Jan-2026 11:18:02 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.has_multiple_towers' in 'field list' in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT p.*, \r\n ...')
+#1 C:\xampp\htdocs\builderz\builderz\includes\MasterService.php(41): Database->query('SELECT p.*, \r\n ...', Array)
+#2 C:\xampp\htdocs\builderz\builderz\modules\masters\projects.php(48): MasterService->getAllProjects(Array)
+#3 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[28-Jan-2026 11:18:02 Asia/Kolkata] Database query error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.has_multiple_towers' in 'field list'
+[28-Jan-2026 11:18:02 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.has_multiple_towers' in 'field list' in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT p.*, \r\n ...')
+#1 C:\xampp\htdocs\builderz\builderz\includes\MasterService.php(41): Database->query('SELECT p.*, \r\n ...', Array)
+#2 C:\xampp\htdocs\builderz\builderz\modules\masters\projects.php(48): MasterService->getAllProjects(Array)
+#3 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[28-Jan-2026 11:18:03 Asia/Kolkata] Database query error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.has_multiple_towers' in 'field list'
+[28-Jan-2026 11:18:03 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.has_multiple_towers' in 'field list' in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT p.*, \r\n ...')
+#1 C:\xampp\htdocs\builderz\builderz\includes\MasterService.php(41): Database->query('SELECT p.*, \r\n ...', Array)
+#2 C:\xampp\htdocs\builderz\builderz\modules\masters\projects.php(48): MasterService->getAllProjects(Array)
+#3 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[28-Jan-2026 11:18:03 Asia/Kolkata] Database query error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.has_multiple_towers' in 'field list'
+[28-Jan-2026 11:18:03 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.has_multiple_towers' in 'field list' in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT p.*, \r\n ...')
+#1 C:\xampp\htdocs\builderz\builderz\includes\MasterService.php(41): Database->query('SELECT p.*, \r\n ...', Array)
+#2 C:\xampp\htdocs\builderz\builderz\modules\masters\projects.php(48): MasterService->getAllProjects(Array)
+#3 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[28-Jan-2026 11:18:03 Asia/Kolkata] Database query error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.has_multiple_towers' in 'field list'
+[28-Jan-2026 11:18:03 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.has_multiple_towers' in 'field list' in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT p.*, \r\n ...')
+#1 C:\xampp\htdocs\builderz\builderz\includes\MasterService.php(41): Database->query('SELECT p.*, \r\n ...', Array)
+#2 C:\xampp\htdocs\builderz\builderz\modules\masters\projects.php(48): MasterService->getAllProjects(Array)
+#3 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[28-Jan-2026 11:18:03 Asia/Kolkata] Database query error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.has_multiple_towers' in 'field list'
+[28-Jan-2026 11:18:03 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.has_multiple_towers' in 'field list' in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT p.*, \r\n ...')
+#1 C:\xampp\htdocs\builderz\builderz\includes\MasterService.php(41): Database->query('SELECT p.*, \r\n ...', Array)
+#2 C:\xampp\htdocs\builderz\builderz\modules\masters\projects.php(48): MasterService->getAllProjects(Array)
+#3 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[28-Jan-2026 11:18:03 Asia/Kolkata] Database query error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.has_multiple_towers' in 'field list'
+[28-Jan-2026 11:18:03 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.has_multiple_towers' in 'field list' in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT p.*, \r\n ...')
+#1 C:\xampp\htdocs\builderz\builderz\includes\MasterService.php(41): Database->query('SELECT p.*, \r\n ...', Array)
+#2 C:\xampp\htdocs\builderz\builderz\modules\masters\projects.php(48): MasterService->getAllProjects(Array)
+#3 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[28-Jan-2026 11:18:03 Asia/Kolkata] Database query error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.has_multiple_towers' in 'field list'
+[28-Jan-2026 11:18:03 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.has_multiple_towers' in 'field list' in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT p.*, \r\n ...')
+#1 C:\xampp\htdocs\builderz\builderz\includes\MasterService.php(41): Database->query('SELECT p.*, \r\n ...', Array)
+#2 C:\xampp\htdocs\builderz\builderz\modules\masters\projects.php(48): MasterService->getAllProjects(Array)
+#3 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[28-Jan-2026 11:18:04 Asia/Kolkata] Database query error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.has_multiple_towers' in 'field list'
+[28-Jan-2026 11:18:04 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.has_multiple_towers' in 'field list' in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT p.*, \r\n ...')
+#1 C:\xampp\htdocs\builderz\builderz\includes\MasterService.php(41): Database->query('SELECT p.*, \r\n ...', Array)
+#2 C:\xampp\htdocs\builderz\builderz\modules\masters\projects.php(48): MasterService->getAllProjects(Array)
+#3 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[28-Jan-2026 11:18:04 Asia/Kolkata] Database query error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.has_multiple_towers' in 'field list'
+[28-Jan-2026 11:18:04 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.has_multiple_towers' in 'field list' in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT p.*, \r\n ...')
+#1 C:\xampp\htdocs\builderz\builderz\includes\MasterService.php(41): Database->query('SELECT p.*, \r\n ...', Array)
+#2 C:\xampp\htdocs\builderz\builderz\modules\masters\projects.php(48): MasterService->getAllProjects(Array)
+#3 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[28-Jan-2026 11:18:04 Asia/Kolkata] Database query error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.has_multiple_towers' in 'field list'
+[28-Jan-2026 11:18:04 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.has_multiple_towers' in 'field list' in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT p.*, \r\n ...')
+#1 C:\xampp\htdocs\builderz\builderz\includes\MasterService.php(41): Database->query('SELECT p.*, \r\n ...', Array)
+#2 C:\xampp\htdocs\builderz\builderz\modules\masters\projects.php(48): MasterService->getAllProjects(Array)
+#3 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[28-Jan-2026 11:18:04 Asia/Kolkata] Database query error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.has_multiple_towers' in 'field list'
+[28-Jan-2026 11:18:04 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.has_multiple_towers' in 'field list' in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT p.*, \r\n ...')
+#1 C:\xampp\htdocs\builderz\builderz\includes\MasterService.php(41): Database->query('SELECT p.*, \r\n ...', Array)
+#2 C:\xampp\htdocs\builderz\builderz\modules\masters\projects.php(48): MasterService->getAllProjects(Array)
+#3 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[28-Jan-2026 11:18:04 Asia/Kolkata] Database query error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.has_multiple_towers' in 'field list'
+[28-Jan-2026 11:18:04 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.has_multiple_towers' in 'field list' in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT p.*, \r\n ...')
+#1 C:\xampp\htdocs\builderz\builderz\includes\MasterService.php(41): Database->query('SELECT p.*, \r\n ...', Array)
+#2 C:\xampp\htdocs\builderz\builderz\modules\masters\projects.php(48): MasterService->getAllProjects(Array)
+#3 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[28-Jan-2026 11:18:05 Asia/Kolkata] Database query error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.has_multiple_towers' in 'field list'
+[28-Jan-2026 11:18:05 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.has_multiple_towers' in 'field list' in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT p.*, \r\n ...')
+#1 C:\xampp\htdocs\builderz\builderz\includes\MasterService.php(41): Database->query('SELECT p.*, \r\n ...', Array)
+#2 C:\xampp\htdocs\builderz\builderz\modules\masters\projects.php(48): MasterService->getAllProjects(Array)
+#3 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[28-Jan-2026 11:18:05 Asia/Kolkata] Database query error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.has_multiple_towers' in 'field list'
+[28-Jan-2026 11:18:05 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.has_multiple_towers' in 'field list' in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT p.*, \r\n ...')
+#1 C:\xampp\htdocs\builderz\builderz\includes\MasterService.php(41): Database->query('SELECT p.*, \r\n ...', Array)
+#2 C:\xampp\htdocs\builderz\builderz\modules\masters\projects.php(48): MasterService->getAllProjects(Array)
+#3 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[28-Jan-2026 11:33:44 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined method Database::prepare() in C:\xampp\htdocs\builderz\builderz\debug_flats.php:6
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\debug_flats.php on line 6

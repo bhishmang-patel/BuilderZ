@@ -24,9 +24,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     try {
         if ($action === 'create') {
+            // Concatenate prefix if provided (Multi-tower logic)
+            $flatNo = sanitize($_POST['flat_no']);
+            if (!empty($_POST['flat_prefix_single'])) {
+                $flatNo = sanitize($_POST['flat_prefix_single']) . '-' . $flatNo;
+            }
+
             $data = [
                 'project_id' => intval($_POST['project_id']),
-                'flat_no' => sanitize($_POST['flat_no']),
+                'flat_no' => $flatNo,
                 'floor' => intval($_POST['floor']),
                 'unit_type' => $_POST['unit_type'] ?? 'flat',
                 'bhk' => $_POST['bhk'],
@@ -763,10 +769,10 @@ include __DIR__ . '/../../includes/header.php';
 
 <!-- Bulk Create Modal -->
 <div id="bulkCreateModal" class="custom-modal">
-    <div class="custom-modal-content" style="max-width: 900px;">
+    <div class="custom-modal-content" style="max-width: 1100px;">
         <div class="modal-header-premium">
             <div class="modal-title-group">
-                <h3><i class="fas fa-layer-group"></i> Bulk Create Inventory</h3>
+                <h3><i class="fas fa-layer-group"></i> Bulk Create Flats</h3>
                 <p>Configure Ground, First, and Typical floors</p>
             </div>
             <button class="modal-close-btn" onclick="hideFlatModal('bulkCreateModal')">&times;</button>
@@ -783,14 +789,19 @@ include __DIR__ . '/../../includes/header.php';
                         <select name="project_id" class="modern-select" required>
                             <option value="">-- Select Project --</option>
                             <?php foreach ($projects as $project): ?>
-                                <option value="<?= $project['id'] ?>"><?= htmlspecialchars($project['project_name']) ?></option>
+                                <option value="<?= $project['id'] ?>" 
+                                        data-multi-tower="<?= $project['has_multiple_towers'] ?? 0 ?>"
+                                        data-total-floors="<?= $project['total_floors'] ?? 0 ?>">
+                                    <?= htmlspecialchars($project['project_name']) ?>
+                                </option>
                             <?php endforeach; ?>
                         </select>
                     </div>
                     <div class="input-group-modern">
-                        <input type="number" name="floor_count" id="floor_count" class="modern-input" min="1" required>
+                        <label class="input-label">Total Floors *</label>
+                        <input type="number" name="floor_count" id="floor_count" class="modern-input" min="1" required placeholder="e.g. 10">
                     </div>
-                    <div class="input-group-modern">
+                    <div class="input-group-modern" id="prefix_container" style="display:none;">
                         <label class="input-label">Flat Prefix</label>
                         <input type="text" name="flat_prefix" class="modern-input" value="A-" placeholder="e.g. A-">
                         <small style="color:#64748b; font-size:11px;">Ex: "A-" generates A-101, A-102</small>
@@ -799,7 +810,7 @@ include __DIR__ . '/../../includes/header.php';
 
                 <!-- Tabs -->
                 <div class="tabs-container" style="margin: 20px 0;">
-                    <button type="button" class="tab-btn active" onclick="showTab('ground')">Ground Floor (0)</button>
+                    <button type="button" class="tab-btn active" onclick="showTab('ground')">Ground Floor (G)</button>
                     <button type="button" class="tab-btn" onclick="showTab('first')">First Floor (1)</button>
                     <button type="button" class="tab-btn" onclick="showTab('typical')">Typical Floors (2+)</button>
                 </div>
@@ -818,6 +829,7 @@ include __DIR__ . '/../../includes/header.php';
                     /* Table inputs */
                     .mix-table .modern-input, .mix-table .modern-select { height: 40px; padding: 5px 10px; font-size: 13px; }
                     .mix-table th { font-size: 12px; color: #94a3b8; text-transform: uppercase; padding-bottom: 10px; }
+                    .mix-table th:first-child { width: 120px; } /* Increased width for Type column */
                     .rate-display { background: #f1f5f9; color: #64748b; font-weight: 600; border: 1px solid #e2e8f0; }
                 </style>
 
@@ -828,7 +840,6 @@ include __DIR__ . '/../../includes/header.php';
                         <thead>
                             <tr>
                                 <th>Type</th>
-                                <th>BHK (Opt)</th>
                                 <th>RERA (Sqft)</th>
                                 <th>Sellable (Sqft)</th>
                                 <th>Usable (Sqft)</th>
@@ -873,6 +884,7 @@ include __DIR__ . '/../../includes/header.php';
                     <table class="modern-table mix-table">
                         <thead>
                             <tr>
+                                <th>TYPE</th>
                                 <th>BHK</th>
                                 <th>RERA</th>
                                 <th>Sellable</th>
@@ -892,7 +904,7 @@ include __DIR__ . '/../../includes/header.php';
             <div class="modal-footer-premium">
                 <button type="button" class="btn-ghost" onclick="hideFlatModal('bulkCreateModal')">Cancel</button>
                 <button type="submit" class="btn-save" onclick="return submitBulkForm()">
-                    <i class="fas fa-bolt"></i> Generate Inventory
+                    <i class="fas fa-bolt"></i> Generate Flats
                 </button>
             </div>
         </form>
@@ -934,15 +946,26 @@ include __DIR__ . '/../../includes/header.php';
                 <div class="form-grid-premium three-cols">
                     <div class="input-group-modern">
                         <label class="input-label">Project *</label>
-                        <select name="project_id" class="modern-select" required>
+                        <select name="project_id" class="modern-select" required onchange="toggleSinglePrefix(this)">
+                            <option value="">-- Select Project --</option> 
                             <?php foreach ($projects as $project): ?>
-                                <option value="<?= $project['id'] ?>"><?= htmlspecialchars($project['project_name']) ?></option>
+                                <option value="<?= $project['id'] ?>" 
+                                        data-multi-tower="<?= $project['has_multiple_towers'] ?>"
+                                        data-total-floors="<?= $project['total_floors'] ?? 0 ?>">
+                                    <?= htmlspecialchars($project['project_name']) ?>
+                                </option>
                             <?php endforeach; ?>
                         </select>
                     </div>
+                    
+                    <div class="input-group-modern" id="add_single_prefix_container" style="display:none;">
+                        <label class="input-label">Tower *</label>
+                        <input type="text" name="flat_prefix_single" id="add_flat_prefix_single" class="modern-input" placeholder="e.g. A">
+                    </div>
+
                     <div class="input-group-modern">
                         <label class="input-label">Flat/Unit No *</label>
-                        <input type="text" name="flat_no" class="modern-input" required placeholder="e.g. A-101">
+                        <input type="text" name="flat_no" class="modern-input" required placeholder="e.g. 101">
                     </div>
                      <div class="input-group-modern">
                         <label class="input-label">Floor *</label>
@@ -1269,8 +1292,10 @@ function addItemRow(section) {
         typeOptions = `<input type="hidden" class="unit-type" value="flat"><span class="badge-pill blue">FLAT</span>`;
     }
 
-    row.innerHTML = `
-        <td>${typeOptions}</td>
+    let bhkCell = '';
+    // Only add BHK cell if NOT ground floor
+    if (section !== 'ground') {
+        bhkCell = `
         <td>
              <select class="modern-select bhk" disabled style="background:#f1f5f9; cursor:not-allowed;">
                 <option value="">--</option>
@@ -1278,7 +1303,12 @@ function addItemRow(section) {
                 <option value="2BHK">2 BHK</option>
                 <option value="3BHK">3 BHK</option>
             </select>
-        </td>
+        </td>`;
+    }
+
+    row.innerHTML = `
+        <td>${typeOptions}</td>
+        ${bhkCell}
         <td><input type="number" class="modern-input rera" placeholder="RERA" step="0.01"></td>
         <td><input type="number" class="modern-input sellable" placeholder="Sellable" step="0.01" oninput="updateRowRate(this)"></td>
         <td><input type="number" class="modern-input usable" placeholder="Usable" step="0.01"></td>
@@ -1302,6 +1332,9 @@ function addItemRow(section) {
 function toggleRowBhk(select) {
     const row = select.closest('tr');
     const bhk = row.querySelector('.bhk');
+    // Guard clause if BHK column doesn't exist (Ground Floor)
+    if (!bhk) return; 
+    
     if (select.value === 'flat') {
         bhk.disabled = false;
         bhk.style.background = '#fff';
@@ -1369,19 +1402,13 @@ function submitBulkForm() {
         totalUnits += typicalCount;
     }
     
-    const confirmMsg = `
-    INVENTORY PREVIEW
-    ---------------------------
-    • Ground Floor: ${groundRows.length} units
-    • First Floor:  ${firstRows.length} units
-    • Typical (${totalFloors - 1} floors): ${typicalCount} units
-    ---------------------------
-    TOTAL: ${totalUnits} New Units
-    
-    Proceed to generate?
-    `;
-    
-    if (!confirm(confirmMsg)) return false;
+    // Populate Confirmation Modal
+    document.getElementById('confirm_ground_count').textContent = groundRows.length;
+    document.getElementById('confirm_first_count').textContent = firstRows.length;
+    document.getElementById('confirm_typical_total').textContent = typicalCount;
+    document.getElementById('confirm_typical_per_floor').textContent = typicalRows.length;
+    document.getElementById('confirm_typical_floors').textContent = totalFloors >= 2 ? (totalFloors - 1) : 0;
+    document.getElementById('confirm_total_final').textContent = totalUnits;
 
     // Construct Payload
     const payload = {
@@ -1394,15 +1421,31 @@ function submitBulkForm() {
     };
     
     document.getElementById('flat_mix').value = JSON.stringify(payload);
-    return true;
+    
+    // Show Modal
+    showFlatModal('bulkConfirmModal');
+    return false; // Prevent immediate submission
 }
+
+function finalSubmitBulk() {
+    // Find the form within the Bulk Create Modal and submit it
+    // Assuming the button 'Generate Flats' is inside the form, we can find the form by ID or context
+    // But since the new button is outside, we need to target the form explicitly.
+    // The form starts at line ~550 in flats.php? No, it's lines 582 or 840+.
+    // Let's rely on finding standard form or adding ID.
+    // Actually, let's find the form that contains input name="action" value="bulk_create"
+    const form = document.querySelector('input[name="action"][value="bulk_create"]').form;
+    if(form) form.submit();
+}
+
 
 function getRows(section) {
     const rows = [];
     document.querySelectorAll('#tbody-' + section + ' tr').forEach(tr => {
+        const bhkInput = tr.querySelector('.bhk');
         rows.push({
             unit_type: tr.querySelector('.unit-type').value,
-            bhk: tr.querySelector('.bhk').value,
+            bhk: bhkInput ? bhkInput.value : null, // Handle missing BHK column
             rera_area: tr.querySelector('.rera').value,
             sellable_area: tr.querySelector('.sellable').value,
             usable_area: tr.querySelector('.usable').value,
@@ -1412,7 +1455,114 @@ function getRows(section) {
     return rows;
 }
 </script>
+<script>
+// Multi-Tower Logic (Bulk)
+// Multi-Tower Logic (Bulk) & Auto-Fill Floors
+document.querySelector('select[name="project_id"]').addEventListener('change', function() {
+    const selected = this.options[this.selectedIndex];
+    const isMultiTower = parseInt(selected.getAttribute('data-multi-tower')) === 1;
+    const totalFloors = selected.getAttribute('data-total-floors');
+    
+    // Auto-fill Floor Count
+    const floorInput = document.getElementById('floor_count');
+    if(totalFloors && floorInput) {
+        floorInput.value = totalFloors;
+    }
 
+    const prefixContainer = document.getElementById('prefix_container');
+    
+    if (isMultiTower) {
+        prefixContainer.style.display = 'block';
+    } else {
+        prefixContainer.style.display = 'none';
+         document.querySelector('input[name="flat_prefix"]').value = '';
+    }
+});
+
+// Multi-Tower Logic (Single)
+function toggleSinglePrefix(select) {
+    const selected = select.options[select.selectedIndex];
+    const isMultiTower = parseInt(selected.getAttribute('data-multi-tower')) === 1;
+    const totalFloors = selected.getAttribute('data-total-floors');
+    
+    // Set Max Floor for Single Flat
+    const floorInput = document.querySelector('#addFlatModal input[name="floor"]');
+    if(floorInput && totalFloors) {
+        floorInput.max = totalFloors;
+        floorInput.placeholder = "Max " + totalFloors;
+    }
+
+    const container = document.getElementById('add_single_prefix_container');
+    const input = document.getElementById('add_flat_prefix_single');
+
+    if (isMultiTower) {
+        container.style.display = 'block';
+        input.required = true;
+    } else {
+        container.style.display = 'none';
+        input.required = false;
+        input.value = '';
+    }
+}
+
+// Init Single Modal on load (in case first project is multi-tower)
+document.addEventListener('DOMContentLoaded', function() {
+    const singleSelect = document.querySelector('#addFlatModal select[name="project_id"]');
+    if(singleSelect) toggleSinglePrefix(singleSelect);
+});
+</script>
+
+
+<!-- Bulk Confirmation Modal (Professional) -->
+<div id="bulkConfirmModal" class="custom-modal">
+    <div class="custom-modal-content" style="max-width: 500px; border-radius: 16px; overflow: hidden;">
+        <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding: 30px; text-align: center; color: white;">
+            <div style="width: 64px; height: 64px; background: rgba(255,255,255,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);">
+                <i class="fas fa-clipboard-check" style="font-size: 28px; color: #60a5fa;"></i>
+            </div>
+            <h3 style="margin: 0 0 8px; font-size: 22px; font-weight: 700;">Confirm Generation</h3>
+            <p style="margin: 0; color: #94a3b8; font-size: 14px;">Review the inventory breakdown below</p>
+        </div>
+        
+        <div style="padding: 30px;">
+            <!-- Stats Grid -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;">
+                <div style="background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; text-align: center;">
+                    <span style="display: block; font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 4px;">Ground Floor</span>
+                    <strong style="font-size: 20px; color: #1e293b;" id="confirm_ground_count">0</strong>
+                </div>
+                <div style="background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; text-align: center;">
+                    <span style="display: block; font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 4px;">First Floor</span>
+                    <strong style="font-size: 20px; color: #1e293b;" id="confirm_first_count">0</strong>
+                </div>
+                <div style="background: #eff6ff; padding: 15px; border-radius: 12px; border: 1px solid #dbeafe; text-align: center; grid-column: span 2;">
+                    <span style="display: block; font-size: 11px; text-transform: uppercase; color: #3b82f6; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 4px;">Typical Floors</span>
+                    <strong style="font-size: 24px; color: #1e40af;" id="confirm_typical_total">0</strong>
+                     <div style="font-size: 12px; color: #60a5fa; margin-top: 2px;">
+                        (<span id="confirm_typical_per_floor">0</span> units × <span id="confirm_typical_floors">0</span> floors)
+                    </div>
+                </div>
+            </div>
+
+            <div style="background: #1e293b; color: white; padding: 16px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.3);">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 36px; height: 36px; background: rgba(255,255,255,0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-layer-group" style="font-size: 16px;"></i>
+                    </div>
+                    <span style="font-weight: 600;">Total New Units</span>
+                </div>
+                <span style="font-size: 24px; font-weight: 800; color: #4ade80;" id="confirm_total_final">0</span>
+            </div>
+
+            <div style="display: flex; gap: 15px;">
+                <button type="button" class="btn-ghost" onclick="hideFlatModal('bulkConfirmModal')" style="flex: 1;">Back to Edit</button>
+                <button type="button" class="btn-save" onclick="finalSubmitBulk()" style="flex: 1; justify-content: center;">
+                    <i class="fas fa-bolt"></i> Yes, Generate
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Bulk Delete Confirmation Modal -->
 <div id="bulkDeleteModal" class="custom-modal">

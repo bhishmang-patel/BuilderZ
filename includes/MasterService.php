@@ -28,7 +28,15 @@ class MasterService {
         }
 
         $sql = "SELECT p.*, 
-                (SELECT COUNT(*) FROM bookings b WHERE b.project_id = p.id AND b.status = 'active') as booked_count
+                (SELECT COUNT(*) FROM bookings b WHERE b.project_id = p.id AND b.status = 'active') as booked_count,
+                 CASE 
+                    WHEN p.has_multiple_towers = 1 THEN (
+                        SELECT COUNT(DISTINCT SUBSTRING_INDEX(flat_no, '-', 1)) 
+                        FROM flats 
+                        WHERE project_id = p.id AND flat_no LIKE '%-%'
+                    )
+                    ELSE 1 
+                END as tower_count
                 FROM projects p WHERE $where ORDER BY created_at DESC";
         return $this->db->query($sql, $params)->fetchAll();
     }
@@ -41,7 +49,7 @@ class MasterService {
     }
 
     public function createProject($data, $userId) {
-        $allowedInfos = ['project_name', 'location', 'start_date', 'expected_completion', 'total_floors', 'total_flats', 'status'];
+        $allowedInfos = ['project_name', 'location', 'start_date', 'expected_completion', 'total_floors', 'total_flats', 'status', 'has_multiple_towers'];
         $insertData = array_intersect_key($data, array_flip($allowedInfos));
         $insertData['created_by'] = $userId;
         
@@ -49,6 +57,7 @@ class MasterService {
         $insertData['status'] = $insertData['status'] ?? 'active';
         $insertData['total_floors'] = intval($insertData['total_floors'] ?? 0);
         $insertData['total_flats'] = intval($insertData['total_flats'] ?? 0);
+        $insertData['has_multiple_towers'] = isset($data['has_multiple_towers']) ? 1 : 0;
 
         $id = $this->db->insert('projects', $insertData);
         logAudit('create', 'projects', $id, null, $insertData);
@@ -56,12 +65,13 @@ class MasterService {
     }
 
     public function updateProject($id, $data) {
-        $allowedInfos = ['project_name', 'location', 'start_date', 'expected_completion', 'total_floors', 'total_flats', 'status'];
+        $allowedInfos = ['project_name', 'location', 'start_date', 'expected_completion', 'total_floors', 'total_flats', 'status', 'has_multiple_towers'];
         $updateData = array_intersect_key($data, array_flip($allowedInfos));
         
         $updateData['status'] = $updateData['status'] ?? 'active';
         $updateData['total_floors'] = intval($updateData['total_floors'] ?? 0);
         $updateData['total_flats'] = intval($updateData['total_flats'] ?? 0);
+        $updateData['has_multiple_towers'] = isset($data['has_multiple_towers']) ? 1 : 0;
 
         $this->db->update('projects', $updateData, 'id = ?', ['id' => $id]);
         logAudit('update', 'projects', $id, null, $updateData);

@@ -486,7 +486,14 @@ include __DIR__ . '/../../includes/header.php';
                                 </div>
                             </td>
                             <td class="text-center">
-                                <span class="badge-pill purple"><?= $project['total_flats'] ?> Flats</span>
+                                <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                                    <span class="badge-pill purple"><?= $project['total_flats'] ?> Flats</span>
+                                    <?php if($project['has_multiple_towers']): ?>
+                                        <span class="badge-pill gray" style="font-size: 10px; padding: 2px 8px;">
+                                            <i class="fas fa-building" style="font-size: 9px;"></i> <?= $project['tower_count'] ?> Towers
+                                        </span>
+                                    <?php endif; ?>
+                                </div>
                             </td>
                             <td class="text-center">
                                 <span class="badge-pill status-<?= $project['status'] ?>">
@@ -522,7 +529,7 @@ include __DIR__ . '/../../includes/header.php';
         </div>
         <div class="modal-body" style="padding: 25px;">
             <!-- Status Badge -->
-            <div class="text-center mb-4">
+            <div class="text-center mb-4" style="margin-bottom: 15px;">
                 <span id="view_status_badge" class="badge-pill" style="font-size: 12px; padding: 6px 16px;"></span>
             </div>
 
@@ -545,6 +552,10 @@ include __DIR__ . '/../../includes/header.php';
             <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f1f5f9;">
                 <span style="color: #64748b; font-weight: 500; font-size: 13px;">Total Floors</span>
                 <span style="color: #1e293b; font-weight: 600; font-size: 13px;" id="view_floors"></span>
+            </div>
+            <div id="view_tower_row_static" style="display: none; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f1f5f9;">
+                <span style="color: #64748b; font-weight: 500; font-size: 13px;">Towers</span>
+                <span style="color: #1e293b; font-weight: 600; font-size: 13px;" id="view_tower_count"></span>
             </div>
             <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f1f5f9;">
                 <span style="color: #64748b; font-weight: 500; font-size: 13px;">Start Date</span>
@@ -590,6 +601,13 @@ include __DIR__ . '/../../includes/header.php';
                     </div>
                 </div>
 
+                <div class="form-grid-premium" style="margin-top: 15px; margin-bottom: 15px">
+                    <div class="input-group-modern" style="display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" name="has_multiple_towers" id="add_has_multiple_towers" class="custom-checkbox">
+                        <label for="add_has_multiple_towers" class="input-label" style="margin: 0; cursor: pointer; font-weight: bold">Multi-Tower Project?</label>
+                    </div>
+                </div>
+
                 <!-- Timeline -->
                 <div class="form-section-title"><i class="far fa-calendar-alt"></i> Production Timeline</div>
                 <div class="form-grid-premium">
@@ -623,7 +641,6 @@ include __DIR__ . '/../../includes/header.php';
                         </select>
                     </div>
                 </div>
-
             </div>
 
             <div class="modal-footer-premium">
@@ -664,6 +681,13 @@ include __DIR__ . '/../../includes/header.php';
                     <div class="input-group-modern full-width">
                         <label class="input-label">Location *</label>
                         <input type="text" name="location" id="edit_location" required class="modern-input">
+                    </div>
+                </div>
+
+                <div class="form-grid-premium" style="margin-top: 15px; margin-bottom: 15px;">
+                    <div class="input-group-modern" style="display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" name="has_multiple_towers" id="edit_has_multiple_towers" class="custom-checkbox">
+                        <label for="edit_has_multiple_towers" class="input-label" style="margin: 0; cursor: pointer; font-weight: bold">Multi-Tower Project?</label>
                     </div>
                 </div>
 
@@ -776,7 +800,14 @@ function editProject(project) {
     document.getElementById('edit_expected_completion').value = project.expected_completion || '';
     document.getElementById('edit_total_floors').value = project.total_floors;
     document.getElementById('edit_total_flats').value = project.total_flats;
+    document.getElementById('edit_total_floors').value = project.total_floors;
+    document.getElementById('edit_total_flats').value = project.total_flats;
     document.getElementById('edit_status').value = project.status;
+    
+    // Checkbox handling
+    const isMultiTower = parseInt(project.has_multiple_towers) === 1;
+    document.getElementById('edit_has_multiple_towers').checked = isMultiTower;
+
     openProjectModal('editProjectModal');
 }
 
@@ -795,6 +826,17 @@ function viewProjectDetails(project) {
     document.getElementById('view_total_units').innerText = totalUnits;
     document.getElementById('view_units_left').innerText = unitsLeft;
 
+    // View Modal - Tower Count
+    const towerRow = document.getElementById('view_tower_row_static');
+    const towerCountSpan = document.getElementById('view_tower_count');
+    
+    // Explicitly check for multi-tower flag (show even if count is 0)
+    if (parseInt(project.has_multiple_towers) === 1) {
+        towerCountSpan.innerText = project.tower_count;
+        towerRow.style.display = 'flex';
+    } else {
+        towerRow.style.display = 'none';
+    }
     
     // Status Logic
     const badgeSpan = document.getElementById('view_status_badge');

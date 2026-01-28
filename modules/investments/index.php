@@ -57,6 +57,37 @@ foreach($investments as $inv) {
     $total_invested += $inv['amount'];
 }
 
+// Handle Export CSV
+if (isset($_GET['export']) && $_GET['export'] === 'csv') {
+    // Determine filename
+    $filename = 'investments_' . date('Y-m-d') . '.csv';
+    
+    // Set headers
+    header('Content-Type: text/csv');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    
+    // Open output stream
+    $output = fopen('php://output', 'w');
+    
+    // Write Column Headers
+    fputcsv($output, ['Date', 'Project', 'Investor Name', 'Type', 'Amount', 'Remarks']);
+    
+    // Write Data
+    foreach ($investments as $row) {
+        fputcsv($output, [
+            date('d-M-Y', strtotime($row['investment_date'])),
+            $row['project_name'],
+            $row['investor_name'],
+            ucfirst($row['investment_type']),
+            $row['amount'],
+            $row['remarks']
+        ]);
+    }
+    
+    fclose($output);
+    exit();
+}
+
 include __DIR__ . '/../../includes/header.php';
 ?>
 
@@ -397,6 +428,10 @@ include __DIR__ . '/../../includes/header.php';
                     <button onclick="document.getElementById('filterSection').style.display = document.getElementById('filterSection').style.display === 'none' ? 'block' : 'none'" class="modern-btn" style="background:#f1f5f9; color:#475569;">
                         <i class="fas fa-filter"></i> Filters
                     </button>
+                    <a href="?export=csv&search=<?= urlencode($filters['search']) ?>&project_id=<?= urlencode($filters['project_id']) ?>&investment_type=<?= urlencode($filters['investment_type']) ?>" class="modern-btn" style="background: linear-gradient(135deg, #5b5e63ff 0%, #99a0aaff 100%); color:#fff; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                        <i class="fas fa-file-csv"></i> Export CSV
+                    </a>
+                    
                     <button class="modern-btn" onclick="openModal('addInvestmentModal')" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); width: auto; height: 44px; font-size: 14px; padding: 0 24px;">
                         <i class="fas fa-plus"></i> New Investment
                     </button>

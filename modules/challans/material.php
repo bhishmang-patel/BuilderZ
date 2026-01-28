@@ -74,6 +74,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $db->beginTransaction();
             $count = 0;
 
+            $deleted_ids = [];
+
             foreach ($ids as $id) {
                 // Verify status is pending before deleting
                 $challan = $db->query("SELECT status FROM challans WHERE id = ?", [$id])->fetch();
@@ -87,9 +89,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // 2. Delete Items & Challan
                     $db->delete('challan_items', 'challan_id = ?', [$id]);
                     $db->delete('challans', 'id = ?', [$id]);
-                    logAudit('delete', 'challans', $id);
+                    
+                    $deleted_ids[] = $id;
                     $count++;
                 }
+            }
+            
+            if (!empty($deleted_ids)) {
+                logAudit('bulk_delete', 'challans', 0, null, ['deleted_ids' => $deleted_ids]);
             }
 
             $db->commit();
