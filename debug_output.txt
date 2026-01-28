@@ -1,7 +1,0 @@
-=== LAST 5 CHALLANS ===
-Challan: 2000 | PartyID: 39 | Name: Dadu | GST: [] | Status: unregistered
-Challan: 1000 | PartyID: 38 | Name: Trimurti | GST: [GSTIN136548556] | Status: registered
-
-=== ALL VENDORS ===
-ID: 38 | Name: Trimurti | GST: [GSTIN136548556] | Status: registered
-ID: 39 | Name: Dadu | GST: [] | Status: unregistered
