@@ -136,12 +136,25 @@ function logAudit($action, $table, $record_id, $old_values = null, $new_values =
 }
 
 function checkPermission($allowed_roles) {
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+
     if (!isset($_SESSION['user_role'])) {
+        // Not logged in or session expired
         redirect('modules/auth/login.php');
     }
     
+    // Ensure input is an array
+    if (!is_array($allowed_roles)) {
+        $allowed_roles = [$allowed_roles];
+    }
+    
     if (!in_array($_SESSION['user_role'], $allowed_roles)) {
-        setFlashMessage('error', 'You do not have permission to access this page');
+        // Log unauthorized access attempt
+        error_log("Unauthorized access attempt by user ID {$_SESSION['user_id']} ({$_SESSION['user_role']}) to " . $_SERVER['PHP_SELF']);
+        
+        setFlashMessage('error', 'You do not have permission to access this page.');
         redirect('modules/dashboard/index.php');
     }
 }
@@ -176,11 +189,19 @@ function updateBookingTotals($booking_id) {
             WHERE reference_type = 'booking' AND reference_id = ?";
     $stmt = $db->query($sql, [$booking_id]);
     $result = $stmt->fetch();
-    $total_received = $result['total_received'];
+    $total_received = round($result['total_received'], 2);
     
-    // 2. Update booking total
+    // 2. Update booking total and pending amount
+    // Fetch agreement value first
+    $booking_info = $db->select('bookings', 'id=?', [$booking_id])->fetch();
+    $agreement_value = $booking_info['agreement_value'] ?? 0;
+    $total_pending = max(0, $agreement_value - $total_received);
+
     $db->update('bookings', 
-        ['total_received' => $total_received], 
+        [
+            'total_received' => $total_received,
+            'total_pending' => $total_pending
+        ], 
         'id = ?', 
         ['id' => $booking_id]
     );
@@ -210,6 +231,74 @@ function updateBookingTotals($booking_id) {
             }
         }
     }
+    
+    // 4. Update Demand Allocation (FIFO Logic)
+    updateBookingDemands($booking_id, $total_received);
+}
+
+function updateBookingDemands($booking_id, $total_received_buffer_unused) {
+    $db = Database::getInstance();
+    
+    // 1. Reset all demands to 0 first (clean slate calculation)
+    $db->update('booking_demands', ['paid_amount' => 0, 'status' => 'pending'], 'booking_id = ?', ['booking_id' => $booking_id]);
+
+    // 2. Fetch all demands ordered by date
+    $demands = $db->query("SELECT * FROM booking_demands WHERE booking_id = ? ORDER BY generated_date ASC", [$booking_id])->fetchAll();
+    if (empty($demands)) return;
+
+    $demandMap = [];
+    foreach ($demands as $d) {
+        $demandMap[$d['id']] = [
+            'amount' => $d['demand_amount'],
+            'paid' => 0,
+            'status' => 'pending'
+        ];
+    }
+
+    // 3. Fetch all payments for this booking
+    $payments = $db->query("SELECT amount, demand_id FROM payments WHERE reference_type = 'booking' AND reference_id = ?", [$booking_id])->fetchAll();
+
+    $general_pool = 0;
+
+    // 4. Allocation Pass 1: Targeted Payments
+    foreach ($payments as $p) {
+        if (!empty($p['demand_id']) && isset($demandMap[$p['demand_id']])) {
+            $demandMap[$p['demand_id']]['paid'] += $p['amount'];
+        } else {
+            $general_pool += $p['amount'];
+        }
+    }
+
+    // 5. Allocation Pass 2: General Pool (FIFO)
+    foreach ($demands as $d) {
+        $id = $d['id'];
+        $needed = $demandMap[$id]['amount'] - $demandMap[$id]['paid'];
+
+        if ($needed > 0 && $general_pool > 0) {
+            $allocate = min($needed, $general_pool);
+            $demandMap[$id]['paid'] += $allocate;
+            $general_pool -= $allocate;
+        }
+
+        // Update Status
+        if ($demandMap[$id]['paid'] >= $demandMap[$id]['amount'] - 1) { // -1 for tiny float diffs
+            $demandMap[$id]['status'] = 'paid';
+        } elseif ($demandMap[$id]['paid'] > 0) {
+            $demandMap[$id]['status'] = 'partial';
+        } else {
+            $demandMap[$id]['status'] = 'pending';
+        }
+
+        // Persist to DB
+        $db->update('booking_demands', 
+            [
+                'paid_amount' => $demandMap[$id]['paid'], 
+                'status' => $demandMap[$id]['status']
+            ], 
+            'id = ?', 
+            ['id' => $id]
+        );
+    }
 }
 
 function updateChallanPaidAmount($challan_id) {
@@ -221,11 +310,13 @@ function updateChallanPaidAmount($challan_id) {
     $stmt = $db->query($sql, [$challan_id]);
     $result = $stmt->fetch();
     
-    $paid_amount = $result['paid_amount'];
+    $paid_amount = round($result['paid_amount'], 2);
     
     $stmt = $db->select('challans', 'id = ?', [$challan_id], 'total_amount');
     $challan = $stmt->fetch();
     
+    $pending_amount = max(0, round($challan['total_amount'] - $paid_amount, 2));
+
     $status = 'pending';
     if ($paid_amount >= $challan['total_amount']) {
         $status = 'paid';
@@ -234,7 +325,11 @@ function updateChallanPaidAmount($challan_id) {
     }
     
     $db->update('challans', 
-        ['paid_amount' => $paid_amount, 'status' => $status], 
+        [
+            'paid_amount' => $paid_amount, 
+            'pending_amount' => $pending_amount,
+            'status' => $status
+        ], 
         'id = ?', 
         ['id' => $challan_id]
     );
@@ -331,7 +426,7 @@ function updateBillPaidAmount($bill_id) {
     $stmt = $db->query($sql, [$bill_id]);
     $result = $stmt->fetch();
     
-    $paid_amount = $result['paid_amount'];
+    $paid_amount = round($result['paid_amount'], 2);
     
     $stmt = $db->select('bills', 'id = ?', [$bill_id], 'amount');
     $bill = $stmt->fetch();

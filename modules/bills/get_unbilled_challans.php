@@ -31,6 +31,7 @@ try {
             FROM challans c
             WHERE c.party_id = ? 
               AND c.challan_type = 'material'
+              AND c.status = 'approved'
               AND c.id NOT IN (SELECT challan_id FROM bills WHERE challan_id IS NOT NULL)
             ORDER BY c.created_at DESC";
 

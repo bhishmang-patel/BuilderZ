@@ -15,10 +15,14 @@ $current_page = 'stock';
 
 // Fetch stock summary
 $sql = "SELECT m.*, 
-        (SELECT COALESCE(SUM(ci.quantity), 0) FROM challan_items ci JOIN challans c ON ci.challan_id = c.id WHERE ci.material_id = m.id AND c.status != 'cancelled') as total_in,
+        (SELECT COALESCE(SUM(ci.quantity), 0) FROM challan_items ci JOIN challans c ON ci.challan_id = c.id WHERE ci.material_id = m.id AND c.status = 'approved') as total_in,
         (SELECT COALESCE(SUM(mu.quantity), 0) FROM material_usage mu WHERE mu.material_id = m.id) as total_out
-        FROM materials m 
-        ORDER BY m.material_name";
+    FROM materials m
+    GROUP BY m.id
+    HAVING total_in > 0 OR total_out > 0
+    ORDER BY m.material_name
+    ";
+
 $stock_data = $db->query($sql)->fetchAll();
 
 // Calculate Stats
@@ -153,16 +157,34 @@ include __DIR__ . '/../../includes/header.php';
 /* Modern Table */
 .modern-table { width: 100%; border-collapse: separate; border-spacing: 0; }
 .modern-table th {
+    padding: 0;
+    height: 56px;
     background: #f8fafc;
-    color: #64748b;
+    border-bottom: 1px solid #e2e8f0;
+    vertical-align: middle;
+}
+
+/* PERFECT CENTERING */
+.th-inner {
+    height: 100%;
+    display: flex;
+    align-items: center;        /* vertical center */
+    justify-content: center;    /* horizontal center */
+
     font-weight: 600;
     font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    padding: 15px;
-    text-align: left;
-    border-bottom: 1px solid #e2e8f0;
+    color: #64748b;
 }
+
+/* Left aligned header (Material Name) */
+.th-inner.left {
+    justify-content: flex-start;
+    padding-left: 20px;
+}
+
+
 .modern-table td {
     padding: 16px 15px;
     vertical-align: middle;
@@ -174,6 +196,26 @@ include __DIR__ . '/../../includes/header.php';
 .modern-table tbody tr { transition: background 0.1s; }
 .modern-table tbody tr:hover { background: #f8fafc; }
 
+.modern-table th.text-center,
+.modern-table td.text-center {
+    text-align: center !important;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.th-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #64748b;
+}
 .avatar-square {
     width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
     font-weight: 700; color: #fff; margin-right: 12px; flex-shrink: 0;
@@ -285,14 +327,15 @@ include __DIR__ . '/../../includes/header.php';
                 <table class="modern-table">
                     <thead>
                         <tr>
-                            <th>Material Name</th>
-                            <th>In (Purchased)</th>
-                            <th>Out (Used)</th>
-                            <th>Current Stock</th>
-                            <th>Valuation</th>
-                            <th>Actions</th>
+                            <th><div class="th-inner left">Material Name</div></th>
+                            <th><div class="th-inner">In (Purchased)</div></th>
+                            <th><div class="th-inner">Out (Used)</div></th>
+                            <th><div class="th-inner">Current Stock</div></th>
+                            <th><div class="th-inner">Valuation</div></th>
+                            <th><div class="th-inner">Actions</div></th>
                         </tr>
                     </thead>
+
                     <tbody>
                         <?php 
                         $colors = ['#10b981', '#3b82f6', '#a855f7', '#f59e0b'];
@@ -307,38 +350,35 @@ include __DIR__ . '/../../includes/header.php';
                             $valuation = $real_stock * $item['default_rate'];
                         ?>
                         <tr>
-                            <td>
+                            <td class="text-center">
                                 <div style="display:flex; align-items:center;">
                                     <div class="avatar-square" style="background: <?= $color ?>;"><?= $initial ?></div>
                                     <div>
-                                        <div style="font-weight:700; color:#1e293b;"><?= htmlspecialchars($item['material_name']) ?></div>
-                                        <div style="font-size:12px; color:#64748b; margin-top:2px;">
-                                            Unit: <?= strtolower($item['unit']) ?>
-                                        </div>
+                                        <div class="text-center"style="font-weight:700; color:#1e293b;"><?= htmlspecialchars($item['material_name']) ?></div>
                                     </div>
                                 </div>
                             </td>
-                            <td>
+                            <td class="text-center">
                                 <span class="badge-soft green">
-                                    + <?= number_format($item['total_in'], 2) ?>
+                                    + <?= number_format($item['total_in'], 2) ?> <?= ucfirst($item['unit']) ?>
                                 </span>
                             </td>
-                            <td>
+                            <td class="text-center">
                                 <span class="badge-soft red">
-                                    - <?= number_format($item['total_out'], 2) ?>
+                                   - <?= number_format($item['total_out'], 2) ?> <?= ucfirst($item['unit']) ?>
                                 </span>
                             </td>
-                            <td>
+                            <td class="text-center">
                                 <span style="font-size: 15px; font-weight: 700; color: #1e293b;">
-                                    <?= number_format($real_stock, 2) ?>
+                                    <?= number_format($real_stock, 2) ?> <?= ucfirst($item['unit']) ?>
                                 </span>
                             </td>
-                            <td>
+                            <td class="text-center">
                                 <span style="font-weight: 600; color: #475569;">
                                     <?= formatCurrency($valuation) ?>
                                 </span>
                             </td>
-                            <td>
+                            <td class="text-center">
                                 <a href="<?= BASE_URL ?>modules/inventory/ledger.php?id=<?= $item['id'] ?>" class="action-btn" title="View Ledger">
                                     <i class="fas fa-history"></i>
                                 </a>

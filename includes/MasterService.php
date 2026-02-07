@@ -49,7 +49,7 @@ class MasterService {
     }
 
     public function createProject($data, $userId) {
-        $allowedInfos = ['project_name', 'location', 'start_date', 'expected_completion', 'total_floors', 'total_flats', 'status', 'has_multiple_towers'];
+        $allowedInfos = ['project_name', 'location', 'start_date', 'expected_completion', 'total_floors', 'total_flats', 'status', 'has_multiple_towers', 'default_stage_of_work_id'];
         $insertData = array_intersect_key($data, array_flip($allowedInfos));
         $insertData['created_by'] = $userId;
         
@@ -57,6 +57,7 @@ class MasterService {
         $insertData['status'] = $insertData['status'] ?? 'active';
         $insertData['total_floors'] = intval($insertData['total_floors'] ?? 0);
         $insertData['total_flats'] = intval($insertData['total_flats'] ?? 0);
+        $insertData['default_stage_of_work_id'] = !empty($data['default_stage_of_work_id']) ? intval($data['default_stage_of_work_id']) : null;
         $insertData['has_multiple_towers'] = isset($data['has_multiple_towers']) ? 1 : 0;
 
         $id = $this->db->insert('projects', $insertData);
@@ -65,12 +66,13 @@ class MasterService {
     }
 
     public function updateProject($id, $data) {
-        $allowedInfos = ['project_name', 'location', 'start_date', 'expected_completion', 'total_floors', 'total_flats', 'status', 'has_multiple_towers'];
+        $allowedInfos = ['project_name', 'location', 'start_date', 'expected_completion', 'total_floors', 'total_flats', 'status', 'has_multiple_towers', 'default_stage_of_work_id'];
         $updateData = array_intersect_key($data, array_flip($allowedInfos));
         
         $updateData['status'] = $updateData['status'] ?? 'active';
         $updateData['total_floors'] = intval($updateData['total_floors'] ?? 0);
         $updateData['total_flats'] = intval($updateData['total_flats'] ?? 0);
+        $updateData['default_stage_of_work_id'] = !empty($data['default_stage_of_work_id']) ? intval($data['default_stage_of_work_id']) : null;
         $updateData['has_multiple_towers'] = isset($data['has_multiple_towers']) ? 1 : 0;
 
         $this->db->update('projects', $updateData, 'id = ?', ['id' => $id]);
@@ -231,13 +233,20 @@ class MasterService {
     public function getAllParties($filters = []) {
         $where = '1=1';
         $params = [];
+        $joinChallans = false;
 
         if (!empty($filters['type'])) {
-            $where .= ' AND party_type = ?';
+            $where .= ' AND p.party_type = ?';
             $params[] = $filters['type'];
+            
+            // If fetching vendors, we might want material info
+            if ($filters['type'] === 'vendor') {
+                $joinChallans = true;
+            }
         }
+        
         if (!empty($filters['search'])) {
-            $where .= ' AND (name LIKE ? OR mobile LIKE ? OR email LIKE ?)';
+            $where .= ' AND (p.name LIKE ? OR p.mobile LIKE ? OR p.email LIKE ?)';
             $params[] = "%{$filters['search']}%";
             $params[] = "%{$filters['search']}%";
             $params[] = "%{$filters['search']}%";
@@ -245,27 +254,54 @@ class MasterService {
 
         // New Vendor Filters
         if (!empty($filters['vendor_type'])) {
-            $where .= ' AND vendor_type = ?';
+            $where .= ' AND p.vendor_type = ?';
             $params[] = $filters['vendor_type'];
         }
-        if (!empty($filters['city'])) { // Exact match for filter dropdowns
-             $where .= ' AND city = ?';
+        if (!empty($filters['city'])) {
+             $where .= ' AND p.city = ?';
              $params[] = $filters['city'];
         }
         if (!empty($filters['gst_status'])) {
-            $where .= ' AND gst_status = ?';
+            $where .= ' AND p.gst_status = ?';
             $params[] = $filters['gst_status'];
         }
         if (!empty($filters['status'])) {
-            $where .= ' AND status = ?';
+            $where .= ' AND p.status = ?';
             $params[] = $filters['status'];
+        } else {
+            // Default to NOT showing pending vendors
+            $where .= " AND p.status != 'pending'";
         }
 
+        if (!empty($filters['material'])) {
+            $where .= " AND m.material_name LIKE ?";
+            $params[] = "%{$filters['material']}%";
+            $joinChallans = true;
+        }
 
-        
         $sql = "SELECT p.*, 
-                (p.opening_balance + (SELECT COALESCE(SUM(b.amount - b.paid_amount), 0) FROM bills b WHERE b.party_id = p.id AND b.status != 'paid')) as outstanding_balance
-                FROM parties p WHERE $where ORDER BY p.name ASC";
+                (p.opening_balance + (SELECT COALESCE(SUM(b.amount - b.paid_amount), 0) FROM bills b WHERE b.party_id = p.id AND b.status != 'paid')) as outstanding_balance";
+
+        if ($joinChallans) {
+             $sql .= ", GROUP_CONCAT(DISTINCT m.material_name SEPARATOR ', ') as supplied_materials,
+                       SUM(ci.quantity) as total_quantity";
+        }
+
+        $sql .= " FROM parties p ";
+
+        if ($joinChallans) {
+            $sql .= " LEFT JOIN challans c ON p.id = c.party_id
+                      LEFT JOIN challan_items ci ON c.id = ci.challan_id
+                      LEFT JOIN materials m ON ci.material_id = m.id";
+        }
+
+        $sql .= " WHERE $where";
+        
+        if ($joinChallans) {
+            $sql .= " GROUP BY p.id";
+        }
+        
+        $sql .= " ORDER BY p.name ASC";
         
         return $this->db->query($sql, $params)->fetchAll();
     }
@@ -275,12 +311,24 @@ class MasterService {
     }
 
     public function createParty($data) {
+        if (!empty($data['gst_number'])) {
+            $data['gst_number'] = strtoupper(trim($data['gst_number']));
+            if (!preg_match("/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/", $data['gst_number'])) {
+                throw new Exception("Invalid GST Number format. It must be exactly 15 characters (e.g. 22AAAAA0000A1Z5).");
+            }
+        }
         $id = $this->db->insert('parties', $data);
         logAudit('create', 'parties', $id, null, $data);
         return $id;
     }
 
     public function updateParty($id, $data) {
+        if (!empty($data['gst_number'])) {
+            $data['gst_number'] = strtoupper(trim($data['gst_number']));
+            if (!preg_match("/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/", $data['gst_number'])) {
+                throw new Exception("Invalid GST Number format. It must be exactly 15 characters (e.g. 22AAAAA0000A1Z5).");
+            }
+        }
         $this->db->update('parties', $data, 'id = ?', ['id' => $id]);
         logAudit('update', 'parties', $id, null, $data);
         return true;

@@ -8,6 +8,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 requireAuth();
+checkPermission(['admin', 'accountant', 'project_manager']);
 
 $db = Database::getInstance();
 $labour_id = intval($_GET['labour_id'] ?? 0);

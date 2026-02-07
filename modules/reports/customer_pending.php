@@ -8,6 +8,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 requireAuth();
+checkPermission(['admin', 'accountant', 'project_manager']);
 
 $db = Database::getInstance();
 $page_title = 'Customer Pending Payments';
@@ -28,6 +29,7 @@ include __DIR__ . '/../../includes/header.php';
 ?>
 
 <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/booking.css">
+<link rel="stylesheet" href="<?= BASE_URL ?>assets/css/payment_modal_premium.css">
 
 <style>
 /* Page Specific Styles */
@@ -296,48 +298,68 @@ include __DIR__ . '/../../includes/header.php';
     </div>
 </div>
 
-<!-- Payment Modal -->
-<div id="paymentModal" class="custom-modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3 class="modal-title">
-                <div class="chart-icon-box blue" style="width: 32px; height: 32px; font-size: 14px;"><i class="fas fa-money-bill-wave"></i></div>
+<!-- Premium Payment Modal -->
+<div id="paymentModal" class="custom-modal payment-modal-overlay">
+    <div class="payment-modal-content">
+        <div class="payment-modal-header">
+            <h3 class="payment-modal-title">
+                <div class="payment-modal-icon"><i class="fas fa-wallet"></i></div>
                 Record Payment
             </h3>
-            <button class="close-modal" onclick="hideModal('paymentModal')">&times;</button>
+            <button class="payment-modal-close" onclick="hideModal('paymentModal')">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
+        
         <form method="POST" action="<?= BASE_URL ?>modules/payments/index.php">
-            <div class="modal-body">
-                <input type="hidden" name="action" value="make_payment">
-                <input type="hidden" name="redirect_url" value="modules/reports/customer_pending.php">
-                <input type="hidden" name="payment_type" id="payment_type">
-                <input type="hidden" name="reference_id" id="reference_id">
-                <input type="hidden" name="party_id" id="party_id">
-                <input type="hidden" id="max_pending_amount" value="0">
-                
-                <div style="background: #eff6ff; border: 1px solid #dbeafe; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                        <span style="font-size: 13px; color: #475569; font-weight: 600;">Customer</span>
-                        <span id="party_name_display" style="font-size: 13px; color: #1e293b; font-weight: 700;">-</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-size: 13px; color: #475569; font-weight: 600;">Pending Amount</span>
-                        <span id="pending_amount_display" style="font-size: 16px; color: #ef4444; font-weight: 800;">₹ 0.00</span>
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="make_payment">
+            <input type="hidden" name="redirect_url" value="modules/reports/customer_pending.php">
+            <input type="hidden" name="payment_type" id="payment_type">
+            <input type="hidden" name="reference_id" id="reference_id">
+            <input type="hidden" name="party_id" id="party_id">
+            <input type="hidden" id="max_pending_amount" value="0">
+            
+            <div class="payment-info-card" style="margin-bottom: 20px;">
+                <div>
+                    <div class="payment-info-label">Customer</div>
+                    <div class="payment-info-value" id="party_name_display">-</div>
+                </div>
+                <div style="text-align: right;">
+                    <div class="payment-info-label">Pending Amount</div>
+                    <div class="payment-amount-large" id="pending_amount_display">₹ 0.00</div>
+                </div>
+            </div>
+
+            <div class="payment-form-body">
+                <!-- Demand Selection for Customer Receipts -->
+                <div id="demand_selection_group" style="display:none; margin-bottom: 20px;">
+                    <div class="payment-input-group">
+                        <label class="payment-label">Payment For (Optional)</label>
+                        <div class="payment-select-wrapper">
+                            <select name="demand_id" id="demand_dropdown" class="payment-input">
+                                <option value="">General / Oldest Unpaid (Default)</option>
+                            </select>
+                            <i class="fas fa-chevron-down payment-select-arrow"></i>
+                        </div>
                     </div>
                 </div>
                 
                 <div class="row">
                     <div class="col-md-6">
-                        <div class="form-group">
-                            <label class="form-label">Payment Date *</label>
-                            <input type="date" name="payment_date" required value="<?= date('Y-m-d') ?>" class="modern-input">
+                        <div class="payment-input-group">
+                            <label class="payment-label">Payment Date</label>
+                            <input type="date" name="payment_date" required value="<?= date('Y-m-d') ?>" class="payment-input">
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="form-group">
-                            <label class="form-label">Amount (₹) *</label>
-                            <input type="number" name="amount" id="payment_amount" step="0.01" required onchange="calculateBalance()" oninput="calculateBalance()" class="modern-input" placeholder="0.00">
-                             <small id="amount_warning" style="color: #ef4444; display: none; margin-top: 5px; font-weight: 600; font-size: 12px;">
+                        <div class="payment-input-group">
+                            <label class="payment-label">Amount</label>
+                            <div class="payment-currency-wrapper">
+                                <span class="payment-currency-symbol">₹</span>
+                                <input type="number" name="payment_amount_final" id="payment_amount" step="0.01" required onchange="calculateBalance()" oninput="calculateBalance()" class="payment-input has-symbol" placeholder="0.00">
+                            </div>
+                            <small id="amount_warning" style="color: #ef4444; display: none; margin-top: 5px; font-weight: 600; font-size: 11px;">
                                 <i class="fas fa-exclamation-triangle"></i> Amount exceeds pending!
                             </small>
                         </div>
@@ -346,46 +368,42 @@ include __DIR__ . '/../../includes/header.php';
 
                 <div class="row">
                     <div class="col-md-6">
-                        <div class="form-group">
-                            <label class="form-label">Payment Mode *</label>
-                            <div style="position: relative;">
-                                <select name="payment_mode" required class="modern-select">
+                         <div class="payment-input-group">
+                            <label class="payment-label">Payment Mode</label>
+                            <div class="payment-select-wrapper">
+                                <select name="payment_mode" required class="payment-input">
                                     <option value="cash">Cash</option>
                                     <option value="bank">Bank Transfer</option>
                                     <option value="upi">UPI</option>
                                     <option value="cheque">Cheque</option>
                                 </select>
-                                <i class="fas fa-chevron-down" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none; font-size: 12px;"></i>
+                                <i class="fas fa-chevron-down payment-select-arrow"></i>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="form-group">
-                            <label class="form-label">Reference No</label>
-                            <input type="text" name="reference_no" placeholder="UTR / Cheque No" class="modern-input">
+                        <div class="payment-input-group">
+                            <label class="payment-label">Reference No</label>
+                            <input type="text" name="reference_no" placeholder="UTR / Cheque No" class="payment-input">
                         </div>
                     </div>
                 </div>
                 
-                <div class="form-group">
-                    <label class="form-label">Remarks</label>
-                    <textarea name="remarks" rows="2" placeholder="Any additional notes..." class="modern-input" style="min-height: 80px;"></textarea>
-                </div>
-                
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; margin-top: 10px;">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-end;">
-                         <div>
-                            <div style="font-size: 12px; color: #64748b; margin-bottom: 2px;">Remaining Balance</div>
-                            <div id="remaining_calc" style="font-size: 18px; font-weight: 800; color: #10b981;">₹ 0.00</div>
-                        </div>
-                        <div style="font-size: 11px; color: #94a3b8;">After this payment</div>
-                    </div>
+                <div class="payment-input-group">
+                    <label class="payment-label">Remarks (Optional)</label>
+                    <textarea name="remarks" rows="2" placeholder="Add any notes here..." class="payment-input" style="min-height: 80px; resize: none;"></textarea>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="modern-btn secondary" onclick="hideModal('paymentModal')">Cancel</button>
-                <button type="submit" class="modern-btn" id="payment_submit_btn">
-                    <i class="fas fa-check-circle"></i> Record Payment
+
+            <div class="payment-balance-row">
+                <div style="font-size: 13px; color: #64748b; font-weight: 600;">Remaining Balance</div>
+                <div id="remaining_calc" style="font-size: 16px; font-weight: 700; color: #10b981;">₹ 0.00</div>
+            </div>
+
+            <div class="payment-modal-footer">
+                <button type="button" class="btn-cancel" onclick="hideModal('paymentModal')">Cancel</button>
+                <button type="submit" class="btn-confirm" id="payment_submit_btn">
+                    <i class="fas fa-check"></i> Confirm Payment
                 </button>
             </div>
         </form>
@@ -403,6 +421,30 @@ function showPaymentModal(type, refId, partyId, pendingAmount, partyName) {
     document.getElementById('pending_amount_display').textContent = '₹ ' + parseFloat(pendingAmount).toFixed(2);
     document.getElementById('remaining_calc').textContent = '₹ ' + parseFloat(pendingAmount).toFixed(2);
     document.getElementById('amount_warning').style.display = 'none';
+    
+    // Reset Dropdown
+    const demandGroup = document.getElementById('demand_selection_group');
+    const demandDropdown = document.getElementById('demand_dropdown');
+    demandDropdown.innerHTML = '<option value="">General / Oldest Unpaid (Default)</option>';
+    demandGroup.style.display = 'none';
+
+    if (type === 'customer_receipt') {
+        // Fetch Demands
+        fetch(`<?= BASE_URL ?>modules/api/get_booking_demands.php?booking_id=${refId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.demands.length > 0) {
+                    data.demands.forEach(d => {
+                        const option = document.createElement('option');
+                        option.value = d.id;
+                        option.textContent = d.label;
+                        demandDropdown.appendChild(option);
+                    });
+                    demandGroup.style.display = 'block';
+                }
+            })
+            .catch(err => console.error('Error fetching demands:', err));
+    }
     
     // Show modal
     const modal = document.getElementById('paymentModal');

@@ -49,32 +49,49 @@ $current_page = 'material_challan';
 
 // Fetch lists
 $projects = $db->query("SELECT id, project_name FROM projects WHERE status = 'active' ORDER BY project_name")->fetchAll();
-$vendors = $db->query("SELECT id, name, mobile, email, address, gst_number FROM parties WHERE party_type = 'vendor' ORDER BY name")->fetchAll();
+$vendors = $db->query("SELECT id, name, mobile, email, address, gst_number FROM parties WHERE party_type = 'vendor' AND status = 'active' ORDER BY name")->fetchAll();
 $materials = $db->query("SELECT id, material_name, unit, default_rate FROM materials ORDER BY material_name")->fetchAll();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+         setFlashMessage('error', 'Security token expired. Please reload and try again.');
+         redirect('modules/challans/edit.php?id=' . $id);
+    }
     try {
         $db->beginTransaction();
 
         $vendor_id = $_POST['vendor_id'];
         $vendor_name = trim($_POST['vendor_name']);
         
+        // GST Validation
+        if (!empty($_POST['gst_number'])) {
+            $_POST['gst_number'] = strtoupper(trim($_POST['gst_number']));
+            if (!preg_match("/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/", $_POST['gst_number'])) {
+                throw new Exception("Invalid GST Number. Must be exactly 15 characters (e.g. 22AAAAA0000A1Z5).");
+            }
+        }
+        
         // Handle new vendor if typed manually
         if (empty($vendor_id)) {
             $existing_vendor = $db->query("SELECT id FROM parties WHERE LOWER(name) = LOWER(?) AND party_type='vendor'", [$vendor_name])->fetch();
             if ($existing_vendor) {
+                // Existing vendor found
                 $vendor_id = $existing_vendor['id'];
+                // No update of details to avoid side effects
             } else {
-                $vendor_data = [
-                    'party_type' => 'vendor',
+                // New -> Defer
+                 $temp_vendor = [
                     'name' => $vendor_name,
                     'mobile' => sanitize($_POST['mobile']),
                     'address' => sanitize($_POST['address']),
                     'gst_number' => sanitize($_POST['gst_number']),
                     'email' => sanitize($_POST['email'])
                 ];
-                $vendor_id = $db->insert('parties', $vendor_data);
+                $temp_vendor_json = json_encode($temp_vendor);
+                $vendor_id = null;
             }
+        } else {
+             // Existing -> No update of details
         } 
 
         $project_id = intval($_POST['project_id']);
@@ -102,13 +119,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $total_amount += floatval($material['quantity']) * floatval($material['rate']);
         }
 
-        // 1. Revert Stock for OLD items
-        foreach ($items as $old_item) {
-            updateMaterialStock($old_item['material_id'], $old_item['quantity'], false); // Subtract/Revert logic? 
-            // Wait, updateMaterialStock($id, $qty, $add=true). 
-            // Originally when created, we did $add=true (stock += qty).
-            // So to revert, we should do $add=false (stock -= qty).
-            updateMaterialStock($old_item['material_id'], $old_item['quantity'], false);
+        // Determine New Status
+        $new_status = $challan['status'];
+        if (empty($vendor_id) && !empty($temp_vendor_json)) {
+            // Revert to pending if switching to a draft vendor
+            $new_status = 'pending';
+        }
+
+        // 1. Revert Stock for OLD items (ONLY if previously approved/added)
+        // Check current status from DB (fetched above as $challan)
+        if ($challan['status'] === 'approved') {
+            foreach ($items as $old_item) {
+                updateMaterialStock($old_item['material_id'], $old_item['quantity'], false); 
+            }
         }
 
         // 2. Delete OLD items
@@ -122,8 +145,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'challan_date' => $challan_date,
             'vehicle_no' => $vehicle_no,
             'total_amount' => $total_amount,
-            // Keep status same unless logic dictates otherwise
+            'temp_vendor_data' => $temp_vendor_json ?? null,
+            'status' => $new_status
         ];
+        // If reverting to pending, clear approved details
+        if ($new_status === 'pending' && $challan['status'] === 'approved') {
+            $update_data['approved_by'] = null;
+            $update_data['approved_at'] = null;
+        }
+
         $db->update('challans', $update_data, 'id = ?', ['id' => $id]);
 
         // 4. Insert NEW items and Add Stock
@@ -158,8 +188,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             $db->insert('challan_items', $item_data);
             
-            // Add to stock
-            updateMaterialStock($material_id, $item['quantity'], true);
+            // Add to stock ONLY if NEW status is approved
+            if ($new_status === 'approved') {
+                updateMaterialStock($material_id, $item['quantity'], true);
+            }
         }
 
         logAudit('update', 'challans', $id, $challan, $update_data);
@@ -177,38 +209,210 @@ include __DIR__ . '/../../includes/header.php';
 ?>
 
 <style>
-/* Same CSS as Create Page */
-.create-card { background: #fff; border-radius: 16px; box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08); border: 1px solid #e2e8f0; overflow: hidden; max-width: 1100px; margin: 0 auto; }
-.create-header { background: linear-gradient(135deg, #0f172a 0%, #334155 100%); padding: 1.5rem 2rem; color: white; display: flex; justify-content: space-between; align-items: center; }
-.create-title { font-size: 1.25rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 12px; }
-.create-body { padding: 2.5rem; }
-.section-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; font-weight: 700; margin-bottom: 1.25rem; padding-bottom: 0.5rem; border-bottom: 1px solid #f1f5f9; margin-top: 1rem; }
-.section-title:first-child { margin-top: 0; }
-.form-grid-modern { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2rem; }
-.input-group-modern label { display: block; font-size: 0.875rem; font-weight: 600; color: #334155; margin-bottom: 0.5rem; }
-.input-modern { width: 100%; padding: 0.75rem 1rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; color: #0f172a; transition: all 0.2s; background: #f8fafc; height: 48px; }
-.input-modern:focus { outline: none; border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
-.action-bar { background: #f8fafc; padding: 1.5rem 2.5rem; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 1rem; }
-.btn-modern-primary { background: #0f172a; color: white; border: none; padding: 0.75rem 2rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; display: inline-flex; align-items: center; gap: 0.5rem; }
-.btn-modern-secondary { background: white; color: #64748b; border: 1px solid #cbd5e1; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; text-decoration: none; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.5rem; }
+.create-card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08);
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.create-header {
+    background: linear-gradient(135deg, #0f172a 0%, #334155 100%);
+    padding: 1.5rem 2rem;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.create-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.create-body {
+    padding: 2.5rem;
+}
+
+.section-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    font-weight: 700;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #f1f5f9;
+    margin-top: 1rem;
+}
+
+.section-title:first-child {
+    margin-top: 0;
+}
+
+.form-grid-modern {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 3 columns for better density */
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.input-group-modern label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 0.5rem;
+}
+
+.input-modern {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    color: #0f172a;
+    transition: all 0.2s;
+    background: #f8fafc;
+    height: 48px; /* Consistent height */
+}
+
+.input-modern:focus {
+    outline: none;
+    border-color: #3b82f6;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.action-bar {
+    background: #f8fafc;
+    padding: 1.5rem 2.5rem;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+.btn-modern-primary {
+    background: #0f172a;
+    color: white;
+    border: none;
+    padding: 0.75rem 2rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-modern-secondary {
+    background: white;
+    color: #64748b;
+    border: 1px solid #cbd5e1;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
 .btn-modern-primary:hover { opacity: 0.9; }
 .btn-modern-secondary:hover { background: #f1f5f9; color: #475569; }
-.material-entry-box { background: #f1f5f9; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; }
-.material-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 120px; gap: 1rem; align-items: end; }
-.btn-add-material { background: #10b981; color: white; border: none; height: 48px; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; transition: background 0.2s; }
+
+/* Material Entry specific */
+.material-entry-box {
+    background: #f1f5f9;
+    padding: 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+}
+
+.material-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr 120px;
+    gap: 1rem;
+    align-items: end;
+}
+
+.btn-add-material {
+    background: #10b981;
+    color: white;
+    border: none;
+    height: 48px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    transition: background 0.2s;
+}
+
 .btn-add-material:hover { background: #059669; }
-.modern-table-simple { width: 100%; border-collapse: collapse; }
-.modern-table-simple th { text-align: left; padding: 1rem; color: #64748b; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid #e2e8f0; }
-.modern-table-simple td { padding: 1rem; border-bottom: 1px solid #f1f5f9; color: #334155; }
+
+/* Table overrides */
+.modern-table-simple {
+    width: 100%;
+    border-collapse: collapse;
+}
+.modern-table-simple th {
+    text-align: left;
+    padding: 1rem;
+    color: #64748b;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 2px solid #e2e8f0;
+}
+.modern-table-simple td {
+    padding: 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+}
+.empty-state-row td {
+    text-align: center;
+    padding: 3rem;
+    color: #94a3b8;
+}
+
+/* Autocomplete overrides */
 .autocomplete-wrapper { position: relative; }
-.autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #e2e8f0; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border-radius: 8px; z-index: 50; margin-top: 4px; max-height: 250px; overflow-y: auto; display: none; }
+.autocomplete-list {
+    position: absolute;
+    top: 100%; left: 0; right: 0;
+    background: white;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    z-index: 50;
+    margin-top: 4px;
+    max-height: 250px;
+    overflow-y: auto;
+    display: none;
+}
 .autocomplete-list.show { display: block; }
-.autocomplete-item { padding: 0.75rem 1rem; cursor: pointer; border-bottom: 1px solid #f8fafc; }
+.autocomplete-item {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    border-bottom: 1px solid #f8fafc;
+}
 .autocomplete-item:hover, .autocomplete-item.active { background: #f1f5f9; }
 </style>
 
 <div class="create-challan-container" style="padding-top: 0; padding-bottom: 4rem;">
     <form method="POST" id="challanForm" onsubmit="return validateForm()">
+        <?= csrf_field() ?>
         <div class="create-card">
             
             <!-- Header -->
@@ -267,7 +471,7 @@ include __DIR__ . '/../../includes/header.php';
 
                      <div class="input-group-modern">
                         <label>GST Number</label>
-                        <input type="text" name="gst_number" id="vendor_gst" class="input-modern" placeholder="Optional">
+                        <input type="text" name="gst_number" id="vendor_gst" class="input-modern" placeholder="e.g. 22AAAAA0000A1Z5" maxlength="15" pattern="^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$" title="Must be 15 characters: 2 digits, 5 letters, 4 digits, 1 letter, 1 alphanumeric, Z, 1 alphanumeric" oninput="this.value = this.value.toUpperCase()">
                     </div>
                 </div>
 
@@ -568,12 +772,15 @@ function addMaterial() {
     const id = materialIdInput.value;
     const unit = unitSelect.value;
     const qty = parseFloat(document.getElementById('material_quantity').value);
-    const rate = parseFloat(rateInput.value);
+    let rate = parseFloat(rateInput.value);
     
-    if (!name || !unit || !qty || !rate) {
+    if (!name || !unit || !qty) {
         showToast('Please fill all material fields', 'warning', 'Incomplete Information');
         return;
     }
+
+    // Allow empty rate (defaults to 0)
+    if (isNaN(rate)) rate = 0;
     
     // Check duplicates in JS list
     // Note: Edit mode allows duplicates if intended (e.g. multiple bags of cement with different rates?). 

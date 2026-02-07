@@ -15,6 +15,11 @@ $current_page = 'usage';
 
 // Handle Usage Entry
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+         setFlashMessage('error', 'Security token expired. Please try again.');
+         redirect('modules/inventory/usage.php');
+    }
+
     $action = $_POST['action'] ?? '';
     
     if ($action === 'record_usage') {
@@ -27,15 +32,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Check current stock (Dynamic Calculation)
         $stock_sql = "SELECT m.material_name, m.unit,
                         (
-                            (SELECT COALESCE(SUM(ci.quantity), 0) FROM challan_items ci JOIN challans c ON ci.challan_id = c.id WHERE ci.material_id = m.id AND c.status != 'cancelled') 
+                            (SELECT COALESCE(SUM(ci.quantity), 0) FROM challan_items ci JOIN challans c ON ci.challan_id = c.id WHERE ci.material_id = m.id AND c.status = 'approved') 
                             - 
                             (SELECT COALESCE(SUM(mu.quantity), 0) FROM material_usage mu WHERE mu.material_id = m.id)
                         ) as current_stock
                       FROM materials m WHERE m.id = ?";
         $material = $db->query($stock_sql, [$material_id])->fetch();
         
-        if ($material['current_stock'] < $quantity) {
-            setFlashMessage('error', "Insufficient stock for {$material['material_name']}. Available: {$material['current_stock']} {$material['unit']}");
+        if ($quantity <= 0) {
+            setFlashMessage('error', 'Usage quantity must be greater than zero.');
+        } elseif ($material['current_stock'] < $quantity) {
+            setFlashMessage(
+                'error',
+                "Insufficient stock for {$material['material_name']}. Available: {$material['current_stock']} {$material['unit']}"
+            );
         } else {
             $db->beginTransaction();
             try {
@@ -49,9 +59,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ];
                 
                 $id = $db->insert('material_usage', $data);
-                
-                // Deduct from stock (false = subtract)
-                updateMaterialStock($material_id, $quantity, false);
                 
                 logAudit('create', 'material_usage', $id, null, $data);
                 $db->commit();
@@ -68,24 +75,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Fetch usage history
-$sql = "SELECT mu.*, p.project_name, m.material_name, m.unit, u.full_name as used_by_name 
+$sql = "SELECT mu.*, p.project_name, m.material_name, m.unit,
+               COALESCE(NULLIF(u.full_name, ''), u.username, 'Unknown') AS used_by_name
         FROM material_usage mu
         JOIN projects p ON mu.project_id = p.id
         JOIN materials m ON mu.material_id = m.id
         LEFT JOIN users u ON mu.created_by = u.id
         ORDER BY mu.usage_date DESC, mu.created_at DESC";
+
 $usage_history = $db->query($sql)->fetchAll();
 
 // Fetch projects and materials for form (Dynamic Stock)
 $projects = $db->query("SELECT id, project_name FROM projects WHERE status = 'active' ORDER BY project_name")->fetchAll();
-$materials_sql = "SELECT m.id, m.material_name, m.unit, 
-                    (
-                        (SELECT COALESCE(SUM(ci.quantity), 0) FROM challan_items ci JOIN challans c ON ci.challan_id = c.id WHERE ci.material_id = m.id AND c.status != 'cancelled') 
-                        - 
-                        (SELECT COALESCE(SUM(mu.quantity), 0) FROM material_usage mu WHERE mu.material_id = m.id)
-                    ) as current_stock
-                  FROM materials m 
-                  ORDER BY m.material_name";
+$materials_sql = "SELECT m.id, m.material_name, m.unit,
+        (
+            (SELECT COALESCE(SUM(ci.quantity), 0)
+            FROM challan_items ci
+            JOIN challans c ON ci.challan_id = c.id
+            WHERE ci.material_id = m.id AND c.status = 'approved')
+            -
+            (SELECT COALESCE(SUM(mu.quantity), 0)
+            FROM material_usage mu
+            WHERE mu.material_id = m.id)
+        ) AS current_stock
+    FROM materials m
+    HAVING current_stock > 0
+    ORDER BY m.material_name";
+
 $materials = $db->query($materials_sql)->fetchAll();
 
 include __DIR__ . '/../../includes/header.php';
@@ -249,6 +265,7 @@ textarea.modern-input { resize: vertical; min-height: 100px; height: auto; }
             </div>
 
             <form method="POST">
+                <?= csrf_field() ?>
                 <input type="hidden" name="action" value="record_usage">
                 
                 <div class="form-group">
@@ -363,9 +380,9 @@ textarea.modern-input { resize: vertical; min-height: 100px; height: auto; }
                                 <td>
                                     <div style="display:flex; align-items:center; gap:6px;">
                                         <div style="width:24px; height:24px; background:#e2e8f0; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; color:#64748b;">
-                                            <?= strtoupper(substr($record['used_by_name'] ?? 'U', 0, 1)) ?>
+                                            <?= strtoupper(substr(trim($record['used_by_name'] ?: 'U'), 0, 1)) ?>
                                         </div>
-                                        <span style="font-size:13px;"><?= htmlspecialchars($record['used_by_name']) ?></span>
+                                        <span style="font-size:13px;"><?= htmlspecialchars($record['used_by_name'] ?: 'Unknown') ?></span>
                                     </div>
                                 </td>
                             </tr>

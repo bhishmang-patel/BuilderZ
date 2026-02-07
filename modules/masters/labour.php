@@ -17,6 +17,11 @@ $current_page = 'labour_pay';
 
 // Handle challan operations
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+         setFlashMessage('error', 'Security token expired. Please try again.');
+         redirect('modules/masters/labour.php');
+    }
+
     $action = $_POST['action'] ?? '';
     
     if ($action === 'create_challan') {
@@ -133,6 +138,18 @@ include __DIR__ . '/../../includes/header.php';
     .status-pending { color: #f59e0b; background: #fffbeb; }
     .status-approved { color: #10b981; background: #ecfdf5; }
     .status-paid { color: #3b82f6; background: #eff6ff; }
+
+    .text-center{
+        display: flex; 
+        align-items: center; 
+        justify-content: center
+    }
+
+    .badge-pill{
+        display: flex; 
+        align-items: center; 
+        justify-content: center
+    }
 </style>
 
 <div class="row">
@@ -144,9 +161,9 @@ include __DIR__ . '/../../includes/header.php';
                 <div class="chart-title-group">
                     <h3>
                         <div class="chart-icon-box orange"><i class="fas fa-hard-hat"></i></div>
-                        Labour Pay
+                        Labour
                     </h3>
-                    <div class="chart-subtitle">Manage labour payments and contractors</div>
+                    <div class="chart-subtitle">Manage labour & contractor</div>
                 </div>
                 
                 <div style="display: flex; gap: 10px;">
@@ -201,14 +218,14 @@ include __DIR__ . '/../../includes/header.php';
                     <thead>
                         <tr>
                             <th>PAY NO</th>
-                            <th>DATE</th>
+                            <th class="text-center">DATE</th>
                             <th>LABOUR/CONTRACTOR</th>
-                            <th>PROJECT</th>
+                            <th class="text-center">PROJECT</th>
                             <th>WORK PERIOD</th>
-                            <th>TOTAL</th>
+                            <th class="text-center">TOTAL</th>
                             <th>PAID</th>
                             <th>PENDING</th>
-                            <th>STATUS</th>
+                            <th class="text-center">STATUS</th>
                             <th>ACTION</th>
                         </tr>
                     </thead>
@@ -227,15 +244,18 @@ include __DIR__ . '/../../includes/header.php';
                             <td>
                                 <span style="font-weight:700; color:#475569;"><?= htmlspecialchars($challan['challan_no']) ?></span>
                             </td>
-                            <td><span style="font-size:13px; color:#64748b;"><?= formatDate($challan['challan_date']) ?></span></td>
+                            <td><span style="font-size:13px; color:#64748b; display: flex; align-items: center; justify-content: center"><?= formatDate($challan['challan_date']) ?></span></td>
                             <td>
-                                <div style="display:flex; align-items:center;">
+                                <div style="display: flex; align-items: center; justify-content: center">
                                     <?php $labourColor = ColorHelper::getCustomerColor($challan['party_id']); ?>
                                     <div class="avatar-circle" style="background: <?= $labourColor ?>; color: #fff; width:28px; height:28px; font-size:11px; margin-right:8px;"><?= $labourInitial ?></div>
                                     <span style="font-weight:600; font-size:13px;"><?= htmlspecialchars($challan['labour_name']) ?></span>
                                 </div>
                             </td>
-                            <td><span class="badge-pill gray"><?= htmlspecialchars($challan['project_name']) ?></span></td>
+                            <td>
+                                <?php $projColor = ColorHelper::getProjectColor($challan['project_id']); ?>
+                                <span class="badge-pill" style="background: <?= $projColor ?>; color: #fff; display: flex; align-items: center; justify-content: center"><?= htmlspecialchars($challan['project_name']) ?></span>
+                            </td>
                             <td>
                                 <div style="font-size:12px; color:#64748b;">
                                     <?= formatDate($challan['work_from_date']) ?> <i class="fas fa-arrow-right" style="font-size:10px; margin:0 2px;"></i> <?= formatDate($challan['work_to_date']) ?>
@@ -251,7 +271,7 @@ include __DIR__ . '/../../includes/header.php';
                                 <?php endif; ?>
                             </td>
                             <td><span class="badge-pill <?= $statusClass ?>"><?= ucfirst($challan['status']) ?></span></td>
-                            <td>
+                            <td style="display: flex; align-items: center; justify-content: center">
                                 <button class="action-btn" onclick="viewChallanDetails(<?= $challan['id'] ?>)" title="View"><i class="fas fa-eye"></i></button>
                                 <?php if ($challan['status'] === 'pending' && $_SESSION['user_role'] === 'admin'): ?>
                                     <button onclick="openApproveModal(<?= $challan['id'] ?>, '<?= htmlspecialchars($challan['challan_no']) ?>')" class="action-btn" title="Approve" style="color:#10b981;">
@@ -285,6 +305,7 @@ include __DIR__ . '/../../includes/header.php';
             </p>
             
             <form method="POST" id="approveForm">
+                <?= csrf_field() ?>
                 <input type="hidden" name="action" value="approve_challan">
                 <input type="hidden" name="challan_id" id="approve_challan_id">
                 

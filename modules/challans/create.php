@@ -16,56 +16,53 @@ $current_page = 'material_challan';
 
 // Fetch initial data
 $projects = $db->query("SELECT id, project_name FROM projects WHERE status = 'active' ORDER BY project_name")->fetchAll();
-$vendors = $db->query("SELECT id, name, mobile, email, address, gst_number FROM parties WHERE party_type = 'vendor' ORDER BY name")->fetchAll();
+$vendors = $db->query("SELECT id, name, mobile, email, address, gst_number FROM parties WHERE party_type = 'vendor' AND status = 'active' ORDER BY name")->fetchAll();
 $materials = $db->query("SELECT id, material_name, unit, default_rate FROM materials ORDER BY material_name")->fetchAll();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+         setFlashMessage('error', 'Security token expired. Please reload and try again.');
+         redirect('modules/challans/create.php');
+    }
+
     try {
         $db->beginTransaction();
 
         $vendor_id = $_POST['vendor_id'];
         $vendor_name = trim($_POST['vendor_name']);
+
+        // GST Validation
+        if (!empty($_POST['gst_number'])) {
+            $_POST['gst_number'] = strtoupper(trim($_POST['gst_number']));
+            if (!preg_match("/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/", $_POST['gst_number'])) {
+                throw new Exception("Invalid GST Number. Must be exactly 15 characters (e.g. 22AAAAA0000A1Z5).");
+            }
+        }
         
         if (empty($vendor_id)) {
             $existing_vendor = $db->query("SELECT id FROM parties WHERE LOWER(name) = LOWER(?) AND party_type='vendor'", [$vendor_name])->fetch();
             
             if ($existing_vendor) {
+                // Existing vendor found by name
                 $vendor_id = $existing_vendor['id'];
-                // Update existing keys if provided
-                $update_data = [
-                    'mobile' => sanitize($_POST['mobile']),
-                    'address' => sanitize($_POST['address']),
-                    'gst_number' => sanitize($_POST['gst_number']),
-                    'email' => sanitize($_POST['email'])
-                ];
-                if (!empty($_POST['gst_number'])) {
-                    $update_data['gst_status'] = 'registered';
-                }
-                $db->update('parties', $update_data, 'id = ?', ['id' => $vendor_id]);
+                // We do NOT update details here to avoid side effects on unapproved challan
+                // Or we can, but strictly speaking, "No side effects" might imply this too.
+                // For now, let's assume we just link it.
             } else {
-                $vendor_data = [
-                    'party_type' => 'vendor',
+                // New Entity - DEFER creation
+                $temp_vendor = [
                     'name' => $vendor_name,
                     'mobile' => sanitize($_POST['mobile']),
                     'address' => sanitize($_POST['address']),
                     'gst_number' => sanitize($_POST['gst_number']),
-                    'gst_status' => !empty($_POST['gst_number']) ? 'registered' : 'unregistered',
                     'email' => sanitize($_POST['email'])
                 ];
-                $vendor_id = $db->insert('parties', $vendor_data);
+                $temp_vendor_json = json_encode($temp_vendor);
+                $vendor_id = null; // Will be null in DB
             }
         } else {
-            // Existing ID provided - Update details
-             $update_data = [
-                'mobile' => sanitize($_POST['mobile']),
-                'address' => sanitize($_POST['address']),
-                'gst_number' => sanitize($_POST['gst_number']),
-                'email' => sanitize($_POST['email'])
-            ];
-             if (!empty($_POST['gst_number'])) {
-                $update_data['gst_status'] = 'registered';
-            }
-            $db->update('parties', $update_data, 'id = ?', ['id' => $vendor_id]);
+            // Existing ID provided
+             // We do NOT update details here to avoid side effects
         } 
 
         $project_id = intval($_POST['project_id']);
@@ -97,13 +94,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $challan_data = [
             'challan_no' => $challan_no,
             'challan_type' => 'material',
-            'party_id' => $vendor_id,
+            'party_id' => $vendor_id, // Can be NULL now
             'project_id' => $project_id,
             'challan_date' => $challan_date,
             'vehicle_no' => $vehicle_no,
             'total_amount' => $total_amount,
             'status' => 'pending',
-            'created_by' => $_SESSION['user_id']
+            'created_by' => $_SESSION['user_id'],
+            'temp_vendor_data' => $temp_vendor_json ?? null
         ];
         
         $challan_id = $db->insert('challans', $challan_data);
@@ -137,7 +135,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ];
             
             $db->insert('challan_items', $item_data);
-            updateMaterialStock($material_id, $item['quantity'], true);
+            // Stock update deferred to approval
+            // updateMaterialStock($material_id, $item['quantity'], true);
         }
 
         logAudit('create', 'challans', $challan_id, null, $challan_data);
@@ -359,6 +358,7 @@ include __DIR__ . '/../../includes/header.php';
 
 <div class="create-challan-container" style="padding-top: 0; padding-bottom: 4rem;">
     <form method="POST" id="challanForm" onsubmit="return validateForm()">
+        <?= csrf_field() ?>
         <div class="create-card">
             
             <!-- Header -->
@@ -415,7 +415,7 @@ include __DIR__ . '/../../includes/header.php';
 
                      <div class="input-group-modern">
                         <label>GST Number</label>
-                        <input type="text" name="gst_number" id="vendor_gst" class="input-modern" placeholder="Optional">
+                        <input type="text" name="gst_number" id="vendor_gst" class="input-modern" placeholder="e.g. 22AAAAA0000A1Z5" maxlength="15" pattern="^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$" title="Must be 15 characters: 2 digits, 5 letters, 4 digits, 1 letter, 1 alphanumeric, Z, 1 alphanumeric" oninput="this.value = this.value.toUpperCase()">
                     </div>
                 </div>
 

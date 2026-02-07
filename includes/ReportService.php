@@ -380,7 +380,7 @@ class ReportService {
             JOIN parties pt ON p.party_id = pt.id
             LEFT JOIN users u ON p.created_by = u.id
             WHERE $where
-            ORDER BY p.payment_date ASC, p.created_at ASC";
+            ORDER BY p.payment_date DESC, p.created_at DESC";
 
         $payments = $this->db->query($sql, $params)->fetchAll();
 
@@ -482,7 +482,7 @@ class ReportService {
                    COUNT(c.id) as total_challans,
                    SUM(c.total_amount) as total_amount,
                    SUM(c.paid_amount) as paid_amount,
-                   SUM(c.pending_amount) as pending_amount
+                   SUM(c.total_amount - c.paid_amount) as pending_amount
             FROM parties p
             LEFT JOIN challans c ON p.id = c.party_id AND c.challan_type = 'labour'
             WHERE p.party_type = 'labour'

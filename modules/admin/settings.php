@@ -16,6 +16,11 @@ $current_page = 'settings';
 
 // Handle settings update
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+         setFlashMessage('error', 'Security token expired. Please try again.');
+         redirect('modules/admin/settings.php');
+    }
+
     $action = $_POST['action'] ?? '';
     
     if ($action === 'update_settings') {
@@ -24,6 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'company_address' => sanitize($_POST['company_address']),
             'company_phone' => sanitize($_POST['company_phone']),
             'company_email' => sanitize($_POST['company_email']),
+            'company_website' => sanitize($_POST['company_website']),
             'gst_number' => sanitize($_POST['gst_number']),
             'financial_year_start' => $_POST['financial_year_start']
         ];
@@ -166,6 +172,7 @@ include __DIR__ . '/../../includes/header.php';
             
             <div class="card-body" style="padding: 24px;">
                 <form method="POST" enctype="multipart/form-data">
+                    <?= csrf_field() ?>
                     <input type="hidden" name="action" value="update_settings">
                     
                     <!-- Logo Upload Section -->
@@ -217,11 +224,21 @@ include __DIR__ . '/../../includes/header.php';
                     <div class="row" style="margin-bottom: 24px;">
                         <div class="col-6">
                             <div class="form-group">
+                                <label class="setting-label">Website</label>
+                                <input type="text" name="company_website" class="modern-input"
+                                       value="<?= htmlspecialchars($settingsData['company_website'] ?? '') ?>" placeholder="https://www.example.com">
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-group">
                                 <label class="setting-label">GST Number</label>
                                 <input type="text" name="gst_number" class="modern-input"
                                        value="<?= htmlspecialchars($settingsData['gst_number'] ?? '') ?>" placeholder="GSTIN">
                             </div>
                         </div>
+                    </div>
+                    
+                    <div class="row" style="margin-bottom: 24px;">
                         <div class="col-6">
                             <div class="form-group">
                                 <label class="setting-label">Financial Year Start</label>

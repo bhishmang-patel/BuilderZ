@@ -12,12 +12,17 @@ if (session_status() === PHP_SESSION_NONE) {
 requireAuth();
 checkPermission(['admin', 'project_manager']);
 
+$db = Database::getInstance();
 $masterService = new MasterService();
 $page_title = 'Projects';
 $current_page = 'projects';
 
 // Handle CRUD Operations
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+        die('CSRF Token verification failed');
+    }
+
     $action = $_POST['action'] ?? '';
     
     try {
@@ -46,6 +51,10 @@ $filters = [
     'status' => $_GET['status'] ?? ''
 ];
 $projects = $masterService->getAllProjects($filters);
+
+// Fetch Stage of Works for Dropdown
+$sow_sql = "SELECT id, name FROM stage_of_work WHERE status = 'active' ORDER BY name";
+$stage_templates = $db->query($sow_sql)->fetchAll();
 
 include __DIR__ . '/../../includes/header.php';
 ?>
@@ -584,6 +593,7 @@ include __DIR__ . '/../../includes/header.php';
         </div>
 
         <form method="POST">
+            <?= csrf_field() ?>
             <input type="hidden" name="action" value="create">
 
             <div class="modal-body-premium">
@@ -601,12 +611,13 @@ include __DIR__ . '/../../includes/header.php';
                     </div>
                 </div>
 
-                <div class="form-grid-premium" style="margin-top: 15px; margin-bottom: 15px">
-                    <div class="input-group-modern" style="display: flex; align-items: center; gap: 10px;">
-                        <input type="checkbox" name="has_multiple_towers" id="add_has_multiple_towers" class="custom-checkbox">
-                        <label for="add_has_multiple_towers" class="input-label" style="margin: 0; cursor: pointer; font-weight: bold">Multi-Tower Project?</label>
+                    <div class="input-group-modern" style="display: flex; align-items: center; gap: 12px;">
+                        <label class="switch-wrapper">
+                            <input type="checkbox" name="has_multiple_towers" id="add_has_multiple_towers">
+                            <span class="slider"></span>
+                        </label>
+                        <label for="add_has_multiple_towers" class="input-label" style="margin: 0; cursor: pointer; font-weight: bold; font-size: 14px;">Multi-Tower Project?</label>
                     </div>
-                </div>
 
                 <!-- Timeline -->
                 <div class="form-section-title"><i class="far fa-calendar-alt"></i> Production Timeline</div>
@@ -641,6 +652,19 @@ include __DIR__ . '/../../includes/header.php';
                         </select>
                     </div>
                 </div>
+                
+                <div class="form-grid-premium" style="margin-top: 15px;">
+                    <div class="input-group-modern full-width">
+                        <label class="input-label">Default Payment Plan (Master Template)</label>
+                        <select name="default_stage_of_work_id" class="modern-select">
+                            <option value="">-- None (Manual) --</option>
+                            <?php foreach ($stage_templates as $st): ?>
+                                <option value="<?= $st['id'] ?>"><?= htmlspecialchars($st['name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <p style="font-size: 11px; color: #94a3b8; margin-top: 4px;">Used for tracking project progress independently of bookings.</p>
+                    </div>
+                </div>
             </div>
 
             <div class="modal-footer-premium">
@@ -666,6 +690,7 @@ include __DIR__ . '/../../includes/header.php';
         </div>
 
         <form method="POST" id="editProjectForm">
+            <?= csrf_field() ?>
             <input type="hidden" name="action" value="update">
             <input type="hidden" name="id" id="edit_id">
 
@@ -685,9 +710,12 @@ include __DIR__ . '/../../includes/header.php';
                 </div>
 
                 <div class="form-grid-premium" style="margin-top: 15px; margin-bottom: 15px;">
-                    <div class="input-group-modern" style="display: flex; align-items: center; gap: 10px;">
-                        <input type="checkbox" name="has_multiple_towers" id="edit_has_multiple_towers" class="custom-checkbox">
-                        <label for="edit_has_multiple_towers" class="input-label" style="margin: 0; cursor: pointer; font-weight: bold">Multi-Tower Project?</label>
+                    <div class="input-group-modern" style="display: flex; align-items: center; gap: 12px;">
+                        <label class="switch-wrapper">
+                            <input type="checkbox" name="has_multiple_towers" id="edit_has_multiple_towers">
+                            <span class="slider"></span>
+                        </label>
+                        <label for="edit_has_multiple_towers" class="input-label" style="margin: 0; cursor: pointer; font-weight: bold; font-size: 14px;">Multi-Tower Project?</label>
                     </div>
                 </div>
 
@@ -724,6 +752,18 @@ include __DIR__ . '/../../includes/header.php';
                         </select>
                     </div>
                 </div>
+
+                <div class="form-grid-premium" style="margin-top: 15px;">
+                    <div class="input-group-modern full-width">
+                        <label class="input-label">Default Payment Plan</label>
+                        <select name="default_stage_of_work_id" id="edit_default_stage_of_work_id" class="modern-select">
+                            <option value="">-- None (Manual) --</option>
+                            <?php foreach ($stage_templates as $st): ?>
+                                <option value="<?= $st['id'] ?>"><?= htmlspecialchars($st['name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
             </div>
 
             <div class="modal-footer-premium">
@@ -751,6 +791,7 @@ include __DIR__ . '/../../includes/header.php';
             </p>
             
             <form method="POST">
+                <?= csrf_field() ?>
                 <input type="hidden" name="action" value="delete">
                 <input type="hidden" name="id" id="delete_id">
                 

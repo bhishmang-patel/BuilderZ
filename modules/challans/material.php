@@ -17,21 +17,77 @@ $current_page = 'material_challan';
 
 // Handle operations
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+         setFlashMessage('error', 'Security token expired. Please try again.');
+         redirect('modules/challans/material.php');
+    }
+
     $action = $_POST['action'] ?? '';
     
     if ($action === 'approve_challan' && $_SESSION['user_role'] === 'admin') {
         $challan_id = intval($_POST['challan_id']);
         
-        $update_data = [
-            'status' => 'approved',
-            'approved_by' => $_SESSION['user_id'],
-            'approved_at' => date('Y-m-d H:i:s')
-        ];
-        
-        $db->update('challans', $update_data, 'id = ?', ['id' => $challan_id]);
-        logAudit('approve', 'challans', $challan_id);
-        
-        setFlashMessage('success', 'Challan approved successfully');
+        $challan = $db->query("SELECT * FROM challans WHERE id = ?", [$challan_id])->fetch();
+        if ($challan && $challan['status'] === 'pending') {
+            try {
+                $db->beginTransaction();
+                
+                // 1. Handle Vendor Creation if deferred
+                if (empty($challan['party_id']) && !empty($challan['temp_vendor_data'])) {
+                    $tv = json_decode($challan['temp_vendor_data'], true);
+                    
+                    // Double check overlap to avoid duplicates if same name created elsewhere
+                    $existing = $db->query("SELECT id FROM parties WHERE LOWER(name) = LOWER(?) AND party_type='vendor'", [trim($tv['name'])])->fetch();
+                    if ($existing) {
+                        $party_id = $existing['id'];
+                    } else {
+                        $vendor_data = [
+                            'party_type' => 'vendor',
+                            'name' => $tv['name'],
+                            'mobile' => $tv['mobile'],
+                            'address' => $tv['address'],
+                            'gst_number' => $tv['gst_number'],
+                            'gst_status' => !empty($tv['gst_number']) ? 'registered' : 'unregistered',
+                            'email' => $tv['email'],
+                            'status' => 'active' // Active immediately upon approval
+                        ];
+                        $party_id = $db->insert('parties', $vendor_data);
+                    }
+                    
+                    // Link to challan
+                    $db->update('challans', ['party_id' => $party_id, 'temp_vendor_data' => null], 'id=?', ['id' => $challan_id]);
+                }
+
+                // 2. Update Status
+                $update_data = [
+                    'status' => 'approved',
+                    'approved_by' => $_SESSION['user_id'],
+                    'approved_at' => date('Y-m-d H:i:s')
+                ];
+                $db->update('challans', $update_data, 'id = ?', ['id' => $challan_id]);
+                
+                // 3. Update Stock
+                $items = $db->query("SELECT * FROM challan_items WHERE challan_id = ?", [$challan_id])->fetchAll();
+                foreach ($items as $item) {
+                    updateMaterialStock($item['material_id'], $item['quantity'], true);
+                }
+
+                // 4. Activate Vendor if it was pending (legacy case)
+                if (!empty($challan['party_id'])) {
+                     $db->update('parties', ['status' => 'active'], "id = ? AND status = 'pending'", ['id' => $challan['party_id']]);
+                }
+                
+                logAudit('approve', 'challans', $challan_id);
+                $db->commit();
+                setFlashMessage('success', 'Challan approved successfully');
+
+            } catch (Exception $e) {
+                $db->rollback();
+                setFlashMessage('error', 'Approval failed: ' . $e->getMessage());
+            }
+        } else {
+            setFlashMessage('warning', 'Challan already approved or invalid.');
+        }
         redirect('modules/challans/material.php');
     }
 
@@ -133,7 +189,7 @@ if ($status_filter) {
     $params[] = $status_filter;
 }
 
-$sql = "SELECT c.*, 
+        $sql = "SELECT c.*, 
                p.name as vendor_name,
                pr.project_name,
                u.full_name as created_by_name,
@@ -144,7 +200,7 @@ $sql = "SELECT c.*,
                (SELECT COALESCE(SUM(quantity), 0) FROM challan_items ci WHERE ci.challan_id = c.id) as total_quantity,
                p.address as vendor_address
         FROM challans c
-        JOIN parties p ON c.party_id = p.id
+        LEFT JOIN parties p ON c.party_id = p.id
         JOIN projects pr ON c.project_id = pr.id
         LEFT JOIN users u ON c.created_by = u.id
         WHERE $where
@@ -170,33 +226,7 @@ include __DIR__ . '/../../includes/header.php';
     .status-approved { color: #10b981; background: #ecfdf5; }
     .status-paid { color: #3b82f6; background: #eff6ff; }
 
-    /* Custom Checkbox */
-    .custom-checkbox {
-        width: 20px;
-        height: 20px;
-        border: 2px solid #cbd5e1;
-        border-radius: 6px;
-        cursor: pointer;
-        position: relative;
-        appearance: none;
-        background: white;
-        transition: all 0.2s;
-    }
-    .custom-checkbox:checked {
-        background: #3b82f6;
-        border-color: #3b82f6;
-    }
-    .custom-checkbox:checked::after {
-        content: '\f00c';
-        font-family: 'Font Awesome 5 Free';
-        font-weight: 900;
-        color: white;
-        font-size: 12px;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-    }
+
 </style>
 
 <div class="row">
@@ -215,6 +245,7 @@ include __DIR__ . '/../../includes/header.php';
                 
                 <div style="display: flex; gap: 10px;">
                     <form id="bulkDeleteChallanForm" method="POST" style="display:none;">
+                        <?= csrf_field() ?>
                         <input type="hidden" name="action" value="bulk_delete_challans">
                         <input type="hidden" name="ids" id="bulkDeleteChallanIds">
                     </form>
@@ -271,7 +302,7 @@ include __DIR__ . '/../../includes/header.php';
                 <table class="modern-table">
                     <thead>
                         <tr>
-                            <th style="width: 50px;"><input type="checkbox" id="selectAllChallans" class="custom-checkbox" onclick="toggleAllChallans(this)"></th>
+                            <th style="width: 50px;"><input type="checkbox" id="selectAllChallans" class="premium-checkbox" onclick="toggleAllChallans(this)"></th>
                             <th>CHALLAN NO</th>
                             <th>DATE</th>
                             <th>VENDOR</th>
@@ -292,12 +323,18 @@ include __DIR__ . '/../../includes/header.php';
                                 if($challan['status'] === 'approved') $statusClass = 'blue';
                                 if($challan['status'] === 'paid') $statusClass = 'green';
                                 
-                                $vendorInitial = strtoupper(substr($challan['vendor_name'], 0, 1));
+                                $vendorName = $challan['vendor_name'];
+                                if (empty($vendorName) && !empty($challan['temp_vendor_data'])) {
+                                    $tv = json_decode($challan['temp_vendor_data'], true);
+                                    $vendorName = $tv['name'] . ' (Draft)';
+                                }
+                                
+                                $vendorInitial = strtoupper(substr($vendorName ?? '?', 0, 1));
                         ?>
                         <tr>
                             <td>
                                 <?php if ($challan['status'] === 'pending' && $_SESSION['user_role'] === 'admin'): ?>
-                                    <input type="checkbox" class="custom-checkbox challan-checkbox" value="<?= $challan['id'] ?>" onclick="updateBulkChallanState()">
+                                    <input type="checkbox" class="premium-checkbox challan-checkbox" value="<?= $challan['id'] ?>" onclick="updateBulkChallanState()">
                                 <?php else: ?>
                                     <i class="fas fa-lock" style="color: #cbd5e1; font-size: 14px; margin-left: 2px;" title="Cannot delete"></i>
                                 <?php endif; ?>
@@ -309,10 +346,10 @@ include __DIR__ . '/../../includes/header.php';
                             <td>
                                 <div style="display:flex; align-items:left; justify-content:left;">
                                     <?php 
-                                        $vendorColor = ColorHelper::getCustomerColor($challan['vendor_name']);
+                                        $vendorColor = ColorHelper::getCustomerColor($vendorName);
                                     ?>
                                     <div class="avatar-circle" style="background: <?= $vendorColor ?>; color: #fff; width:24px; height:24px; font-size:10px; margin-right:8px;"><?= $vendorInitial ?></div>
-                                    <span style="font-weight:600; font-size:13px;"><?= htmlspecialchars($challan['vendor_name']) ?></span>
+                                    <span style="font-weight:600; font-size:13px;"><?= htmlspecialchars($vendorName) ?></span>
                                 </div>
                             </td>
                             <td>
@@ -380,6 +417,7 @@ include __DIR__ . '/../../includes/header.php';
             </p>
             
             <form method="POST" id="approveForm">
+                <?= csrf_field() ?>
                 <input type="hidden" name="action" value="approve_challan">
                 <input type="hidden" name="challan_id" id="approve_challan_id">
                 
@@ -422,6 +460,7 @@ include __DIR__ . '/../../includes/header.php';
             </p>
             
             <form method="POST" id="deleteForm">
+                <?= csrf_field() ?>
                 <input type="hidden" name="action" value="delete_challan">
                 <input type="hidden" name="challan_id" id="delete_challan_id">
                 
@@ -478,11 +517,11 @@ function toggleAllChallans(source) {
 
 function updateBulkChallanState() {
     const checkboxes = document.querySelectorAll('.challan-checkbox:checked');
-    const bar = document.getElementById('selectionBar');
+    const bar = document.getElementById('bulkDeleteChallanBtn');
     const count = document.getElementById('selectedChallanCount');
     
     if (checkboxes.length > 0) {
-        bar.style.display = 'flex';
+        bar.style.display = 'inline-flex';
         count.textContent = checkboxes.length;
     } else {
         bar.style.display = 'none';
@@ -501,11 +540,29 @@ function confirmBulkDeleteChallans() {
     const checkboxes = document.querySelectorAll('.challan-checkbox:checked');
     if (checkboxes.length === 0) return;
 
-    if (confirm(`Are you sure you want to delete ${checkboxes.length} selected challan(s)?\n\n- This will PERMANENTLY delete the records.\n- Stock added by these challans will be SUBTRACTED (Reverted).`)) {
-        const ids = Array.from(checkboxes).map(cb => cb.value);
-        document.getElementById('bulkDeleteChallanIds').value = JSON.stringify(ids);
-        document.getElementById('bulkDeleteChallanForm').submit();
-    }
+    Swal.fire({
+        title: `Delete ${checkboxes.length} Challans?`,
+        html: "This will <strong>PERMANENTLY</strong> delete the records.<br>Stock will be <strong>SUBTRACTED</strong> (Reverted).",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#fff',
+        confirmButtonText: 'Yes, Delete',
+        cancelButtonText: 'Cancel',
+        customClass: {
+            popup: 'premium-swal-popup',
+            title: 'premium-swal-title',
+            content: 'premium-swal-content',
+            confirmButton: 'premium-swal-confirm',
+            cancelButton: 'premium-swal-cancel'
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const ids = Array.from(checkboxes).map(cb => cb.value);
+            document.getElementById('bulkDeleteChallanIds').value = JSON.stringify(ids);
+            document.getElementById('bulkDeleteChallanForm').submit();
+        }
+    });
 }
 </script>
 

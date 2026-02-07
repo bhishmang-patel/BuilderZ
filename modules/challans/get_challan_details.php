@@ -21,7 +21,7 @@ $sql = "SELECT c.*,
                u.full_name as created_by_name,
                au.full_name as approved_by_name
         FROM challans c
-        JOIN parties p ON c.party_id = p.id
+        LEFT JOIN parties p ON c.party_id = p.id
         JOIN projects pr ON c.project_id = pr.id
         LEFT JOIN users u ON c.created_by = u.id
         LEFT JOIN users au ON c.approved_by = au.id
@@ -29,6 +29,13 @@ $sql = "SELECT c.*,
 
 $stmt = $db->query($sql, [$challan_id]);
 $challan = $stmt->fetch();
+
+if ($challan && empty($challan['party_name']) && !empty($challan['temp_vendor_data'])) {
+    $tv = json_decode($challan['temp_vendor_data'], true);
+    $challan['party_name'] = $tv['name'] . ' (Draft)';
+    $challan['vendor_address'] = $tv['address'];
+    $challan['gst_number'] = $tv['gst_number'];
+}
 
 if (!$challan) {
     echo '<p class="text-center">Record not found</p>';

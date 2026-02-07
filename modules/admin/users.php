@@ -16,6 +16,11 @@ $current_page = 'users';
 
 // Handle user operations
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+        setFlashMessage('error', 'Security token expired. Please try again.');
+        redirect('modules/admin/users.php');
+    }
+
     $action = $_POST['action'] ?? '';
     
     if ($action === 'create') {
@@ -361,6 +366,7 @@ include __DIR__ . '/../../includes/header.php';
             <button class="close-btn" onclick="closeModalById('addUserModal')" style="font-size: 24px; color: #94a3b8; background: transparent; border: none; cursor: pointer;">&times;</button>
         </div>
         <form method="POST">
+            <?= csrf_field() ?>
             <div class="modal-body" style="padding: 28px;">
                 <input type="hidden" name="action" value="create">
                 
@@ -444,6 +450,7 @@ include __DIR__ . '/../../includes/header.php';
             <button class="close-btn" onclick="closeModalById('editUserModal')">&times;</button>
         </div>
         <form method="POST">
+            <?= csrf_field() ?>
             <div class="modal-body">
                 <input type="hidden" name="action" value="update">
                 <input type="hidden" name="id" id="edit_id">
@@ -511,6 +518,7 @@ include __DIR__ . '/../../includes/header.php';
             </p>
             
             <form method="POST">
+                <?= csrf_field() ?>
                 <input type="hidden" name="action" value="delete">
                 <input type="hidden" name="id" id="delete_id">
                 <div style="display: flex; gap: 12px; justify-content: center; margin-top: 10px;">

@@ -8,6 +8,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 requireAuth();
+checkPermission(['admin', 'project_manager']);
 
 $db = Database::getInstance();
 $page_title = 'Cancel Booking';
@@ -63,8 +64,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect('modules/booking/cancel.php?id=' . $booking_id);
         }
 
-        $db->beginTransaction();
         try {
+            $db->beginTransaction();
+
+            // 1. Lock and Re-fetch Booking Data needed for validation
+            $locked_booking = $db->query("SELECT total_received, status, flat_id FROM bookings WHERE id = ? FOR UPDATE", [$booking_id])->fetch();
+
+            if (!$locked_booking) {
+                throw new Exception("Booking not found during processing.");
+            }
+            if ($locked_booking['status'] === 'cancelled') {
+                throw new Exception("Booking is already cancelled.");
+            }
+
             $cancellation_date = $_POST['cancellation_date'];
             $cancellation_reason = sanitize($_POST['cancellation_reason']);
             $refund_amount = floatval($_POST['refund_amount']);
@@ -74,11 +86,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $deduction_reason = sanitize($_POST['deduction_reason']);
             $remarks = sanitize($_POST['remarks']);
             
+            // 2. Server-Side Validation of Amounts
+            $total_input = $refund_amount + $deduction_amount;
+            $total_actual = floatval($locked_booking['total_received']);
+
+            if (abs($total_input - $total_actual) > 1.00) { // allowing 1 rupee deviation for rounding diffs
+                throw new Exception("Mismatch in amounts. Refund ($refund_amount) + Deduction ($deduction_amount) must equal Total Received ($total_actual).");
+            }
+
+            if ($refund_amount < 0 || $deduction_amount < 0) {
+                 throw new Exception("Amounts cannot be negative.");
+            }
+            
             // Insert cancellation record
             $cancellation_data = [
                 'booking_id' => $booking_id,
                 'cancellation_date' => $cancellation_date,
-                'total_paid' => $booking['total_received'],
+                'total_paid' => $total_actual,
                 'refund_amount' => $refund_amount,
                 'deduction_amount' => $deduction_amount,
                 'deduction_reason' => $deduction_reason,
@@ -144,6 +168,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+
 
 include __DIR__ . '/../../includes/header.php';
 ?>
@@ -433,12 +458,34 @@ function validateCancellation() {
     const refund = parseFloat(document.getElementById('refund_amount').value) || 0;
     
     if (Math.abs((deduction + refund) - totalReceived) > 0.01) {
-        alert('Error: Deduction + Refund must equal Total Received amount (' + totalReceived.toFixed(2) + ')');
+        Swal.fire({
+            icon: 'error',
+            title: 'Calculation Error',
+            text: 'Deduction + Refund must equal Total Received amount (' + totalReceived.toFixed(2) + ')',
+            confirmButtonColor: '#ef4444',
+            customClass: {
+                popup: 'premium-swal-popup',
+                title: 'premium-swal-title',
+                content: 'premium-swal-content',
+                confirmButton: 'premium-swal-confirm'
+            }
+        });
         return false;
     }
     
     if (deduction < 0 || refund < 0) {
-        alert('Error: Amounts cannot be negative');
+        Swal.fire({
+            icon: 'error',
+            title: 'Validation Error',
+            text: 'Amounts cannot be negative',
+            confirmButtonColor: '#ef4444',
+            customClass: {
+                popup: 'premium-swal-popup',
+                title: 'premium-swal-title',
+                content: 'premium-swal-content',
+                confirmButton: 'premium-swal-confirm'
+            }
+        });
         return false;
     }
     

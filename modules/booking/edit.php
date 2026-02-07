@@ -85,7 +85,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'gst_amount' => $gst_amount,
             'development_charge' => $development_charge,
             'parking_charge' => $parking_charge,
-            'society_charge' => $society_charge
+            'society_charge' => $society_charge,
+            'stage_of_work_id' => !empty($_POST['stage_of_work_id']) ? intval($_POST['stage_of_work_id']) : null
         ];
 
         $db->update('bookings', $update_data, 'id = ?', ['id' => $booking_id]);
@@ -103,6 +104,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Get all customers for autocomplete
 $customers = $db->query("SELECT id, name, mobile, email, address FROM parties WHERE party_type = 'customer' ORDER BY name")->fetchAll();
+
+// Get active Stage of Work Templates
+$stage_of_works = $db->query("SELECT * FROM stage_of_work ORDER BY name ASC")->fetchAll();
 
 include __DIR__ . '/../../includes/header.php';
 ?>
@@ -345,6 +349,18 @@ include __DIR__ . '/../../includes/header.php';
                             <label class="input-label">Flat No</label>
                             <input type="text" class="modern-input" value="<?= htmlspecialchars($booking['flat_no']) ?>" readonly>
                         </div>
+                    </div>
+                    
+                    <div class="input-group-modern">
+                        <label class="input-label" style="color: #4f46e5; font-weight: 700;">Payment Plan (Stage of Work)</label>
+                        <select name="stage_of_work_id" class="modern-select" style="border-color: #4f46e5; background: #eef2ff;">
+                            <option value="">-- No Plan Selected --</option>
+                            <?php foreach ($stage_of_works as $plan): ?>
+                                <option value="<?= $plan['id'] ?>" <?= $booking['stage_of_work_id'] == $plan['id'] ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($plan['name']) ?> (<?= $plan['total_stages'] ?> Stages)
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                     <div class="form-grid-premium">
                         <div class="input-group-modern">

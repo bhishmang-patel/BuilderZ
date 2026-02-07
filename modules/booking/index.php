@@ -8,6 +8,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 requireAuth();
+checkPermission(['admin', 'project_manager']);
 
 $db = Database::getInstance();
 $page_title = 'Bookings';
@@ -79,10 +80,19 @@ $bookings = $stmt->fetchAll();
 
 
 // Calculate Totals for Footer
-$total_bookings_count = count($bookings);
+// Calculate Totals for Footer (Exclude Cancelled)
+$total_bookings_count = 0;
 $total_bookings_value = 0;
+$total_received_value = 0;
+$total_pending_value = 0;
+
 foreach($bookings as $b) {
-    $total_bookings_value += $b['agreement_value'];
+    if ($b['status'] !== 'cancelled') {
+        $total_bookings_count++;
+        $total_bookings_value += $b['agreement_value'];
+        $total_received_value += $b['total_received'];
+        $total_pending_value += $b['total_pending'];
+    }
 }
 
 // Get projects for filter
@@ -100,6 +110,9 @@ $available_flats = $db->query("SELECT f.id, f.flat_no, f.area_sqft, f.total_valu
 
 // Get customers
 $customers = $db->query("SELECT id, name, mobile FROM parties WHERE party_type = 'customer' ORDER BY name")->fetchAll();
+
+// Get active Stage of Work Templates
+$stage_of_works = $db->query("SELECT * FROM stage_of_work ORDER BY name ASC")->fetchAll();
 
 include __DIR__ . '/../../includes/header.php';
 ?>
@@ -338,9 +351,11 @@ $total_received_sum = 0;
 $total_pending_sum = 0;
 
 foreach($bookings as $b) {
-    if(!empty($b['area_sqft'])) $total_area_sold += $b['area_sqft'];
-    $total_received_sum += $b['total_received'];
-    $total_pending_sum += $b['total_pending'];
+    if ($b['status'] !== 'cancelled') {
+        if(!empty($b['area_sqft'])) $total_area_sold += $b['area_sqft'];
+        $total_received_sum += $b['total_received'];
+        $total_pending_sum += $b['total_pending'];
+    }
 }
 $average_rate = ($total_area_sold > 0) ? ($total_bookings_value / $total_area_sold) : 0;
 ?>
@@ -508,7 +523,7 @@ $average_rate = ($total_area_sold > 0) ? ($total_bookings_value / $total_area_so
                                 $color = ColorHelper::getProjectColor($booking['project_id']);
                                 $initial = ColorHelper::getInitial($booking['project_name']);
                                 
-                                $custColor = ColorHelper::getCustomerColor($booking['customer_id'] ?? 0);
+                                $custColor = ColorHelper::getCustomerColor($booking['customer_id'] ?? 0, $booking['customer_name'] ?? '');
                                 $custInitial = ColorHelper::getInitial($booking['customer_name']);
                                 
                                 // Status styling
@@ -623,7 +638,7 @@ $average_rate = ($total_area_sold > 0) ? ($total_bookings_value / $total_area_so
             <div class="modal-body-premium">
                 <div class="row">
                     <!-- LEFT COLUMN: Forms -->
-                    <div class="col-lg-8" style="padding-right: 40px; border-right: 1px solid #f1f5f9;">
+                    <div class="col-lg-8" style="padding-right: 40px; border-right: 1px solid #f1f5f9; width: 50%">
                         
                         <!-- Customer Section -->
                         <div class="form-section-title"><i class="fas fa-user-circle"></i> Customer Information</div>
@@ -668,6 +683,18 @@ $average_rate = ($total_area_sold > 0) ? ($total_bookings_value / $total_area_so
                                 <label class="input-label">Select Flat *</label>
                                 <select name="flat_id" id="flat_select" class="modern-select" required onchange="updateFlatDetails()" disabled>
                                     <option value="">Select project first</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-grid-premium">
+                            <!-- NEW: Stage of Work (Premium Design) -->
+                            <div class="input-group-modern full-width">
+                                <label class="input-label" style="color: #4f46e5; font-weight: 700;">Select Payment Plan (Stage of Work)</label>
+                                <select name="stage_of_work_id" class="modern-select" style="border-color: #4f46e5; background: #eef2ff;">
+                                    <option value="">Select a Plan (Optional)</option>
+                                    <?php foreach ($stage_of_works as $plan): ?>
+                                        <option value="<?= $plan['id'] ?>"><?= htmlspecialchars($plan['name']) ?> (<?= $plan['total_stages'] ?> Stages)</option>
+                                    <?php endforeach; ?>
                                 </select>
                             </div>
                         </div>

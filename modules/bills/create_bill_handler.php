@@ -9,6 +9,11 @@ if (session_status() === PHP_SESSION_NONE) {
 requireAuth();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+         setFlashMessage('error', 'Security token expired. Please try again.');
+         redirect('modules/vendors/index.php');
+    }
+
     try {
         $db = Database::getInstance();
         
@@ -17,7 +22,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $bill_no = sanitize($_POST['bill_no']);
         $bill_date = $_POST['bill_date'];
         $amount = floatval($_POST['amount']);
+        $amount = floatval($_POST['amount']);
         $file_path = null;
+        
+        // Security check: If linked to a challan, ensure it is APPROVED
+        if ($challan_id) {
+            $challan = $db->query("SELECT status FROM challans WHERE id = ?", [$challan_id])->fetch();
+            if (!$challan || $challan['status'] !== 'approved') {
+                 throw new Exception("Cannot create bill for Pending Challan. Please approve the challan first.");
+            }
+        }
 
         // Validation
         if (!$vendor_id || empty($bill_no) || empty($bill_date) || $amount <= 0) {

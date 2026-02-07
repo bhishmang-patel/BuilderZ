@@ -9,6 +9,11 @@ if (session_status() === PHP_SESSION_NONE) {
 requireAuth();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+         setFlashMessage('error', 'Security token expired. Please try again.');
+         redirect('modules/vendors/index.php');
+    }
+    
     try {
         $db = Database::getInstance();
         

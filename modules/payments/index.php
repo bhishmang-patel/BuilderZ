@@ -17,6 +17,11 @@ $current_page = 'payments';
 
 // Handle payment operations
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+         setFlashMessage('error', 'Security token expired. Please reload and try again.');
+         redirect('modules/payments/index.php');
+    }
+
     $action = $_POST['action'] ?? '';
     
     if ($action === 'make_payment') {
@@ -24,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $reference_id = intval($_POST['reference_id']);
         $party_id = intval($_POST['party_id']);
         $payment_date = $_POST['payment_date'];
-        $amount = floatval($_POST['amount']);
+        $amount = round((float)$_POST['payment_amount_final'], 2);
         $payment_mode = $_POST['payment_mode'];
         $reference_no = sanitize($_POST['reference_no']);
         $remarks = sanitize($_POST['remarks']);
@@ -32,16 +37,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $db->beginTransaction();
         try {
             // SPECIAL HANDLING: Distribute 'vendor_payment' across pending bills
+            // SPECIAL HANDLING: Distribute 'vendor_payment' across pending bills
             if ($payment_type === 'vendor_payment') {
-                $bills = $db->query("SELECT id, amount, paid_amount FROM bills WHERE party_id = ? AND status != 'paid' ORDER BY bill_date ASC", [$party_id])->fetchAll();
+                // LOCKING: Fetch bills with FOR UPDATE to prevent race conditions
+                $bills = $db->query("SELECT id, amount, paid_amount FROM bills WHERE party_id = ? AND status != 'paid' ORDER BY bill_date ASC FOR UPDATE", [$party_id])->fetchAll();
                 $remaining_payment = $amount;
                 $payments_made = 0;
 
                 foreach ($bills as $bill) {
                     if ($remaining_payment <= 0) break;
 
-                    $pending = $bill['amount'] - $bill['paid_amount'];
-                    $allocate = min($pending, $remaining_payment);
+                    $pending = round($bill['amount'] - $bill['paid_amount'], 2);
+                    // Logic check: if pending is 0 or negative (due to race condition resolved by lock), skip
+                    if ($pending <= 0.01) continue; 
+
+                    $allocate = round(min($pending, $remaining_payment), 2);
+
+                    // Ensure we don't accidentally allocate more than remaining due to some float weirdness
+                    if ($allocate > $remaining_payment) {
+                        $allocate = $remaining_payment;
+                    }
 
                     if ($allocate > 0) {
                         $payment_data = [
@@ -58,35 +73,116 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ];
                         $pid = $db->insert('payments', $payment_data);
                         logAudit('create', 'payments', $pid, null, $payment_data);
-                        updateBillPaidAmount($bill['id']);
+                        updateBillPaidAmount($bill['id']); // This recalculates based on inserted payments
                         
-                        $remaining_payment -= $allocate;
+                        $remaining_payment = round($remaining_payment - $allocate, 2);
                         $payments_made++;
                     }
                 }
                 
-                // If amount remains (overpayment), record it as a generic credit/advance?
-                // For now, let's just record it as a generic payment against the vendor (reference_type='vendor'?) 
-                // schema says enum('booking','bill','challan'). Let's use 'challan' ID 0 or NULL if allowed, or just let it float?
-                // The prompt issue is about updating outstanding, so clearing bills is the priority.
+                if ($payments_made === 0 && $amount > 0) {
+                    // Logic decision: If we have money but no bills to pay, what do we do?
+                    // For safety in this "Fix" phase, we'll throw an exception rather than let money float.
+                    // Or we could check if user intends to pay advance, but let's stick to strict debt settlement for now.
+                    throw new Exception("No pending bills found to allocate this payment (or bills were paid by another transaction).");
+                }
                 
-                if ($remaining_payment > 0) {
-                     // Record excess as generic 'on account' payment if needed, 
-                     // but schema might be strict. For now, we assume user pays exact or less.
-                     // A simple workaround: Just log it or throw error? 
-                     // The UI Javascript warns about excess, so we might be safe from excess usually.
+                // If there's still remaining payment, we effectively ignore/reject it for now to prevent "floating" money.
+                if ($remaining_payment > 1.00) {
+                     throw new Exception("Payment amount exceeds total pending bills. Excess: " . $remaining_payment);
                 }
 
+            } 
+            // SPECIAL HANDLING: Distribute 'labour_account_payment' across pending labour challans
+            elseif ($payment_type === 'labour_account_payment') {
+                // Fetch pending labour challans for this party
+                $challans = $db->query("SELECT id, total_amount, paid_amount FROM challans WHERE party_id = ? AND challan_type = 'labour' AND paid_amount < total_amount ORDER BY challan_date ASC FOR UPDATE", [$party_id])->fetchAll();
+                $remaining_payment = $amount;
+                $payments_made = 0;
+
+                foreach ($challans as $challan) {
+                    if ($remaining_payment <= 0) break;
+
+                    $pending = round($challan['total_amount'] - $challan['paid_amount'], 2);
+                    if ($pending <= 0.01) continue; 
+
+                    $allocate = round(min($pending, $remaining_payment), 2);
+
+                    if ($allocate > $remaining_payment) {
+                        $allocate = $remaining_payment;
+                    }
+
+                    if ($allocate > 0) {
+                        $payment_data = [
+                            'payment_type' => 'labour_payment', 
+                            'reference_type' => 'challan',
+                            'reference_id' => $challan['id'],
+                            'party_id' => $party_id,
+                            'payment_date' => $payment_date,
+                            'amount' => $allocate,
+                            'payment_mode' => $payment_mode,
+                            'reference_no' => $reference_no,
+                            'remarks' => $remarks . " (Allocated from global payment)",
+                            'created_by' => $_SESSION['user_id']
+                        ];
+                        $pid = $db->insert('payments', $payment_data);
+                        logAudit('create', 'payments', $pid, null, $payment_data);
+                        updateChallanPaidAmount($challan['id']); 
+                        
+                        $remaining_payment = round($remaining_payment - $allocate, 2);
+                        $payments_made++;
+                    }
+                }
+                
                 if ($payments_made === 0 && $amount > 0) {
-                    throw new Exception("No pending bills found to allocate this payment.");
+                    throw new Exception("No pending labour challans found to allocate this payment.");
+                }
+                
+                if ($remaining_payment > 1.00) {
+                     throw new Exception("Payment amount exceeds total pending challans. Excess: " . $remaining_payment);
                 }
 
             } else {
-                // NORMAL LOGIC for other types
+                // NORMAL LOGIC for other types with STRICT VALIDATION & LOCKING
+                
+                // 1. Vendor Bill Payment (Single)
+                if ($payment_type === 'vendor_bill_payment') {
+                    $bill = $db->query("SELECT amount, paid_amount FROM bills WHERE id = ? FOR UPDATE", [$reference_id])->fetch();
+                    if (!$bill) throw new Exception("Bill not found.");
+                    
+                    $pending = round($bill['amount'] - $bill['paid_amount'], 2);
+                    if ($amount > $pending + 1.00) { // Allow tiny rounding buffer
+                         throw new Exception("Payment amount ($amount) exceeds pending bill amount ($pending).");
+                    }
+                }
+                // 2. Labour Challan / Vendor Challan
+                elseif ($payment_type === 'labour_payment' || $payment_type === 'challan_payment') { // Assuming 'challan_payment' might exist or 'labour_payment' maps to challan
+                    // Note: Front-end sends 'labour_payment' for labour challans.
+                    // 'reference_type' will be 'challan'.
+                    $challan = $db->query("SELECT total_amount, paid_amount FROM challans WHERE id = ? FOR UPDATE", [$reference_id])->fetch();
+                    if (!$challan) throw new Exception("Challan not found.");
+                    
+                    $pending = round($challan['total_amount'] - $challan['paid_amount'], 2);
+                    if ($amount > $pending + 1.00) {
+                        throw new Exception("Payment amount ($amount) exceeds pending challan amount ($pending).");
+                    }
+                }
+                // 3. Customer Receipt
+                elseif ($payment_type === 'customer_receipt') {
+                    // We lock the booking to ensure substantial sequential processing
+                    $booking = $db->query("SELECT total_pending, agreement_value, total_received FROM bookings WHERE id = ? FOR UPDATE", [$reference_id])->fetch();
+                    if (!$booking) throw new Exception("Booking not found.");
+                    
+                    // Optional: Restrict overpayment beyond Agreement Value?
+                    // Real estate often takes advances, but let's warn/block if it exceeds unreasonably?
+                    // For now, let's just allow it but the LOCK ensures we don't have parallel updates messing up the summation.
+                }
+
                 $payment_data = [
                     'payment_type' => $payment_type,
                     'reference_type' => $payment_type === 'customer_receipt' ? 'booking' : ($payment_type === 'vendor_bill_payment' ? 'bill' : 'challan'),
                     'reference_id' => $reference_id,
+                    'demand_id' => !empty($_POST['demand_id']) && $payment_type === 'customer_receipt' ? intval($_POST['demand_id']) : null,
                     'party_id' => $party_id,
                     'payment_date' => $payment_date,
                     'amount' => $amount,
@@ -113,13 +209,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $db->commit();
             
             setFlashMessage('success', 'Payment recorded successfully');
-            $redirect_url = $_POST['redirect_url'] ?? 'modules/payments/index.php';
+            
+            // Determine active tab for redirection
+            $activeTab = 'customer';
+            if (in_array($payment_type, ['vendor_payment', 'vendor_bill_payment'])) {
+                $activeTab = 'vendor';
+            } elseif ($payment_type === 'labour_payment' || $payment_type === 'labour_account_payment') {
+                $activeTab = 'labour';
+            }
+            
+            $redirect_url = $_POST['redirect_url']?? "modules/payments/index.php?tab={$activeTab}";
+
             redirect($redirect_url);
             
         } catch (Exception $e) {
             $db->rollback();
             setFlashMessage('error', 'Failed to record payment: ' . $e->getMessage());
-            $redirect_url = $_POST['redirect_url'] ?? 'modules/payments/index.php';
+            
+            // Determine active tab for error redirection too
+            $activeTab = 'customer';
+            if (in_array($payment_type, ['vendor_payment', 'vendor_bill_payment'])) {
+                $activeTab = 'vendor';
+            } elseif ($payment_type === 'labour_payment' || $payment_type === 'labour_account_payment') {
+                $activeTab = 'labour';
+            }
+
+            $redirect_url = $_POST['redirect_url']?? "modules/payments/index.php?tab={$activeTab}";
             redirect($redirect_url);
         }
     }
@@ -187,10 +302,12 @@ if ($date_to) {
 
 $sql = "SELECT p.*, 
                pt.name as party_name,
-               u.full_name as created_by_name
+               u.full_name as created_by_name,
+               bd.stage_name as demand_stage
         FROM payments p
-        JOIN parties pt ON p.party_id = pt.id
+        LEFT JOIN parties pt ON p.party_id = pt.id
         LEFT JOIN users u ON p.created_by = u.id
+        LEFT JOIN booking_demands bd ON p.demand_id = bd.id
         WHERE $where
         ORDER BY p.created_at DESC
         LIMIT 50";
@@ -577,7 +694,7 @@ include __DIR__ . '/../../includes/header.php';
                                 <tbody>
                                     <?php 
                                     foreach ($pending_vendor_bills as $bill): 
-                                        $vendorColor = ColorHelper::getCustomerColor($bill['party_id']);
+                                        $vendorColor = ColorHelper::getCustomerColor($bill['vendor_name']);
                                         $vendorInitial = ColorHelper::getInitial($bill['vendor_name']);
                                     ?>
                                     <tr>
@@ -680,12 +797,12 @@ include __DIR__ . '/../../includes/header.php';
                     
                     <!-- Filters -->
                     <form method="GET" class="filter-card mb-3">
+                        <input type="hidden" name="tab" value="history">
                         <div class="filter-row">
                             <select name="type" class="modern-select" style="flex:1;">
                                 <option value="">All Payment Types</option>
                                 <option value="customer_receipt" <?= $payment_type_filter === 'customer_receipt' ? 'selected' : '' ?>>Customer Receipt</option>
                                 <option value="customer_refund" <?= $payment_type_filter === 'customer_refund' ? 'selected' : '' ?>>Customer Refund</option>
-                                <option value="vendor_payment" <?= $payment_type_filter === 'vendor_payment' ? 'selected' : '' ?>>Vendor Payment (Old)</option>
                                 <option value="vendor_bill_payment" <?= $payment_type_filter === 'vendor_bill_payment' ? 'selected' : '' ?>>Vendor Bill</option>
                                 <option value="labour_payment" <?= $payment_type_filter === 'labour_payment' ? 'selected' : '' ?>>Labour Payment</option>
                             </select>
@@ -701,7 +818,7 @@ include __DIR__ . '/../../includes/header.php';
                             </div>
                             
                             <button type="submit" class="modern-btn">Apply</button>
-                            <a href="modules/payments/index.php?tab=history" class="modern-btn" style="background:#94a3b8;">Reset</a>
+                            <a href="<?= BASE_URL ?>modules/payments/index.php?tab=history" class="modern-btn" style="background:#94a3b8;">Reset</a>
                         </div>
                     </form>
 
@@ -749,18 +866,32 @@ include __DIR__ . '/../../includes/header.php';
                                                     $partyInitial = strtoupper(substr($payment['party_name'], 0, 1));
                                                 ?>
                                                 <div class="avatar-circle" style="background: <?= $partyColor ?>; color: #fff; width:32px; height:32px; font-size:12px; margin-right:10px;"><?= $partyInitial ?></div>
-                                                <span style="font-weight:600; color:#334155;"><?= htmlspecialchars($payment['party_name']) ?></span>
+                                                <span style="font-weight:600; color:#334155;"><?= htmlspecialchars($payment['party_name'] ?? 'Unknown Party') ?></span>
                                             </div>
                                         </td>
-                                        <td><span style="font-weight: 700; color: #10b981;"><?= formatCurrency($payment['amount']) ?></span></td>
-                                        <td><span style="font-size:12px; text-transform:capitalize;"><?= htmlspecialchars($payment['payment_mode']) ?></span></td>
+                                        <td><span style="font-weight: 700; color: #10b981;"><?= formatCurrency($payment['amount'] ?? 0) ?></span></td>
+                                        <td>
+                                            <span style="font-size:12px; text-transform:capitalize; font-weight:600;"><?= htmlspecialchars($payment['payment_mode']) ?></span>
+                                            <?php if(!empty($payment['demand_stage'])): ?>
+                                                <div style="font-size: 10px; color: #6366f1; margin-top: 2px;">
+                                                    For: <?= htmlspecialchars($payment['demand_stage']) ?>
+                                                </div>
+                                            <?php endif; ?>
+                                        </td>
                                         <td><span style="font-size:12px; color:#64748b;"><?= htmlspecialchars($payment['reference_no'] ?: '-') ?></span></td>
                                         <td><span style="font-size:12px; color:#64748b;"><?= htmlspecialchars(substr($payment['remarks'], 0, 30)) ?></span></td>
-                                        <td><div class="avatar-circle av-gray" title="<?= htmlspecialchars($payment['created_by_name']) ?>" style="width:24px; height:24px; font-size:10px;"><?= strtoupper(substr($payment['created_by_name'],0,1)) ?></div></td>
+                                        <td>
+                                            <?php 
+                                            // Fallback for creator name
+                                            $creatorName = !empty($payment['created_by_name']) ? $payment['created_by_name'] : 'System';
+                                            $creatorInitial = strtoupper(substr($creatorName, 0, 1));
+                                            ?>
+                                            <div class="avatar-circle av-gray" title="<?= htmlspecialchars($creatorName) ?>" style="width:24px; height:24px; font-size:10px; background: #e2e8f0; color: #64748b;"><?= $creatorInitial ?></div>
+                                        </td>
                                         <td>
                                             <?php if($payment['payment_type'] === 'customer_receipt'): ?>
-                                                <a href="<?= BASE_URL ?>modules/reports/download.php?action=payment_receipt&id=<?= $payment['id'] ?>" class="action-btn" target="_blank" title="Download Receipt">
-                                                    <i class="fas fa-download"></i>
+                                                <a href="<?= BASE_URL ?>modules/reports/download.php?action=payment_receipt&id=<?= $payment['id'] ?>" class="action-btn" target="_blank" title="Print Receipt">
+                                                    <i class="fas fa-print"></i>
                                                 </a>
                                             <?php endif; ?>
                                         </td>
@@ -791,6 +922,7 @@ include __DIR__ . '/../../includes/header.php';
         </div>
         
         <form method="POST">
+            <?= csrf_field() ?>
             <div class="modal-body-premium">
                 <input type="hidden" name="action" value="make_payment">
                 <input type="hidden" name="payment_type" id="payment_type">
@@ -809,6 +941,14 @@ include __DIR__ . '/../../includes/header.php';
                     </div>
                 </div>
 
+                <!-- Demand Selection for Customer Receipts -->
+                <div id="demand_selection_group" style="display:none; margin-bottom: 24px;">
+                    <label class="input-label">Payment For (Optional)</label>
+                    <select name="demand_id" id="demand_dropdown" class="modern-select">
+                        <option value="">General / Oldest Unpaid (Default)</option>
+                    </select>
+                </div>
+
                 <div class="form-section-title"><i class="fas fa-file-invoice"></i> Transaction Details</div>
 
                 <div class="form-grid-premium">
@@ -818,7 +958,7 @@ include __DIR__ . '/../../includes/header.php';
                     </div>
                     <div>
                         <label class="input-label">Amount (₹) *</label>
-                        <input type="number" name="amount" id="payment_amount" class="modern-input" step="0.01" required oninput="calculateBalance()" placeholder="0.00" style="font-weight: 700; color: #10b981;">
+                        <input type="text" id="payment_amount" name="payment_amount_final" class="modern-input" required inputmode="decimal" placeholder="0.00" autocomplete="off" style="font-weight: 700; color: #10b981;" oninput="sanitizeAmount(this); calculateBalance();"/>
                     </div>
                 </div>
                 
@@ -896,50 +1036,116 @@ window.onclick = function(event) {
     }
 }
 
+function round2(num) {
+    return Math.round((num + Number.EPSILON) * 100) / 100;
+}
+
+// function showPaymentModal - Updated
 function showPaymentModal(type, refId, partyId, pendingAmount, partyName) {
     document.getElementById('payment_type').value = type;
     document.getElementById('reference_id').value = refId;
     document.getElementById('party_id').value = partyId;
+
+    // Reset amount field
     document.getElementById('payment_amount').value = '';
-    document.getElementById('max_pending_amount').value = pendingAmount;
-    
+
+    document.getElementById('max_pending_amount').value = round2(pendingAmount); // Ensure format
+
     document.getElementById('party_name_display').textContent = partyName;
-    const formattedPending = parseFloat(pendingAmount).toFixed(2);
+    
+    // Using simple pending amount formatting
+    const formattedPending = round2(pendingAmount).toFixed(2);
     document.getElementById('pending_amount_display').textContent = '₹ ' + formattedPending;
     document.getElementById('remaining_calc').textContent = '₹ ' + formattedPending;
     document.getElementById('remaining_calc').style.color = '#1e293b';
+
     document.getElementById('amount_warning').style.display = 'none';
+
+    // Handle Demand Selection for Customer Receipts
+    const demandGroup = document.getElementById('demand_selection_group');
+    const demandDropdown = document.getElementById('demand_dropdown');
     
+    // Reset Dropdown
+    demandDropdown.innerHTML = '<option value="">General / Oldest Unpaid (Default)</option>';
+    demandGroup.style.display = 'none';
+
+    if (type === 'customer_receipt') {
+        // Fetch Demands
+        fetch(`<?= BASE_URL ?>modules/api/get_booking_demands.php?booking_id=${refId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.demands.length > 0) {
+                    data.demands.forEach(d => {
+                        const option = document.createElement('option');
+                        option.value = d.id;
+                        option.textContent = d.label;
+                        demandDropdown.appendChild(option);
+                    });
+                    demandGroup.style.display = 'block';
+                }
+            })
+            .catch(err => console.error('Error fetching demands:', err));
+    }
+
     openLocalModal('paymentModal');
 }
 
+function sanitizeAmount(input) {
+    // Allow only numbers and one decimal point
+    let value = input.value.replace(/[^0-9.]/g, '');
+
+    // Prevent multiple decimals
+    const parts = value.split('.');
+    if (parts.length > 2) {
+        value = parts[0] + '.' + parts.slice(1).join('');
+    }
+
+    // Limit to 2 decimal places
+    if (parts[1]?.length > 2) {
+        value = parts[0] + '.' + parts[1].slice(0, 2);
+    }
+
+    input.value = value;
+}
+
 function calculateBalance() {
-    const pendingAmount = parseFloat(document.getElementById('max_pending_amount').value);
-    const paymentAmount = parseFloat(document.getElementById('payment_amount').value) || 0;
-    const remaining = pendingAmount - paymentAmount;
-    const warningEl = document.getElementById('amount_warning');
-    const submitBtn = document.getElementById('payment_submit_btn');
+    const pendingAmount = round2(
+        parseFloat(document.getElementById('max_pending_amount').value) || 0
+    );
+
+    const paymentAmount = round2(
+        parseFloat(document.getElementById('payment_amount').value) || 0
+    );
+
+    const remaining = round2(pendingAmount - paymentAmount);
+
     const displayEl = document.getElementById('remaining_calc');
-    
+    const warningEl = document.getElementById('amount_warning');
+
     if (remaining >= 0) {
         displayEl.textContent = '₹ ' + remaining.toFixed(2);
         displayEl.style.color = remaining === 0 ? '#10b981' : '#1e293b';
         warningEl.style.display = 'none';
-        // submitBtn.disabled = false; // Allow submission basically always now?
     } else {
         displayEl.textContent = '₹ ' + Math.abs(remaining).toFixed(2) + ' (Excess)';
         displayEl.style.color = '#ef4444';
         warningEl.style.display = 'block';
-        // submitBtn.disabled = true; // Maybe allow overpayment? Keeping logic strict for now
     }
 }
 
 // Auto-switch tab based on URL parameter
-document.addEventListener('DOMContentLoaded', function() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const tab = urlParams.get('tab');
+document.addEventListener('DOMContentLoaded', function () {
+    const url = new URL(window.location.href);
+    const tab = url.searchParams.get('tab');
+
     if (tab) {
         switchTab(tab);
+
+        // 🔥 remove tab so refresh resets
+        url.searchParams.delete('tab');
+        window.history.replaceState({}, document.title, url.pathname + url.search);
+    } else {
+        switchTab('customer');
     }
 });
 </script>

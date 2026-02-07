@@ -46,6 +46,45 @@
                 });
             }
         });
+
+        // Global Confirmation Dialog (SweetAlert2)
+        function confirmAction(e, message = "Are you sure you want to proceed?", confirmBtnText = "Yes, do it!") {
+            e.preventDefault();
+            const targetUrl = e.currentTarget.getAttribute('href');
+            const form = e.currentTarget.closest('form');
+            
+            Swal.fire({
+                title: 'Are you sure?',
+                text: message,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3b82f6',
+                cancelButtonColor: '#ef4444',
+                confirmButtonText: confirmBtnText,
+                cancelButtonText: 'Cancel',
+                customClass: {
+                    popup: 'premium-swal-popup',
+                    title: 'premium-swal-title',
+                    content: 'premium-swal-content',
+                    confirmButton: 'premium-swal-confirm',
+                    cancelButton: 'premium-swal-cancel'
+                },
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    if (targetUrl) {
+                        window.location.href = targetUrl;
+                    } else if (form) {
+                        // If button is a submit button, we might need to recreate the click or just submit
+                        // But if confirmAction is on an 'a' tag acting as submit (rare), targetUrl handles it.
+                        // If it's a <button type="submit">, form.submit() works but bypasses other handlers? 
+                        // Usually safer to allow default if we weren't interrupting.
+                        form.submit();
+                    }
+                }
+            });
+            return false;
+        }
     </script>
 </body>
 </html>

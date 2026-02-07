@@ -6,7 +6,17 @@
     <title><?= $page_title ?? 'Dashboard' ?> - <?= APP_NAME ?></title>
     <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
+<?php 
+// Fetch Company Settings for Header Display
+if (!isset($db)) {
+    require_once __DIR__ . '/../config/database.php';
+    $db = Database::getInstance();
+}
+$companySettings = $db->query("SELECT setting_key, setting_value FROM settings")->fetchAll(PDO::FETCH_KEY_PAIR);
+$headerLogoUrl = !empty($companySettings['company_logo']) ? BASE_URL . $companySettings['company_logo'] : null;
+?>
 <body>
     <div class="wrapper">
         <!-- Sidebar -->
@@ -44,22 +54,32 @@
                         <i class="fas fa-file-invoice"></i> <span>Delivery Challans</span>
                     </a>
                 </li>
+                <li>
+                    <a href="<?= BASE_URL ?>modules/projects/milestones.php" class="<?= ($current_page ?? '') === 'project_progress' ? 'active' : '' ?>">
+                        <i class="fas fa-tasks"></i> <span>Project Progress</span>
+                    </a>
+                </li>
                 <?php endif; ?>
 
                 <!-- FINANCE -->
                 <li class="menu-section">FINANCE</li>
                 <?php if (in_array($_SESSION['user_role'], ['admin', 'accountant'])): ?>
                 <li>
+                    <a href="<?= BASE_URL ?>modules/investments/index.php" class="<?= ($current_page ?? '') === 'investments' ? 'active' : '' ?>">
+                        <i class="fas fa-hand-holding-usd"></i> <span>Investments</span>
+                    </a>
+                </li>
+                <?php endif; ?>
+                
+                <?php if (in_array($_SESSION['user_role'], ['admin', 'accountant'])): ?>
+                <li>
                     <a href="<?= BASE_URL ?>modules/payments/index.php" class="<?= ($current_page ?? '') === 'payments' ? 'active' : '' ?>">
                         <i class="fas fa-money-bill-wave"></i> <span>Payments</span>
                     </a>
                 </li>
-                <?php endif; ?>
-
-                <?php if (in_array($_SESSION['user_role'], ['admin', 'accountant'])): ?>
                 <li>
-                    <a href="<?= BASE_URL ?>modules/investments/index.php" class="<?= ($current_page ?? '') === 'investments' ? 'active' : '' ?>">
-                        <i class="fas fa-hand-holding-usd"></i> <span>Investments</span>
+                    <a href="<?= BASE_URL ?>modules/booking/demands.php" class="<?= ($current_page ?? '') === 'demands' ? 'active' : '' ?>">
+                        <i class="fas fa-file-invoice-dollar"></i> <span>Payment Demands</span>
                     </a>
                 </li>
                 <?php endif; ?>
@@ -68,13 +88,18 @@
                 <li class="menu-section">MASTERS</li>
                 <?php if (in_array($_SESSION['user_role'], ['admin', 'project_manager'])): ?>
                 <li>
+                    <a href="<?= BASE_URL ?>modules/masters/stage_of_work.php" class="<?= ($current_page ?? '') === 'stage_of_work' ? 'active' : '' ?>">
+                        <i class="fas fa-list-ol"></i> <span>Stage of Work</span>
+                    </a>
+                </li>
+                <li>
                     <a href="<?= BASE_URL ?>modules/masters/projects.php" class="<?= ($current_page ?? '') === 'projects' ? 'active' : '' ?>">
                         <i class="fas fa-building"></i> <span>Projects</span>
                     </a>
                 </li>
                 <li>
                     <a href="<?= BASE_URL ?>modules/masters/flats.php" class="<?= ($current_page ?? '') === 'flats' ? 'active' : '' ?>">
-                        <i class="fas fa-layer-group"></i> <span>Flats</span>
+                        <i class="fas fa-house"></i> <span>Flats</span>
                     </a>
                 </li>
                 <?php endif; ?>
@@ -85,7 +110,7 @@
                 </li>
                 <li>
                     <a href="<?= BASE_URL ?>modules/vendors/index.php" class="<?= ($current_page ?? '') === 'vendors' ? 'active' : '' ?>">
-                        <i class="fas fa-hard-hat"></i> <span>Vendors</span>
+                        <i class="fas fa-boxes-stacked"></i> <span>Vendors</span>
                     </a>
                 </li>
                 <?php if (in_array($_SESSION['user_role'], ['admin', 'project_manager', 'accountant'])): ?>
@@ -118,12 +143,12 @@
                 </li>
                 <li>
                     <a href="<?= BASE_URL ?>modules/reports/vendor_outstanding.php" class="<?= ($current_page ?? '') === 'vendor_outstanding' ? 'active' : '' ?>">
-                        <i class="fas fa-truck"></i> <span>Vendor Outstanding</span>
+                        <i class="fas fa-truck-fast"></i> <span>Vendor Outstanding</span>
                     </a>
                 </li>
                 <li>
                     <a href="<?= BASE_URL ?>modules/reports/labour_outstanding.php" class="<?= ($current_page ?? '') === 'labour_outstanding' ? 'active' : '' ?>">
-                        <i class="fas fa-hard-hat"></i> <span>Labour Outstanding</span>
+                        <i class="fas fa-user-clock"></i> <span>Labour Outstanding</span>
                     </a>
                 </li>
                 <li>
@@ -138,7 +163,7 @@
                 </li>
                 <li>
                     <a href="<?= BASE_URL ?>modules/reports/financial_overview.php" class="<?= ($current_page ?? '') === 'financial_overview' ? 'active' : '' ?>">
-                        <i class="fas fa-chart-line"></i> <span>Financial Overview</span>
+                        <i class="fas fa-chart-pie"></i> <span>Financial Overview</span>
                     </a>
                 </li>
             </ul>
@@ -169,8 +194,12 @@
                             <span class="user-name"><?= $_SESSION['full_name'] ?></span>
                             <span class="user-role"><?= ucfirst($_SESSION['user_role']) ?></span>
                         </div>
-                        <button class="profile-trigger" id="profileDropdownBtn">
-                            <i class="fas fa-user"></i>
+                        <button class="profile-trigger" id="profileDropdownBtn" style="padding: 0; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                            <?php if ($headerLogoUrl): ?>
+                                <img src="<?= $headerLogoUrl ?>" alt="Profile" style="width: 100%; height: 100%; object-fit: cover;">
+                            <?php else: ?>
+                                <i class="fas fa-user"></i>
+                            <?php endif; ?>
                         </button>
                         <div class="profile-dropdown-menu" id="profileDropdownMenu">
                             <div class="dropdown-footer">

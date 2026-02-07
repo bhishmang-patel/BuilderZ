@@ -8,25 +8,28 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 requireAuth();
+checkPermission(['admin', 'accountant', 'project_manager']);
 
 $db = Database::getInstance();
 $vendor_id = intval($_GET['vendor_id'] ?? 0);
 
 // Fetch vendor challans
-$sql = "SELECT c.*, pr.project_name, p.name as vendor_name  
-        FROM challans c
-        JOIN projects pr ON c.project_id = pr.id
-        JOIN parties p ON c.party_id = p.id
-        WHERE c.party_id = ? AND c.challan_type = 'material'
-        ORDER BY c.challan_date DESC";
+// Fetch pending vendor bills
+$sql = "SELECT b.id, b.bill_no, b.bill_date, b.amount as total_amount, b.paid_amount, (b.amount - b.paid_amount) as pending_amount,
+               b.status, p.name as vendor_name, c.challan_no
+        FROM bills b
+        JOIN parties p ON b.party_id = p.id
+        LEFT JOIN challans c ON b.challan_id = c.id
+        WHERE b.party_id = ? AND b.status IN ('pending', 'partial')
+        ORDER BY b.bill_date DESC";
 
 $stmt = $db->query($sql, [$vendor_id]);
-$challans = $stmt->fetchAll();
+$bills = $stmt->fetchAll();
 
-if (empty($challans)) {
+if (empty($bills)) {
     echo '<div style="text-align: center; padding: 40px; color: #64748b;">
-            <i class="fas fa-search" style="font-size: 24px; margin-bottom: 10px; display: block; opacity: 0.5;"></i>
-            No challans found
+            <i class="fas fa-check-circle" style="font-size: 24px; margin-bottom: 10px; display: block; opacity: 0.5; color: #10b981;"></i>
+            No pending bills found. All clear!
           </div>';
     exit;
 }
@@ -36,10 +39,10 @@ if (empty($challans)) {
     <table class="modern-table">
         <thead>
             <tr>
-                <th>Challan No</th>
+                <th>Bill No</th>
                 <th>Date</th>
-                <th>Project</th>
-                <th>Total Cost</th>
+                <th>Ref Challan</th>
+                <th>Total Amount</th>
                 <th>Paid</th>
                 <th>Pending</th>
                 <th>Status</th>
@@ -47,17 +50,23 @@ if (empty($challans)) {
             </tr>
         </thead>
         <tbody>
-            <?php foreach ($challans as $challan): ?>
+            <?php foreach ($bills as $bill): ?>
             <tr>
-                <td><strong><?= htmlspecialchars($challan['challan_no']) ?></strong></td>
-                <td><span style="color: #64748b;"><?= formatDate($challan['challan_date']) ?></span></td>
-                <td><span style="color: #1e293b; font-weight: 500;"><?= htmlspecialchars($challan['project_name']) ?></span></td>
-                <td style="font-family: monospace; font-weight: 600;"><?= formatCurrency($challan['total_amount']) ?></td>
-                <td><span class="badge-soft green" style="font-family: monospace;"><?= formatCurrency($challan['paid_amount']) ?></span></td>
+                <td><strong><?= htmlspecialchars($bill['bill_no']) ?></strong></td>
+                <td><span style="color: #64748b;"><?= formatDate($bill['bill_date']) ?></span></td>
                 <td>
-                    <?php if ($challan['pending_amount'] > 0): ?>
+                    <?php if($bill['challan_no']): ?>
+                        <span class="badge-soft blue" style="font-size: 11px;"><?= htmlspecialchars($bill['challan_no']) ?></span>
+                    <?php else: ?>
+                        <span style="color: #cbd5e1;">-</span>
+                    <?php endif; ?>
+                </td>
+                <td style="font-family: monospace; font-weight: 600;"><?= formatCurrency($bill['total_amount']) ?></td>
+                <td><span class="badge-soft green" style="font-family: monospace;"><?= formatCurrency($bill['paid_amount']) ?></span></td>
+                <td>
+                    <?php if ($bill['pending_amount'] > 0): ?>
                         <span class="badge-soft red" style="font-family: monospace;">
-                            <?= formatCurrency($challan['pending_amount']) ?>
+                            <?= formatCurrency($bill['pending_amount']) ?>
                         </span>
                     <?php else: ?>
                          <span class="badge-soft green" style="font-size: 11px;">
@@ -69,19 +78,18 @@ if (empty($challans)) {
                     <?php
                     $status_colors = [
                         'pending' => 'orange',
-                        'approved' => 'blue',
-                        'partial' => 'orange',
+                        'partial' => 'blue',
                         'paid' => 'green'
                     ];
-                    $color = $status_colors[$challan['status']] ?? 'gray';
+                    $color = $status_colors[$bill['status']] ?? 'gray';
                     ?>
                     <span class="badge-soft <?= $color ?>">
-                        <?= ucfirst($challan['status']) ?>
+                        <?= ucfirst($bill['status']) ?>
                     </span>
                 </td>
                 <td>
-                    <?php if ($challan['pending_amount'] > 0): ?>
-                        <button class="modern-btn" style="width: auto; padding: 6px 12px; font-size: 13px; min-width: auto;" onclick="showPaymentModal('vendor_payment', <?= $challan['id'] ?>, <?= $challan['party_id'] ?>, <?= $challan['pending_amount'] ?>, <?= htmlspecialchars(json_encode($challan['vendor_name'] ?? 'Vendor'), ENT_QUOTES) ?>)">
+                    <?php if ($bill['pending_amount'] > 0): ?>
+                        <button class="modern-btn" style="width: auto; padding: 6px 12px; font-size: 13px; min-width: auto;" onclick="showPaymentModal('vendor_bill_payment', <?= $bill['id'] ?>, <?= $vendor_id ?>, <?= $bill['pending_amount'] ?>, <?= htmlspecialchars(json_encode($bill['vendor_name'] ?? 'Vendor'), ENT_QUOTES) ?>)">
                             <i class="fas fa-rupee-sign"></i> Pay
                         </button>
                     <?php endif; ?>

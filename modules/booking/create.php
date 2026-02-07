@@ -8,6 +8,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 requireAuth();
+checkPermission(['admin', 'project_manager']);
 
 $db = Database::getInstance();
 $page_title = 'Create Booking';
@@ -16,6 +17,7 @@ $current_page = 'booking';
 // Fetch data
 $customers = $db->query("SELECT id, name, mobile, email, address FROM parties WHERE party_type = 'customer' ORDER BY name")->fetchAll();
 $projects = $db->query("SELECT id, project_name FROM projects WHERE status = 'active' ORDER BY project_name")->fetchAll();
+$stage_of_works = $db->query("SELECT id, name, total_stages FROM stage_of_work WHERE status = 'active' ORDER BY name")->fetchAll();
 $available_flats = $db->query("SELECT f.id, f.flat_no, f.area_sqft, f.total_value, p.project_name, p.id as project_id
                                 FROM flats f
                                 JOIN projects p ON f.project_id = p.id
@@ -195,6 +197,25 @@ include __DIR__ . '/../../includes/header.php';
                         <h2 class="card-title-custom">Booking Details</h2>
                     </div>
                     <div class="card-body-custom">
+                        <!-- NEW: Stage of Work -->
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div class="form-group-custom mb-0" style="background: #f0f9ff; padding: 10px; border-radius: 8px; border: 1px dashed #0284c7;">
+                                    <label class="form-label-custom" style="color: #0284c7; font-weight: 700;">Select Stage of Work (Payment Plan)</label>
+                                    <select name="stage_of_work_id" class="form-control-custom">
+                                        <option value="">Select Plan (Optional)</option>
+                                        <?php if(empty($stage_of_works)): ?>
+                                            <option value="" disabled>No Templates Found (Check Database)</option>
+                                        <?php else: ?>
+                                            <?php foreach ($stage_of_works as $plan): ?>
+                                                <option value="<?= $plan['id'] ?>"><?= htmlspecialchars($plan['name']) ?> (<?= $plan['total_stages'] ?> Stages)</option>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <div class="form-group-custom mb-0">
@@ -207,6 +228,9 @@ include __DIR__ . '/../../includes/header.php';
                                     </select>
                                 </div>
                             </div>
+                        </div>
+
+                        <div class="row mb-3">
                             <div class="col-md-6">
                                 <div class="form-group-custom mb-0">
                                     <label class="form-label-custom">Select Flat *</label>

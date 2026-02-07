@@ -10,6 +10,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 requireAuth();
+checkPermission(['admin', 'project_manager', 'accountant']);
 
 $masterService = new MasterService();
 $page_title = 'Parties';
@@ -17,6 +18,10 @@ $current_page = 'parties';
 
 // Handle CRUD Operations
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+        die('CSRF Token verification failed');
+    }
+
     $action = $_POST['action'] ?? '';
     
     try {
@@ -719,6 +724,7 @@ include __DIR__ . '/../../includes/header.php';
             </button>
         </div>
         <form method="POST">
+             <?= csrf_field() ?>
              <input type="hidden" name="action" value="create">
              <input type="hidden" name="return_url" id="add_return_url">
 
@@ -744,7 +750,7 @@ include __DIR__ . '/../../includes/header.php';
 
                      <div>
                          <label class="input-label">GST Number</label>
-                         <input type="text" name="gst_number" class="modern-input" placeholder="GSTIN (Optional)">
+                         <input type="text" name="gst_number" class="modern-input" placeholder="e.g. 22AAAAA0000A1Z5" maxlength="15" pattern="^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$" title="Must be 15 characters: 2 digits, 5 letters, 4 digits, 1 letter, 1 alphanumeric, Z, 1 alphanumeric" oninput="this.value = this.value.toUpperCase()">
                     </div>
                 </div>
 
@@ -789,6 +795,7 @@ include __DIR__ . '/../../includes/header.php';
             </button>
         </div>
         <form method="POST">
+             <?= csrf_field() ?>
              <input type="hidden" name="action" value="update">
              <input type="hidden" name="id" id="edit_id">
 
@@ -814,7 +821,7 @@ include __DIR__ . '/../../includes/header.php';
 
                      <div>
                          <label class="input-label">GST Number</label>
-                         <input type="text" name="gst_number" id="edit_gst_number" class="modern-input" placeholder="GSTIN (Optional)">
+                         <input type="text" name="gst_number" id="edit_gst_number" class="modern-input" placeholder="e.g. 22AAAAA0000A1Z5" maxlength="15" pattern="^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$" title="Must be 15 characters: 2 digits, 5 letters, 4 digits, 1 letter, 1 alphanumeric, Z, 1 alphanumeric" oninput="this.value = this.value.toUpperCase()">
                     </div>
                 </div>
 
@@ -861,6 +868,7 @@ include __DIR__ . '/../../includes/header.php';
             </p>
             
             <form method="POST">
+                <?= csrf_field() ?>
                 <input type="hidden" name="action" value="delete">
                 <input type="hidden" name="id" id="delete_id">
                 

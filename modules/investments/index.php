@@ -20,6 +20,11 @@ $current_page = 'investments';
 
 // Handle CRUD Operations
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+         setFlashMessage('error', 'Security token expired. Please try again.');
+         redirect('modules/investments/index.php');
+    }
+
     $action = $_POST['action'] ?? '';
     
     try {
@@ -588,6 +593,7 @@ include __DIR__ . '/../../includes/header.php';
         </div>
 
         <form method="POST">
+            <?= csrf_field() ?>
             <input type="hidden" name="action" value="create">
             <div class="modal-body-premium">
                 <div class="form-section-title"><i class="fas fa-info-circle"></i> Investment Details</div>
@@ -657,6 +663,7 @@ include __DIR__ . '/../../includes/header.php';
         </div>
 
         <form method="POST">
+            <?= csrf_field() ?>
             <input type="hidden" name="action" value="update">
             <input type="hidden" name="id" id="edit_id">
             
@@ -731,6 +738,7 @@ include __DIR__ . '/../../includes/header.php';
             </p>
             
             <form method="POST">
+                <?= csrf_field() ?>
                 <input type="hidden" name="action" value="delete">
                 <input type="hidden" name="id" id="delete_id">
                 
@@ -829,3 +837,5 @@ function openDeleteModal(id) {
     openModal('deleteInvestmentModal');
 }
 </script>
+
+<?php include __DIR__ . '/../../includes/footer.php'; ?>

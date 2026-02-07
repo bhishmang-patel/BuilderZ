@@ -9,6 +9,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 requireAuth();
+checkPermission(['admin', 'accountant', 'project_manager']);
 
 $db = Database::getInstance();
 $page_title = 'Payment Register';
@@ -183,7 +184,7 @@ include __DIR__ . '/../../includes/header.php';
                 <div class="stats-grid">
                     <div class="stat-card-modern receipts">
                         <div class="stat-label-modern">Total Receipts</div>
-                        <div class="stat-icon-circle" style="background: #ecfdf5; color: #10b981;"><i class="fas fa-arrow-down"></i></div>
+                        <div class="stat-icon-circle" style="color: #10b981;"><i class="fas fa-arrow-down"></i></div>
                         <div class="stat-value-modern" style="color: #10b981;">
                             <span class="short-value"><?= formatCurrencyShort($total_receipts) ?></span>
                             <span class="full-value"><?= formatCurrencyIndian($total_receipts) ?></span>
@@ -192,7 +193,7 @@ include __DIR__ . '/../../includes/header.php';
                     </div>
                     <div class="stat-card-modern payments">
                         <div class="stat-label-modern">Total Payments</div>
-                        <div class="stat-icon-circle" style="background: #fffbeb; color: #f59e0b;"><i class="fas fa-arrow-up"></i></div>
+                        <div class="stat-icon-circle" style="color: #f59e0b;"><i class="fas fa-arrow-up"></i></div>
                         <div class="stat-value-modern" style="color: #f59e0b;">
                             <span class="short-value"><?= formatCurrencyShort($total_payments) ?></span>
                             <span class="full-value"><?= formatCurrencyIndian($total_payments) ?></span>
@@ -201,7 +202,7 @@ include __DIR__ . '/../../includes/header.php';
                     </div>
                     <div class="stat-card-modern refunds">
                         <div class="stat-label-modern">Refunds</div>
-                        <div class="stat-icon-circle" style="background: #fef2f2; color: #ef4444;"><i class="fas fa-undo"></i></div>
+                        <div class="stat-icon-circle" style="color: #ef4444;"><i class="fas fa-undo"></i></div>
                         <div class="stat-value-modern" style="color: #ef4444;">
                             <span class="short-value"><?= formatCurrencyShort($total_refunds) ?></span>
                             <span class="full-value"><?= formatCurrencyIndian($total_refunds) ?></span>
@@ -210,7 +211,7 @@ include __DIR__ . '/../../includes/header.php';
                     </div>
                     <div class="stat-card-modern net">
                         <div class="stat-label-modern">Net Cash Flow</div>
-                        <div class="stat-icon-circle" style="background: #eff6ff; color: #3b82f6;"><i class="fas fa-wallet"></i></div>
+                        <div class="stat-icon-circle" style="color: #3b82f6;"><i class="fas fa-wallet"></i></div>
                         <div class="stat-value-modern" style="color: <?= $net_cashflow >= 0 ? '#3b82f6' : '#ef4444' ?>;">
                             <span class="short-value"><?= formatCurrencyShort($net_cashflow) ?></span>
                             <span class="full-value"><?= formatCurrencyIndian($net_cashflow) ?></span>

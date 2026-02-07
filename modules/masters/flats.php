@@ -20,6 +20,10 @@ $current_page = 'flats';
 $masterService = new MasterService();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+        die('CSRF Token verification failed');
+    }
+
     $action = $_POST['action'] ?? '';
     
     try {
@@ -142,8 +146,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // 3. Typical Floors
                     if (!empty($flatMix['typical_floor']['units']) && $floorCount >= 2) {
                         $startFloor = max(2, intval($flatMix['typical_floor']['start_floor']));
-                        
-                        for ($f = $startFloor; $f <= $floorCount; $f++) {
+                        $lastFloor = $floorCount - 1;   
+                        for ($f = $startFloor; $f <= $lastFloor; $f++) {
                             foreach ($flatMix['typical_floor']['units'] as $idx => $unit) {
                                 $createUnit($f, $unit, $idx + 1);
                                 $count++;
@@ -506,33 +510,7 @@ include __DIR__ . '/../../includes/header.php';
     vertical-align: middle;
 }
 
-/* Custom Checkbox */
-.custom-checkbox {
-    width: 20px;
-    height: 20px;
-    border: 2px solid #cbd5e1;
-    border-radius: 6px;
-    cursor: pointer;
-    position: relative;
-    appearance: none;
-    background: white;
-    transition: all 0.2s;
-}
-.custom-checkbox:checked {
-    background: #3b82f6;
-    border-color: #3b82f6;
-}
-.custom-checkbox:checked::after {
-    content: '\f00c';
-    font-family: 'Font Awesome 5 Free';
-    font-weight: 900;
-    color: white;
-    font-size: 12px;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-}
+
 
 </style>
 
@@ -662,13 +640,14 @@ include __DIR__ . '/../../includes/header.php';
                 <!-- Flats Table -->
                 <div class="table-responsive">
                     <form id="bulkDeleteForm" method="POST">
+                        <?= csrf_field() ?>
                         <input type="hidden" name="action" value="bulk_delete">
                         <input type="hidden" name="ids" id="bulkDeleteIds">
                         
                         <table class="modern-table">
                             <thead>
                                 <tr>
-                                    <th style="width: 40px;"><input type="checkbox" id="selectAll" class="custom-checkbox" onclick="toggleAll(this)"></th>
+                                    <th style="width: 40px;"><input type="checkbox" id="selectAll" class="premium-checkbox" onclick="toggleAll(this)"></th>
                                     <th>PROJECT</th>
                                     <th>FLAT NO</th>
                                     <th>FLOOR</th>
@@ -706,7 +685,7 @@ include __DIR__ . '/../../includes/header.php';
                                     <tr>
                                         <td>
                                             <?php if ($flat['status'] === 'available'): ?>
-                                                <input type="checkbox" class="custom-checkbox flat-checkbox" value="<?= $flat['id'] ?>" onclick="updateBulkState()">
+                                                <input type="checkbox" class="premium-checkbox flat-checkbox" value="<?= $flat['id'] ?>" onclick="updateBulkState()">
                                             <?php else: ?>
                                                 <i class="fas fa-lock" style="color: #cbd5e1; font-size: 14px; margin-left: 2px;" title="Cannot delete booked/sold flat"></i>
                                             <?php endif; ?>
@@ -721,7 +700,19 @@ include __DIR__ . '/../../includes/header.php';
                                             <span class="badge-pill blue" style="font-size: 13px;"><?= htmlspecialchars($flat['flat_no']) ?></span>
                                         </td>
                                         <td><span style="font-weight: 500; color: #64748b;"><?= $flat['floor'] ?></span></td>
-                                        <td><span class="badge-pill purple"><?= htmlspecialchars($flat['bhk'] ?? '—') ?></span></td>       
+                                        <td>
+                                            <span class="badge-pill purple">
+                                                <?php 
+                                                if (!empty($flat['bhk'])) {
+                                                    echo htmlspecialchars($flat['bhk']); 
+                                                } elseif (!empty($flat['unit_type']) && strtolower($flat['unit_type']) !== 'flat') {
+                                                    echo ucfirst(htmlspecialchars($flat['unit_type']));
+                                                } else {
+                                                    echo '—';
+                                                }
+                                                ?>
+                                            </span>
+                                        </td>
                                         <td><span style="font-weight: 600; color: #475569;"><?= number_format($flat['area_sqft'], 2) ?></span></td>
                                         <td>
                                             <?php if(!empty($flat['booked_rate'])): ?>
@@ -780,6 +771,7 @@ include __DIR__ . '/../../includes/header.php';
 
         <form method="POST" id="bulkCreateForm">
             <div class="modal-body-premium">
+                <?= csrf_field() ?>
                 <input type="hidden" name="action" value="bulk_create">
                 <input type="hidden" name="flat_mix" id="flat_mix">
 
@@ -941,6 +933,7 @@ include __DIR__ . '/../../includes/header.php';
         </div>
         <form method="POST">
             <div class="modal-body-premium">
+                <?= csrf_field() ?>
                 <input type="hidden" name="action" value="create">
                 
                 <div class="form-grid-premium three-cols">
@@ -1048,6 +1041,7 @@ include __DIR__ . '/../../includes/header.php';
         </div>
         <form method="POST">
             <div class="modal-body-premium">
+                <?= csrf_field() ?>
                 <input type="hidden" name="action" value="update">
                 <input type="hidden" name="id" id="edit_id">
                 
@@ -1138,6 +1132,7 @@ include __DIR__ . '/../../includes/header.php';
             </p>
             
             <form method="POST">
+                <?= csrf_field() ?>
                 <input type="hidden" name="action" value="delete">
                 <input type="hidden" name="id" id="delete_id">
                 
@@ -1375,22 +1370,66 @@ function submitBulkForm() {
     for (let i = 0; i < allRows.length; i++) {
         const r = allRows[i];
         if (parseFloat(r.sellable_area) <= 0 || isNaN(parseFloat(r.sellable_area))) {
-            alert('Error: Sellable Area must be greater than 0 for all units.');
+            Swal.fire({
+                icon: 'error',
+                title: 'Validation Error',
+                text: 'Sellable Area must be greater than 0 for all units.',
+                confirmButtonColor: '#ef4444',
+                customClass: {
+                    popup: 'premium-swal-popup',
+                    title: 'premium-swal-title',
+                    content: 'premium-swal-content',
+                    confirmButton: 'premium-swal-confirm'
+                }
+            });
             return false;
         }
         if (parseFloat(r.flat_value) <= 0 || isNaN(parseFloat(r.flat_value))) {
-            alert('Error: Flat Value must be greater than 0 for all units.');
+            Swal.fire({
+                icon: 'error',
+                title: 'Validation Error',
+                text: 'Flat Value must be greater than 0 for all units.',
+                confirmButtonColor: '#ef4444',
+                customClass: {
+                    popup: 'premium-swal-popup',
+                    title: 'premium-swal-title',
+                    content: 'premium-swal-content',
+                    confirmButton: 'premium-swal-confirm'
+                }
+            });
             return false;
         }
         if (r.unit_type === 'flat' && !r.bhk) {
-            alert('Error: BHK is required for all Flats.');
+            Swal.fire({
+                icon: 'error',
+                title: 'Validation Error',
+                text: 'BHK is required for all Flats.',
+                confirmButtonColor: '#ef4444',
+                customClass: {
+                    popup: 'premium-swal-popup',
+                    title: 'premium-swal-title',
+                    content: 'premium-swal-content',
+                    confirmButton: 'premium-swal-confirm'
+                }
+            });
             return false;
         }
     }
     
     // 5. Typical Floor Safety
     if (totalFloors >= 2 && typicalRows.length === 0) {
-        alert('Warning: You have ' + totalFloors + ' floors but no Typical Floor configuration. Please add units to Typical Floors.');
+        Swal.fire({
+            icon: 'warning',
+            title: 'Missing Configuration',
+            text: 'You have ' + totalFloors + ' floors but no Typical Floor configuration. Please add units to Typical Floors.',
+            confirmButtonColor: '#f59e0b',
+            customClass: {
+                popup: 'premium-swal-popup',
+                title: 'premium-swal-title',
+                content: 'premium-swal-content',
+                confirmButton: 'premium-swal-confirm'
+            }
+        });
         return false;
     }
 
@@ -1398,7 +1437,9 @@ function submitBulkForm() {
     let totalUnits = groundRows.length + firstRows.length;
     let typicalCount = 0;
     if (totalFloors >= 2) {
-        typicalCount = typicalRows.length * (totalFloors - 1);
+        let typicalFloors = totalFloors - 2; // ground + first
+        if (typicalFloors < 0) typicalFloors = 0;
+        typicalCount = typicalRows.length * typicalFloors;
         totalUnits += typicalCount;
     }
     
@@ -1407,7 +1448,7 @@ function submitBulkForm() {
     document.getElementById('confirm_first_count').textContent = firstRows.length;
     document.getElementById('confirm_typical_total').textContent = typicalCount;
     document.getElementById('confirm_typical_per_floor').textContent = typicalRows.length;
-    document.getElementById('confirm_typical_floors').textContent = totalFloors >= 2 ? (totalFloors - 1) : 0;
+    document.getElementById('confirm_typical_floors').textContent = totalFloors >= 2 ? (totalFloors - 2) : 0;
     document.getElementById('confirm_total_final').textContent = totalUnits;
 
     // Construct Payload

@@ -8,6 +8,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 requireAuth();
+checkPermission(['admin', 'accountant', 'project_manager']);
 
 $db = Database::getInstance();
 $page_title = 'Labour Outstanding';
@@ -284,7 +285,7 @@ include __DIR__ . '/../../includes/header.php';
                                 <button class="modern-btn secondary" style="width: auto; padding: 8px 12px; min-width: auto;" onclick="viewLabourDetails(<?= $labour['labour_id'] ?>)">
                                     <i class="fas fa-eye"></i>
                                 </button>
-                                <button class="modern-btn" style="width: auto; padding: 8px 16px; min-width: auto;" onclick="showPaymentModal('labour_payment', <?= $labour['labour_id'] ?>, <?= $labour['labour_id'] ?>, <?= $labour['pending_amount'] ?>, <?= htmlspecialchars(json_encode($labour['labour_name']), ENT_QUOTES) ?>)">
+                                <button class="modern-btn" style="width: auto; padding: 8px 16px; min-width: auto;" onclick="showPaymentModal('labour_account_payment', <?= $labour['labour_id'] ?>, <?= $labour['labour_id'] ?>, <?= $labour['pending_amount'] ?>, <?= htmlspecialchars(json_encode($labour['labour_name']), ENT_QUOTES) ?>)">
                                     <i class="fas fa-rupee-sign"></i> Pay
                                 </button>
                             </div>
@@ -296,6 +297,8 @@ include __DIR__ . '/../../includes/header.php';
         </table>
     </div>
 </div>
+
+<link rel="stylesheet" href="<?= BASE_URL ?>assets/css/payment_modal_premium.css">
 
 <!-- Labour Details Modal -->
 <div id="labourDetailsModal" class="custom-modal">
@@ -315,97 +318,99 @@ include __DIR__ . '/../../includes/header.php';
     </div>
 </div>
 
-<!-- Payment Modal -->
-<div id="paymentModal" class="custom-modal">
-    <div class="modal-content" style="max-width: 500px; padding: 0; border: none; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
-        <div class="modal-header" style="background: #fff; padding: 20px 24px; border-bottom: 1px solid #f1f5f9;">
-             <h3 class="modal-title" style="font-size: 18px; font-weight: 700; color: #0f172a;">
-                <div class="chart-icon-box blue" style="width: 36px; height: 36px; font-size: 16px; margin-right: 12px;"><i class="fas fa-money-bill-transfer"></i></div>
+<!-- Premium Payment Modal -->
+<div id="paymentModal" class="custom-modal payment-modal-overlay">
+    <div class="payment-modal-content">
+        <div class="payment-modal-header">
+            <h3 class="payment-modal-title">
+                <div class="payment-modal-icon"><i class="fas fa-wallet"></i></div>
                 Record Payment
             </h3>
-            <button class="close-modal" onclick="hideModal('paymentModal')" style="font-size: 24px; color: #94a3b8;">&times;</button>
+            <button class="payment-modal-close" onclick="hideModal('paymentModal')">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
+        
         <form method="POST" action="<?= BASE_URL ?>modules/payments/index.php">
-            <div class="modal-body" style="padding: 24px;">
-                <input type="hidden" name="action" value="make_payment">
-                <input type="hidden" name="redirect_url" value="modules/reports/labour_outstanding.php">
-                <input type="hidden" name="payment_type" id="payment_type">
-                <input type="hidden" name="reference_id" id="reference_id">
-                <input type="hidden" name="party_id" id="party_id">
-                <input type="hidden" id="max_pending_amount" value="0">
-                
-                <!-- Info Card -->
-                <div style="background: linear-gradient(to right, #f8fafc, #fff); border: 1px solid #e2e8f0; padding: 16px; border-radius: 12px; margin-bottom: 24px;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                        <span style="font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Pay To</span>
-                        <span style="font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Outstanding</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span id="party_name_display" style="font-size: 15px; color: #0f172a; font-weight: 700;">-</span>
-                        <span id="pending_amount_display" style="font-size: 18px; color: #ef4444; font-weight: 800; font-family: 'Inter', sans-serif;">₹ 0.00</span>
-                    </div>
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="make_payment">
+            <input type="hidden" name="redirect_url" value="modules/reports/labour_outstanding.php">
+            <input type="hidden" name="payment_type" id="payment_type">
+            <input type="hidden" name="reference_id" id="reference_id">
+            <input type="hidden" name="party_id" id="party_id">
+            <input type="hidden" id="max_pending_amount" value="0">
+            
+            <div class="payment-info-card">
+                <div>
+                    <div class="payment-info-label">Pay To</div>
+                    <div class="payment-info-value" id="party_name_display">-</div>
                 </div>
-                
-                <div class="row" style="margin-bottom: 20px;">
+                <div style="text-align: right;">
+                    <div class="payment-info-label">Outstanding</div>
+                    <div class="payment-amount-large" id="pending_amount_display">₹ 0.00</div>
+                </div>
+            </div>
+
+            <div class="payment-form-body">
+                <div class="row">
                     <div class="col-md-6">
-                        <div class="form-group">
-                            <label class="form-label" style="font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 6px; display: block;">Payment Date</label>
-                            <input type="date" name="payment_date" required value="<?= date('Y-m-d') ?>" class="modern-input">
+                        <div class="payment-input-group">
+                            <label class="payment-label">Payment Date</label>
+                            <input type="date" name="payment_date" required value="<?= date('Y-m-d') ?>" class="payment-input">
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="form-group">
-                             <label class="form-label" style="font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 6px; display: block;">Amount (₹)</label>
-                            <div style="position: relative;">
-                                <input type="number" name="amount" id="payment_amount" step="0.01" required onchange="calculateBalance()" oninput="calculateBalance()" class="modern-input" placeholder="0.00" style="padding-left: 30px; font-weight: 600;">
-                                <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #64748b; font-weight: 600;">₹</span>
+                        <div class="payment-input-group">
+                            <label class="payment-label">Amount</label>
+                            <div class="payment-currency-wrapper">
+                                <span class="payment-currency-symbol">₹</span>
+                                <input type="number" name="payment_amount_final" id="payment_amount" step="0.01" required onchange="calculateBalance()" oninput="calculateBalance()" class="payment-input has-symbol" placeholder="0.00">
                             </div>
-                             <small id="amount_warning" style="color: #ef4444; display: none; margin-top: 5px; font-weight: 600; font-size: 11px;">
-                                <i class="fas fa-exclamation-triangle"></i> Exceeds pending amount
+                            <small id="amount_warning" style="color: #ef4444; display: none; margin-top: 5px; font-weight: 600; font-size: 11px;">
+                                <i class="fas fa-exclamation-triangle"></i> Exceeds outstanding!
                             </small>
                         </div>
                     </div>
                 </div>
 
-                <div class="row" style="margin-bottom: 20px;">
+                <div class="row">
                     <div class="col-md-6">
-                        <div class="form-group">
-                            <label class="form-label" style="font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 6px; display: block;">Payment Mode</label>
-                             <div style="position: relative;">
-                                <select name="payment_mode" required class="modern-select">
+                         <div class="payment-input-group">
+                            <label class="payment-label">Payment Mode</label>
+                            <div class="payment-select-wrapper">
+                                <select name="payment_mode" required class="payment-input">
                                     <option value="cash">Cash</option>
                                     <option value="bank">Bank Transfer</option>
                                     <option value="upi">UPI</option>
                                     <option value="cheque">Cheque</option>
                                 </select>
-                                <i class="fas fa-chevron-down" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none; font-size: 12px;"></i>
+                                <i class="fas fa-chevron-down payment-select-arrow"></i>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="form-group">
-                            <label class="form-label" style="font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 6px; display: block;">Reference No</label>
-                            <input type="text" name="reference_no" placeholder="UTR / Cheque No" class="modern-input">
+                        <div class="payment-input-group">
+                            <label class="payment-label">Reference No</label>
+                            <input type="text" name="reference_no" placeholder="UTR / Cheque No" class="payment-input">
                         </div>
                     </div>
                 </div>
                 
-                <div class="form-group" style="margin-bottom: 24px;">
-                    <label class="form-label" style="font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 6px; display: block;">Remarks</label>
-                    <textarea name="remarks" rows="2" placeholder="Add any notes here..." class="modern-input" style="min-height: 80px; resize: none;"></textarea>
+                <div class="payment-input-group">
+                    <label class="payment-label">Remarks (Optional)</label>
+                    <textarea name="remarks" rows="2" placeholder="Add any notes here..." class="payment-input" style="min-height: 80px; resize: none;"></textarea>
                 </div>
-                
-                <!-- Balance Calc -->
-                <div style="background: #f8fafc; border-top: 1px dashed #cbd5e1; padding: 16px; border-radius: 0 0 8px 8px; margin: 0 -24px -24px -24px; display: flex; justify-content: space-between; align-items: center;">
-                    <div style="font-size: 12px; color: #64748b; font-weight: 500;">Remaining Balance</div>
-                    <div id="remaining_calc" style="font-size: 16px; font-weight: 700; color: #10b981;">₹ 0.00</div>
-                </div>
-
             </div>
-            <div class="modal-footer" style="padding: 16px 24px; background: #fff; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end; gap: 12px;">
-                <button type="button" class="modern-btn secondary" onclick="hideModal('paymentModal')" style="border: 1px solid #e2e8f0; background: #fff; color: #64748b;">Cancel</button>
-                <button type="submit" class="modern-btn blue" id="payment_submit_btn" style="box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2);">
-                    <i class="fas fa-check" style="margin-right: 8px;"></i> Confirm Payment
+
+            <div class="payment-balance-row">
+                <div style="font-size: 13px; color: #64748b; font-weight: 600;">Remaining Balance</div>
+                <div id="remaining_calc" style="font-size: 16px; font-weight: 700; color: #10b981;">₹ 0.00</div>
+            </div>
+
+            <div class="payment-modal-footer">
+                <button type="button" class="btn-cancel" onclick="hideModal('paymentModal')">Cancel</button>
+                <button type="submit" class="btn-confirm" id="payment_submit_btn">
+                    <i class="fas fa-check"></i> Confirm Payment
                 </button>
             </div>
         </form>

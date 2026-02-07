@@ -20,13 +20,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     
     if ($action === 'add_payment') {
+        if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+             setFlashMessage('error', 'Security token expired. Please try again.');
+             redirect('modules/booking/view.php?id=' . $booking_id);
+        }
         $payment_data = [
             'payment_type' => 'customer_receipt',
             'reference_type' => 'booking',
             'reference_id' => $booking_id,
             'party_id' => intval($_POST['party_id']),
+            'demand_id' => !empty($_POST['demand_id']) ? intval($_POST['demand_id']) : null,
             'payment_date' => $_POST['payment_date'],
-            'amount' => floatval($_POST['amount']),
+            'amount' => round(floatval($_POST['amount']), 2),
             'payment_mode' => $_POST['payment_mode'],
             'reference_no' => sanitize($_POST['reference_no']),
             'remarks' => sanitize($_POST['remarks']),
@@ -57,13 +62,16 @@ $sql = "SELECT b.*,
                p.mobile as customer_mobile,
                p.email as customer_email,
                p.address as customer_address,
+               p.address as customer_address,
                pr.project_name,
+               sw.name as stage_of_work_name,
                u.full_name as created_by_name
         FROM bookings b
         JOIN flats f ON b.flat_id = f.id
         JOIN parties p ON b.customer_id = p.id
         JOIN projects pr ON b.project_id = pr.id
         LEFT JOIN users u ON b.created_by = u.id
+        LEFT JOIN stage_of_work sw ON b.stage_of_work_id = sw.id
         WHERE b.id = ?";
 
 $stmt = $db->query($sql, [$booking_id]);
@@ -75,13 +83,17 @@ if (!$booking) {
 }
 
 // Fetch payment history
-$sql = "SELECT p.*, u.full_name as created_by_name
+$sql = "SELECT p.*, u.full_name as created_by_name, bd.stage_name as demand_stage
         FROM payments p
         LEFT JOIN users u ON p.created_by = u.id
+        LEFT JOIN booking_demands bd ON p.demand_id = bd.id
         WHERE p.reference_type = 'booking' AND p.reference_id = ?
         ORDER BY p.payment_date DESC, p.created_at DESC";
 $stmt = $db->query($sql, [$booking_id]);
 $payments = $stmt->fetchAll();
+
+// Fetch Pending Demands for Payment Dropdown
+$demands = $db->query("SELECT * FROM booking_demands WHERE booking_id = ? AND status != 'paid' ORDER BY generated_date ASC", [$booking_id])->fetchAll();
 
 include __DIR__ . '/../../includes/header.php';
 ?>
@@ -279,6 +291,12 @@ include __DIR__ . '/../../includes/header.php';
                             <span class="info-value"><?= formatDate($booking['booking_date']) ?></span>
                         </div>
                         <div class="info-item">
+                            <span class="info-label">Payment Plan:</span>
+                            <span class="info-value" style="color: #4f46e5; font-weight: 600;">
+                                <?= !empty($booking['stage_of_work_name']) ? htmlspecialchars($booking['stage_of_work_name']) : 'Custom / Manual' ?>
+                            </span>
+                        </div>
+                        <div class="info-item">
                             <span class="info-label">Status:</span>
                             <span class="info-value">
                                 <span class="badge-modern <?= $booking['status'] === 'active' ? 'badge-info-modern' : ($booking['status'] === 'completed' ? 'badge-success-modern' : 'badge-warning-modern') ?>">
@@ -382,9 +400,12 @@ include __DIR__ . '/../../includes/header.php';
                                         <td><?= formatDate($payment['payment_date']) ?></td>
                                         <td><strong style="color: #38ef7d;"><?= formatCurrency($payment['amount']) ?></strong></td>
                                         <td>
-                                            <span class="badge-modern badge-info-modern">
-                                                <?= ucfirst($payment['payment_mode']) ?>
-                                            </span>
+                                            <div style="font-weight:600; color:#475569;"><?= ucfirst($payment['payment_mode']) ?></div>
+                                            <?php if(!empty($payment['demand_stage'])): ?>
+                                                <div style="font-size: 0.75rem; color: #6366f1; background: #eef2ff; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-top: 4px;">
+                                                    For: <?= htmlspecialchars($payment['demand_stage']) ?>
+                                                </div>
+                                            <?php endif; ?>
                                         </td>
                                         <td><?= htmlspecialchars($payment['reference_no']) ?></td>
                                         <td><?= htmlspecialchars($payment['remarks']) ?></td>
@@ -449,6 +470,13 @@ include __DIR__ . '/../../includes/header.php';
                         Back to Bookings
                     </a>
 
+                    <div style="border-top: 1px solid #f1f5f9; margin: 16px 0;"></div>
+                    
+                    <a href="<?= BASE_URL ?>modules/booking/export_pdf.php?id=<?= $booking_id ?>" class="action-btn" style="background:linear-gradient(135deg, #0f172a 0%, #334155 100%); color:white;" target="_blank">
+                        <i class="fas fa-file-download"></i>
+                        Booking Confirmation
+                    </a>
+
                     <?php if ($booking['total_pending'] <= 0): ?>
                         <div class="status-alert success">
                             <i class="fas fa-check-circle status-alert-icon" style="color: #38ef7d;"></i>
@@ -497,6 +525,7 @@ include __DIR__ . '/../../includes/header.php';
             <button class="modal-close" onclick="hideModal('addPaymentModal')">&times;</button>
         </div>
         <form method="POST">
+            <?= csrf_field() ?>
             <div class="modal-body">
                 <input type="hidden" name="action" value="add_payment">
                 <input type="hidden" name="party_id" value="<?= $booking['customer_id'] ?>">
@@ -508,6 +537,18 @@ include __DIR__ . '/../../includes/header.php';
                 <div class="form-group">
                     <label>Remaining Payment (₹)</label>
                     <input type="text" readonly class="form-control" value="<?= $booking['total_pending'] ?>" style="background-color: #e9ecef;">
+                </div>
+
+                <div class="form-group">
+                    <label>Payment For (Optional)</label>
+                    <select name="demand_id" class="form-control">
+                        <option value="">General / Oldest Unpaid (Default)</option>
+                        <?php foreach ($demands as $d): ?>
+                            <option value="<?= $d['id'] ?>">
+                                <?= htmlspecialchars($d['stage_name']) ?> - ₹<?= $d['demand_amount'] ?> (Due: <?= formatDate($d['due_date']) ?>)
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
                 
                 <div class="row">

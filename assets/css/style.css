@@ -798,17 +798,106 @@ textarea:focus {
 /* Responsive */
 @media (max-width: 768px) {
     .sidebar {
-        margin-left: calc(-1 * var(--sidebar-width));
+        width: 0;
+        padding: 0;
+        box-shadow: none;
+        overflow: hidden;
+    }
+
+    .sidebar.collapsed {
+        width: 0;
+    }
+
+    .sidebar.active {
+        width: var(--sidebar-width);
+        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.2);
     }
 
     .main-content {
         margin-left: 0;
     }
 
-    .stats-grid {
-        grid-template-columns: 1fr;
+    .sidebar.collapsed+.main-content {
+        margin-left: 0;
+    }
+
+    .sidebar-toggle {
+        display: block;
+        /* Show hamburger in navbar on mobile */
+        background: none;
+        border: none;
+        font-size: 20px;
+        color: #333;
+        cursor: pointer;
+    }
+
+    .navbar-left {
+        gap: 10px;
     }
 }
+
+/* Premium SweetAlert2 Styles */
+.swal2-container {
+    z-index: 20000 !important;
+}
+
+.premium-swal-popup {
+    border-radius: 20px !important;
+    padding: 30px !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+.premium-swal-title {
+    font-size: 22px !important;
+    font-weight: 700 !important;
+    color: #1e293b !important;
+    margin-bottom: 10px !important;
+}
+
+.premium-swal-content {
+    font-size: 15px !important;
+    color: #64748b !important;
+}
+
+.premium-swal-confirm {
+    background-color: #3b82f6 !important;
+    color: white !important;
+    border-radius: 10px !important;
+    padding: 12px 24px !important;
+    font-weight: 600 !important;
+    font-size: 15px !important;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3) !important;
+    transition: all 0.2s;
+    border: none !important;
+}
+
+.premium-swal-confirm:hover {
+    background-color: #2563eb !important;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4) !important;
+}
+
+.premium-swal-cancel {
+    background-color: #fff !important;
+    color: #64748b !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 10px !important;
+    padding: 12px 24px !important;
+    font-weight: 600 !important;
+    font-size: 15px !important;
+    margin-right: 15px !important;
+    transition: all 0.2s;
+}
+
+.premium-swal-cancel:hover {
+    background-color: #f8fafc !important;
+    color: #475569 !important;
+}
+
+
 
 @media (max-width: 1400px) {
 
@@ -1029,4 +1118,101 @@ textarea:focus {
 .btn-logout-dropdown i {
     width: 20px;
     text-align: center;
+}
+
+/* =========================================
+   Modern Toggle Switches & Checkboxes
+   ========================================= */
+
+/* Toggle Switch (iOS Style) */
+.switch-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+    vertical-align: middle;
+}
+
+.switch-wrapper input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #cbd5e1;
+    transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 34px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.switch-wrapper input:checked+.slider {
+    background-color: #3b82f6;
+    /* Primary Color */
+}
+
+.switch-wrapper input:focus+.slider {
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+.switch-wrapper input:checked+.slider:before {
+    transform: translateX(20px);
+}
+
+/* Premium Checkbox (Table Selection) */
+.premium-checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #cbd5e1;
+    border-radius: 6px;
+    cursor: pointer;
+    position: relative;
+    background: white;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.premium-checkbox:checked {
+    background: #3b82f6;
+    border-color: #3b82f6;
+}
+
+.premium-checkbox:checked::after {
+    content: '\f00c';
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    color: white;
+    font-size: 11px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.premium-checkbox:hover {
+    border-color: #3b82f6;
+}
+
+.premium-checkbox:focus {
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    outline: none;
 }

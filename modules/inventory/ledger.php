@@ -37,7 +37,7 @@ $sql_in = "SELECT c.challan_date as date,
            FROM challan_items ci
            JOIN challans c ON ci.challan_id = c.id
            JOIN parties p ON c.party_id = p.id
-           WHERE ci.material_id = ? AND c.status != 'cancelled'";
+           WHERE ci.material_id = ? AND c.status = 'approved'";
 
 // Fetch Usage (Outward)
 $sql_out = "SELECT mu.usage_date as date, 
@@ -66,6 +66,7 @@ foreach ($transactions as $t) {
         $total_out += $t['quantity'];
     }
 }
+$current_stock = $total_in - $total_out;
 
 include __DIR__ . '/../../includes/header.php';
 ?>
@@ -243,7 +244,7 @@ include __DIR__ . '/../../includes/header.php';
         </div>
         <div class="stat-info">
             <h4>Current Stock</h4>
-            <div class="value"><?= number_format($material['current_stock'], 2) ?> <span style="font-size:14px; font-weight:500; color:#94a3b8;"><?= strtolower($material['unit']) ?></span></div>
+            <div class="value"><?= number_format($current_stock, 2) ?> <span style="font-size:14px; font-weight:500; color:#94a3b8;"><?= strtolower($material['unit']) ?></span></div>
         </div>
     </div>
     <div class="stat-card-modern">

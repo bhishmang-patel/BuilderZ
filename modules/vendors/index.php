@@ -16,6 +16,7 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 requireAuth();
+checkPermission(['admin', 'project_manager', 'accountant']);
 
 $masterService = new MasterService();
 $db = Database::getInstance();
@@ -24,6 +25,10 @@ $current_page = 'vendors';
 
 // Handle CRUD Operations
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+        die('CSRF Token verification failed');
+    }
+
     $action = $_POST['action'] ?? '';
     
     try {
@@ -96,7 +101,8 @@ $filters = [
     'vendor_type' => $_GET['vendor_type'] ?? '',
     'city' => $_GET['city'] ?? '',
     'gst_status' => $_GET['gst_status'] ?? '',
-    'status' => $_GET['status'] ?? ''
+    'status' => $_GET['status'] ?? '',
+    'material' => $_GET['material'] ?? ''
 ];
 $parties = [];
 try {
@@ -576,6 +582,10 @@ $totalPending = $stmt->fetch()['total_pending'] ?? 0;
                                 <option value="inactive" <?= $filters['status'] == 'inactive' ? 'selected' : '' ?>>Inactive</option>
                             </select>
                         </div>
+                        <div style="flex: 2; min-width: 200px; position: relative;">
+                            <i class="fas fa-box-open" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 12px;"></i>
+                            <input type="text" name="material" class="modern-input" placeholder="Filter by Material..." value="<?= htmlspecialchars($filters['material']) ?>" style="padding-left: 32px;">
+                        </div>
                         <div style="display:flex; gap:10px;">
                             <button type="submit" class="modern-btn">Apply</button>
                             <a href="index.php" class="modern-btn" style="background:#94a3b8;">Reset</a>
@@ -593,7 +603,8 @@ $totalPending = $stmt->fetch()['total_pending'] ?? 0;
                             <th>Type</th>
                             <th>Location</th>
                             <th>GST Status</th>
-                            <th style="text-align: right;">Opening Bal (₹)</th>
+                            <th style="width: 200px;">Material</th>
+                            <th>Quantity</th>
                             <th style="text-align: right; padding-right: 20px;">Outstanding (₹)</th>
                             <th>Status</th>
                             <th>Actions</th>
@@ -647,10 +658,13 @@ $totalPending = $stmt->fetch()['total_pending'] ?? 0;
                                     <?php endif; ?>
                                 </div>
                             </td>
-                            <td style="text-align: right;">
-                                <span style="font-weight: 600; color: #64748b;">
-                                    <?= formatCurrency($party['opening_balance'] ?? 0) ?>
-                                </span>
+                            <td>
+                                <div style="font-size: 12px; color: #475569; max-width: 200px; white-space: normal; line-height: 1.4;">
+                                    <?= !empty($party['supplied_materials']) ? htmlspecialchars($party['supplied_materials']) : '<span style="color:#cbd5e1">-</span>' ?>
+                                </div>
+                            </td>
+                            <td style="color: #475569;">
+                                <?= !empty($party['total_quantity']) ? number_format($party['total_quantity'], 2) : '-' ?>
                             </td>
                             <td style="text-align: right; padding-right: 20px;">
                                 <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
@@ -774,6 +788,7 @@ $totalPending = $stmt->fetch()['total_pending'] ?? 0;
             </button>
         </div>
         <form action="../bills/create_bill_handler.php" method="POST" enctype="multipart/form-data">
+             <?= csrf_field() ?>
              <input type="hidden" name="vendor_id" id="bill_vendor_id">
              
              <div class="modal-body-premium">
@@ -848,6 +863,7 @@ $totalPending = $stmt->fetch()['total_pending'] ?? 0;
             </button>
         </div>
         <form action="../bills/update_bill_handler.php" method="POST" enctype="multipart/form-data">
+             <?= csrf_field() ?>
              <input type="hidden" name="id" id="edit_bill_id">
              
              <div class="modal-body-premium">
@@ -911,6 +927,7 @@ $totalPending = $stmt->fetch()['total_pending'] ?? 0;
             </button>
         </div>
         <form method="POST">
+             <?= csrf_field() ?>
              <input type="hidden" name="action" value="create">
              <input type="hidden" name="return_url" id="add_return_url">
 
@@ -1008,6 +1025,7 @@ $totalPending = $stmt->fetch()['total_pending'] ?? 0;
             </button>
         </div>
         <form method="POST">
+             <?= csrf_field() ?>
              <input type="hidden" name="action" value="update">
              <input type="hidden" name="id" id="edit_id">
 
@@ -1105,6 +1123,7 @@ $totalPending = $stmt->fetch()['total_pending'] ?? 0;
             </p>
             
             <form method="POST">
+                <?= csrf_field() ?>
                 <input type="hidden" name="action" value="delete">
                 <input type="hidden" name="id" id="delete_id">
                 

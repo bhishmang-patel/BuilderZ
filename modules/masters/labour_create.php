@@ -19,6 +19,11 @@ $labours = $db->query("SELECT id, name, mobile FROM parties WHERE party_type = '
 $projects = $db->query("SELECT id, project_name FROM projects WHERE status = 'active' ORDER BY project_name")->fetchAll();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+         setFlashMessage('error', 'Security token expired. Please try again.');
+         redirect('modules/masters/labour_create.php');
+    }
+
     try {
         $db->beginTransaction();
 
@@ -61,6 +66,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'work_from_date' => $work_from_date,
             'work_to_date' => $work_to_date,
             'total_amount' => $total_amount,
+            'paid_amount' => 0,
+            'pending_amount' => $total_amount,
             'status' => 'pending',
             'created_by' => $_SESSION['user_id']
         ];
@@ -251,6 +258,7 @@ include __DIR__ . '/../../includes/header.php';
 <div class="row">
     <div class="col-12">
         <form method="POST" id="labourForm" onsubmit="return validateForm()">
+            <?= csrf_field() ?>
             <div class="create-card">
                 <div class="create-header">
                     <h2 class="create-title">
