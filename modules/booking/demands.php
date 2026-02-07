@@ -34,6 +34,8 @@ $sql = "SELECT bd.*, b.customer_id, p.name as customer_name, f.flat_no, pr.proje
         JOIN flats f ON b.flat_id = f.id
         JOIN projects pr ON b.project_id = pr.id
         $where_clause
+        AND b.status != 'cancelled'
+        AND bd.status != 'paid'
         ORDER BY bd.generated_date DESC";
 
 $demands = $db->query($sql, $params)->fetchAll();

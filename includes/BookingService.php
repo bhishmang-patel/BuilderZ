@@ -138,14 +138,25 @@ class BookingService {
 
         if (empty($completedStages)) return;
 
-        // 2. Get the items for the current booking's plan
-        $items = $this->db->query("SELECT stage_name, percentage FROM stage_of_work_items WHERE stage_of_work_id = ?", [$stageOfWorkId])->fetchAll();
+        // 2. Get the items for the current booking's plan, ORDERED BY SEQUENCE
+        // This ensures that if we generate multiple demands, they follow the logical construction order
+        $items = $this->db->query(
+            "SELECT stage_name, percentage, stage_order FROM stage_of_work_items WHERE stage_of_work_id = ? ORDER BY stage_order ASC", 
+            [$stageOfWorkId]
+        )->fetchAll();
 
         // 3. Match and generate demands
+        $secondsOffset = 0;
         foreach ($items as $item) {
+            // Check if this stage is actually completed for the project
             if (in_array($item['stage_name'], $completedStages)) {
                 $amount = round(($agreementValue * $item['percentage']) / 100);
                 
+                // Stagger the timestamps by 1 second each to ensure correct ordering in reports/prints
+                // This allows 'Previous Dues' logic to work correctly based on time
+                $generatedDate = date('Y-m-d H:i:s', time() + $secondsOffset);
+                $secondsOffset++; 
+
                 $demandData = [
                     'booking_id' => $bookingId,
                     'stage_name' => $item['stage_name'],
@@ -153,7 +164,7 @@ class BookingService {
                     'paid_amount' => 0.00,
                     'status' => 'pending',
                     'due_date' => date('Y-m-d'), // Immediate due as stage is already done
-                    'generated_date' => date('Y-m-d H:i:s'),
+                    'generated_date' => $generatedDate,
                     'notes' => 'Auto-generated catch-up for completed project milestone'
                 ];
                 

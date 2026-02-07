@@ -1,0 +1,4 @@
+[07-Feb-2026 10:45:37 Asia/Kolkata] PHP Warning:  Undefined array key "booking_amount" in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 635
+[07-Feb-2026 10:45:37 Asia/Kolkata] PHP Deprecated:  number_format(): Passing null to parameter #1 ($num) of type float is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 635
+[07-Feb-2026 10:45:37 Asia/Kolkata] PHP Warning:  Undefined array key "booking_amount" in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 635
+[07-Feb-2026 10:45:37 Asia/Kolkata] PHP Deprecated:  number_format(): Passing null to parameter #1 ($num) of type float is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 635

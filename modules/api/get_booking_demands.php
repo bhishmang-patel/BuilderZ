@@ -19,10 +19,11 @@ if (!$booking_id) {
 }
 
 $db = Database::getInstance();
-$demands = $db->query("SELECT id, stage_name, demand_amount, paid_amount, due_date 
-                       FROM booking_demands 
-                       WHERE booking_id = ? AND status != 'paid' 
-                       ORDER BY generated_date ASC", [$booking_id])->fetchAll();
+$demands = $db->query("SELECT bd.id, bd.stage_name, bd.demand_amount, bd.paid_amount, bd.due_date 
+                       FROM booking_demands bd
+                       JOIN bookings b ON bd.booking_id = b.id
+                       WHERE bd.booking_id = ? AND bd.status != 'paid' AND b.status != 'cancelled'
+                       ORDER BY bd.generated_date ASC", [$booking_id])->fetchAll();
 
 $data = [];
 foreach ($demands as $d) {
