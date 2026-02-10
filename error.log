@@ -2,3 +2,89 @@
 [07-Feb-2026 10:45:37 Asia/Kolkata] PHP Deprecated:  number_format(): Passing null to parameter #1 ($num) of type float is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 635
 [07-Feb-2026 10:45:37 Asia/Kolkata] PHP Warning:  Undefined array key "booking_amount" in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 635
 [07-Feb-2026 10:45:37 Asia/Kolkata] PHP Deprecated:  number_format(): Passing null to parameter #1 ($num) of type float is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 635
+[10-Feb-2026 13:59:52 Asia/Kolkata] Database query error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'e.project_id' in 'on clause'
+[10-Feb-2026 13:59:52 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'e.project_id' in 'on clause' in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT e.*, ec....')
+#1 C:\xampp\htdocs\builderz\builderz\modules\accounts\index.php(58): Database->query('SELECT e.*, ec....')
+#2 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[10-Feb-2026 13:59:53 Asia/Kolkata] Database query error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'e.project_id' in 'on clause'
+[10-Feb-2026 13:59:53 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'e.project_id' in 'on clause' in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT e.*, ec....')
+#1 C:\xampp\htdocs\builderz\builderz\modules\accounts\index.php(58): Database->query('SELECT e.*, ec....')
+#2 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[10-Feb-2026 13:59:53 Asia/Kolkata] Database query error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'e.project_id' in 'on clause'
+[10-Feb-2026 13:59:53 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'e.project_id' in 'on clause' in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT e.*, ec....')
+#1 C:\xampp\htdocs\builderz\builderz\modules\accounts\index.php(58): Database->query('SELECT e.*, ec....')
+#2 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[10-Feb-2026 13:59:54 Asia/Kolkata] Database query error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'e.project_id' in 'on clause'
+[10-Feb-2026 13:59:54 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'e.project_id' in 'on clause' in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT e.*, ec....')
+#1 C:\xampp\htdocs\builderz\builderz\modules\accounts\index.php(58): Database->query('SELECT e.*, ec....')
+#2 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[10-Feb-2026 13:59:55 Asia/Kolkata] Database query error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'e.project_id' in 'on clause'
+[10-Feb-2026 13:59:55 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'e.project_id' in 'on clause' in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT e.*, ec....')
+#1 C:\xampp\htdocs\builderz\builderz\modules\accounts\index.php(58): Database->query('SELECT e.*, ec....')
+#2 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[10-Feb-2026 14:05:26 Asia/Kolkata] Database query error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'e.project_id' in 'on clause'
+[10-Feb-2026 14:05:26 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'e.project_id' in 'on clause' in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT e.*, ec....')
+#1 C:\xampp\htdocs\builderz\builderz\modules\accounts\index.php(58): Database->query('SELECT e.*, ec....')
+#2 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[10-Feb-2026 15:54:21 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined method Database::prepare() in C:\xampp\htdocs\builderz\builderz\modules\accounts\add.php:27
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\accounts\add.php on line 27
+[10-Feb-2026 15:54:24 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined method Database::prepare() in C:\xampp\htdocs\builderz\builderz\modules\accounts\add.php:27
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\accounts\add.php on line 27
+[10-Feb-2026 15:55:12 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined method Database::prepare() in C:\xampp\htdocs\builderz\builderz\modules\accounts\add.php:27
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\accounts\add.php on line 27
+[10-Feb-2026 15:56:07 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined method Database::prepare() in C:\xampp\htdocs\builderz\builderz\modules\accounts\add.php:27
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\accounts\add.php on line 27
+[10-Feb-2026 15:59:51 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined method Database::prepare() in C:\xampp\htdocs\builderz\builderz\modules\accounts\add.php:27
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\accounts\add.php on line 27
+[10-Feb-2026 16:01:26 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined method Database::prepare() in C:\xampp\htdocs\builderz\builderz\modules\accounts\add.php:27
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\accounts\add.php on line 27
+[10-Feb-2026 16:01:30 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined method Database::prepare() in C:\xampp\htdocs\builderz\builderz\modules\accounts\add.php:27
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\accounts\add.php on line 27
+[10-Feb-2026 16:01:33 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined method Database::prepare() in C:\xampp\htdocs\builderz\builderz\modules\accounts\add.php:27
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\accounts\add.php on line 27
+[10-Feb-2026 16:14:30 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined method Database::prepare() in C:\xampp\htdocs\builderz\builderz\modules\accounts\add.php:27
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\modules\accounts\add.php on line 27
+[10-Feb-2026 16:18:15 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined method Database::prepare() in C:\xampp\htdocs\builderz\builderz\test_update.php:42
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\test_update.php on line 42
+[10-Feb-2026 18:56:12 Asia/Kolkata] PHP Warning:  Undefined array key "booking_amount" in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 635
+[10-Feb-2026 18:56:12 Asia/Kolkata] PHP Deprecated:  number_format(): Passing null to parameter #1 ($num) of type float is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 635
+[10-Feb-2026 18:56:12 Asia/Kolkata] PHP Warning:  Undefined array key "booking_amount" in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 635
+[10-Feb-2026 18:56:12 Asia/Kolkata] PHP Deprecated:  number_format(): Passing null to parameter #1 ($num) of type float is deprecated in C:\xampp\htdocs\builderz\builderz\includes\pdf_excel_helpers.php on line 635

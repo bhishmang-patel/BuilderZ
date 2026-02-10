@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <?php 
 // Fetch Company Settings for Header Display
@@ -83,6 +84,11 @@ $headerLogoUrl = !empty($companySettings['company_logo']) ? BASE_URL . $companyS
                     </a>
                 </li>
                 <?php endif; ?>
+                <li>
+                    <a href="<?= BASE_URL ?>modules/accounts/index.php" class="<?= ($current_page ?? '') === 'accounts' ? 'active' : '' ?>">
+                        <i class="fas fa-file-invoice-dollar"></i> <span>Accounts & Expenses</span>
+                    </a>
+                </li>
 
                 <!-- MASTERS -->
                 <li class="menu-section">MASTERS</li>
@@ -136,21 +142,7 @@ $headerLogoUrl = !empty($companySettings['company_logo']) ? BASE_URL . $companyS
 
                 <!-- REPORTS -->
                 <li class="menu-section">REPORTS</li>
-                <li>
-                    <a href="<?= BASE_URL ?>modules/reports/customer_pending.php" class="<?= ($current_page ?? '') === 'customer_pending' ? 'active' : '' ?>">
-                        <i class="fas fa-chart-bar"></i> <span>Customer Pending</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?= BASE_URL ?>modules/reports/vendor_outstanding.php" class="<?= ($current_page ?? '') === 'vendor_outstanding' ? 'active' : '' ?>">
-                        <i class="fas fa-truck-fast"></i> <span>Vendor Outstanding</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?= BASE_URL ?>modules/reports/labour_outstanding.php" class="<?= ($current_page ?? '') === 'labour_outstanding' ? 'active' : '' ?>">
-                        <i class="fas fa-user-clock"></i> <span>Labour Outstanding</span>
-                    </a>
-                </li>
+
                 <li>
                     <a href="<?= BASE_URL ?>modules/reports/project_pl.php" class="<?= ($current_page ?? '') === 'project_pl' ? 'active' : '' ?>">
                         <i class="fas fa-balance-scale"></i> <span>Project P&amp;L</span>

@@ -58,14 +58,15 @@
                 text: message,
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonColor: '#3b82f6',
-                cancelButtonColor: '#ef4444',
+                buttonsStyling: false,
                 confirmButtonText: confirmBtnText,
                 cancelButtonText: 'Cancel',
+                focusCancel: true,
                 customClass: {
                     popup: 'premium-swal-popup',
                     title: 'premium-swal-title',
-                    content: 'premium-swal-content',
+                    htmlContainer: 'premium-swal-content',
+                    actions: 'swal2-actions',
                     confirmButton: 'premium-swal-confirm',
                     cancelButton: 'premium-swal-cancel'
                 },
