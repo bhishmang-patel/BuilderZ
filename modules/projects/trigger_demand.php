@@ -68,7 +68,7 @@ try {
         
         $demand_data = [
             'booking_id' => $booking['booking_id'],
-            'stage_name' => $args['stage_name'] ?? $booking['stage_name'],
+            'stage_name' => $stage_name ?? $booking['stage_name'],
             'demand_amount' => $amount,
             'paid_amount' => 0.00,
             'status' => 'pending',

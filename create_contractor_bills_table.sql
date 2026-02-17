@@ -1,0 +1,31 @@
+CREATE TABLE IF NOT EXISTS `contractor_bills` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `project_id` int(11) NOT NULL,
+  `contractor_id` int(11) NOT NULL,
+  `work_order_id` int(11) DEFAULT NULL,
+  `bill_no` varchar(50) NOT NULL,
+  `bill_date` date NOT NULL,
+  `work_description` text DEFAULT NULL,
+  `work_from_date` date DEFAULT NULL,
+  `work_to_date` date DEFAULT NULL,
+  `basic_amount` decimal(15,2) DEFAULT 0.00,
+  `gst_percentage` decimal(5,2) DEFAULT 0.00,
+  `gst_amount` decimal(15,2) DEFAULT 0.00,
+  `tds_percentage` decimal(5,2) DEFAULT 0.00,
+  `tds_amount` decimal(15,2) DEFAULT 0.00,
+  `is_rcm` tinyint(1) DEFAULT 0,
+  `total_payable` decimal(15,2) NOT NULL DEFAULT 0.00,
+  `paid_amount` decimal(15,2) DEFAULT 0.00,
+  `pending_amount` decimal(15,2) DEFAULT 0.00,
+  `status` enum('pending','approved','rejected') DEFAULT 'pending',
+  `payment_status` enum('pending','partial','paid') DEFAULT 'pending',
+  `approved_by` int(11) DEFAULT NULL,
+  `approved_at` datetime DEFAULT NULL,
+  `created_by` int(11) DEFAULT NULL,
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_bill_contractor` (`bill_no`,`contractor_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+ALTER TABLE payments MODIFY COLUMN reference_type ENUM('booking','challan','bill','contractor_bill') NOT NULL;

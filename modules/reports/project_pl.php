@@ -11,413 +11,504 @@ requireAuth();
 checkPermission(['admin', 'accountant', 'project_manager']);
 
 $db = Database::getInstance();
-$page_title = 'Project-wise P&L';
+$page_title   = 'Project-wise P&L';
 $current_page = 'project_pl';
 
 require_once __DIR__ . '/../../includes/ReportService.php';
 
-// Fetch project-wise profit & loss
 $reportService = new ReportService();
-$projects = $reportService->getProjectPL();
+$projects      = $reportService->getProjectPL();
 
-// Calculate Totals for Stats Cards
-$totals = [
-    'bookings' => 0,
-    'sales' => 0,       // Keep for informational purposes
-    'turnover' => 0,    // Cash Inflow
-    'expense' => 0,     // Cash Outflow
-    'net' => 0
-];
+$totals = ['bookings' => 0, 'sales' => 0, 'turnover' => 0, 'expense' => 0, 'net' => 0];
 
 if (!empty($projects)) {
     foreach ($projects as $key => $project) {
-        // 1. TURNOVER (CASH INFLOW) = Total Received (Gross)
-        $projects[$key]['calc_turnover'] =
-            (float) $project['total_received'];
+        $projects[$key]['calc_turnover'] = (float) $project['total_received'];
+        $projects[$key]['calc_expense']  = (float) $project['vendor_payments']
 
-        // 2. EXPENSES (CASH OUTFLOW) = Vendor + Labour + Other + Refunds
-        $projects[$key]['calc_expense'] =
-            (float) $project['vendor_payments']
-            + (float) $project['labour_payments']
+            + (float) $project['contractor_payments']
             + (float) $project['other_expenses']
             + (float) $project['total_refunds'];
-
-        // 3. PROFIT = SALES − EXPENSES
-        $projects[$key]['calc_profit'] =
-            $projects[$key]['calc_turnover'] - $projects[$key]['calc_expense'];
-
-        // 4. MARGIN = PROFIT ÷ SALES
-        $projects[$key]['calc_margin'] =
-            $projects[$key]['calc_turnover'] > 0
-                ? ($projects[$key]['calc_profit'] / $projects[$key]['calc_turnover']) * 100
-                : 0;
-
+        $projects[$key]['calc_profit'] = $projects[$key]['calc_turnover'] - $projects[$key]['calc_expense'];
+        $projects[$key]['calc_margin'] = $projects[$key]['calc_turnover'] > 0
+            ? ($projects[$key]['calc_profit'] / $projects[$key]['calc_turnover']) * 100
+            : 0;
         $totals['bookings'] += $project['total_bookings'];
-        $totals['sales'] += $project['total_sales'];
+        $totals['sales']    += $project['total_sales'];
         $totals['turnover'] += $projects[$key]['calc_turnover'];
-        $totals['expense'] += $projects[$key]['calc_expense'];
-        $totals['net'] += $projects[$key]['calc_profit'];
+        $totals['expense']  += $projects[$key]['calc_expense'];
+        $totals['net']      += $projects[$key]['calc_profit'];
     }
 }
+
+$net_margin = $totals['turnover'] > 0 ? ($totals['net'] / $totals['turnover']) * 100 : 0;
 
 include __DIR__ . '/../../includes/header.php';
 ?>
 
-<link rel="stylesheet" href="<?= BASE_URL ?>assets/css/booking.css">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,600&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
 
 <style>
-/* Stats Cards */
-.stats-container {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-    margin-bottom: 30px;
-}
-.stat-card-modern {
-    background: #fff;
-    border-radius: 16px;
-    padding: 24px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-    border: 1px solid #f1f5f9;
-    display: flex;
-    align-items: center;
-    gap: 24px;
-    position: relative;
-    overflow: hidden;
-}
-.stat-card-modern::after {
-    content: '';
-    position: absolute;
-    right: 0;
-    top: 0;
-    width: 6px;
-    height: 100%;
-    /* Accent color bar on right */
-}
-.stat-card-modern.blue::after { background: #3b82f6; }
-.stat-card-modern.red::after { background: #ef4444; }
-.stat-card-modern.green::after { background: #10b981; }
+*, *::before, *::after { box-sizing: border-box; }
 
-.stat-icon {
-    width: 56px;
-    height: 56px;
-    border-radius: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
-    flex-shrink: 0;
-}
-.stat-icon.blue { background: #eff6ff; color: #3b82f6; }
-.stat-icon.red { background: #fef2f2; color: #ef4444; }
-.stat-icon.green { background: #ecfdf5; color: #10b981; }
-
-.stat-info h4 { margin: 0; font-size: 14px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-.stat-info .value { font-size: 28px; font-weight: 800; color: #1e293b; margin-top: 4px; letter-spacing: -0.5px; }
-
-/* Main Table Container */
-.pl-container {
-    background: #fff;
-    border-radius: 16px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    border: 1px solid #e2e8f0;
-    overflow: hidden;
-    margin-bottom: 30px;
-}
-.pl-header {
-    padding: 24px;
-    border-bottom: 1px solid #f1f5f9;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: #fff;
-}
-.pl-title h3 { margin: 0; font-size: 18px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 10px; }
-.pl-subtitle { color: #64748b; font-size: 13px; margin-top: 4px; }
-
-/* Custom Action Buttons */
-.action-btn {
-    text-decoration: none;
-    padding: 8px 16px;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 500;
-    transition: all 0.2s;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    border: none;
-    cursor: pointer;
-}
-.action-btn.excel { background: #fdf4ff; color: #9333ea; border: 1px solid #f0abfc; }
-.action-btn.excel:hover { background: #fae8ff; color: #7e22ce; }
-.action-btn.csv { background: #fdf2f8; color: #db2777; border: 1px solid #fbcfe8; }
-.action-btn.csv:hover { background: #fce7f3; color: #be185d; }
-.action-btn.print { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
-.action-btn.print:hover { background: #e2e8f0; color: #1e293b; }
-
-/* Table Styling */
-.pl-table { width: 100%; border-collapse: separate; border-spacing: 0; }
-.pl-table th {
-    text-align: left;
-    padding: 16px 20px;
-    border-bottom: 1px solid #e2e8f0;
-    font-size: 12px;
-    font-weight: 600;
-    color: #64748b;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    background: #f8fafc;
-}
-.pl-table td {
-    padding: 20px;
-    border-bottom: 1px solid #f1f5f9;
-    vertical-align: middle;
-    transition: background 0.2s;
-}
-.pl-row:hover td { background: #f8fafc; }
-.pl-row.expanded td { background: #eff6ff; border-bottom: none; }
-
-/* Toggle Icon */
-.toggle-icon {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: #f1f5f9;
-    color: #64748b;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    transition: all 0.2s;
-    cursor: pointer;
-}
-.pl-row.expanded .toggle-icon { transform: rotate(180deg); background: #3b82f6; color: #fff; }
-
-/* Detail Expansion */
-.details-row { display: none; }
-.details-row.active { display: table-row; animation: slideDown 0.3s ease-out; }
-@keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-
-.details-wrapper {
-    padding: 0 20px 24px 70px; /* Indent to align with project name */
-    background: #eff6ff; /* Match active row bg */
-    border-bottom: 1px solid #e2e8f0;
+:root {
+    --ink:        #1a1714;
+    --ink-soft:   #6b6560;
+    --ink-mute:   #9e9690;
+    --cream:      #f5f3ef;
+    --surface:    #ffffff;
+    --border:     #e8e3db;
+    --border-lt:  #f0ece5;
+    --accent:     #2a58b5;
+    --accent-lt:  #eff4ff;
+    --accent-md:  #c7d9f9;
+    --accent-bg:  #f0f5ff;
+    --accent-dk:  #1e429f;
+    --green:      #059669;
+    --green-lt:   #d1fae5;
+    --orange:     #d97706;
+    --orange-lt:  #fef3c7;
+    --red:        #dc2626;
+    --red-lt:     #fee2e2;
 }
 
-.details-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 30px;
-    background: #fff;
-    padding: 24px;
-    border-radius: 12px;
-    border: 1px solid #dbeafe;
+body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(--ink); }
+.pw  { max-width: 1280px; margin: 2.5rem auto; padding: 0 1.5rem 5rem; }
+
+/* ── Animations ───────────────────── */
+@keyframes hdrIn  { from { opacity:0; transform:translateY(-14px); } to { opacity:1; transform:translateY(0); } }
+@keyframes fadeUp { from { opacity:0; transform:translateY(16px);  } to { opacity:1; transform:translateY(0); } }
+@keyframes rowIn  { from { opacity:0; transform:translateX(-7px);  } to { opacity:1; transform:translateX(0); } }
+@keyframes slideDown { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+
+/* ── Page header ──────────────────── */
+.page-header {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 1rem; flex-wrap: wrap;
+    margin-bottom: 2.25rem; padding-bottom: 1.5rem;
+    border-bottom: 1.5px solid var(--border);
+    opacity: 0;
+    animation: hdrIn 0.45s cubic-bezier(0.22,1,0.36,1) 0.05s forwards;
+}
+.eyebrow { font-size: 0.67rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.28rem; }
+.page-header h1 { font-family: 'Fraunces', serif; font-size: 2rem; font-weight: 700; color: var(--ink); margin: 0; line-height: 1.1; }
+.page-header h1 em { font-style: italic; color: var(--accent); }
+
+.hdr-actions { display: flex; gap: 0.55rem; align-items: center; flex-wrap: wrap; }
+.btn-export {
+    display: inline-flex; align-items: center; gap: 0.38rem;
+    padding: 0.5rem 0.9rem; border-radius: 7px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 600;
+    cursor: pointer; text-decoration: none; border: 1.5px solid var(--border);
+    background: white; color: var(--ink-soft); transition: all 0.18s;
+}
+.btn-export:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); text-decoration: none; }
+
+/* ── Stat cards ───────────────────── */
+.stat-row {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+@media (max-width: 900px)  { .stat-row { grid-template-columns: repeat(2,1fr); } }
+@media (max-width: 500px)  { .stat-row { grid-template-columns: 1fr; } }
+
+.stat-card {
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 12px; padding: 1.25rem 1.35rem;
+    display: flex; align-items: center; gap: 1rem;
+    box-shadow: 0 1px 4px rgba(26,23,20,0.04);
+    transition: transform 0.2s, box-shadow 0.2s;
+    opacity: 0; animation: fadeUp 0.42s cubic-bezier(0.22,1,0.36,1) both;
+    position: relative; overflow: hidden;
+}
+.stat-card::after {
+    content: ''; position: absolute; right: 0; top: 0; bottom: 0;
+    width: 3px; border-radius: 0 12px 12px 0;
+}
+.stat-card.s1 { animation-delay: 0.07s; } .stat-card.s1::after { background: var(--accent); }
+.stat-card.s2 { animation-delay: 0.12s; } .stat-card.s2::after { background: var(--red); }
+.stat-card.s3 { animation-delay: 0.17s; }
+.stat-card.s4 { animation-delay: 0.22s; }
+.stat-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(26,23,20,0.08); }
+
+.sc-ic {
+    width: 42px; height: 42px; border-radius: 10px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 0.95rem;
+}
+.sc-ic.blue   { background: var(--accent-lt); color: var(--accent); }
+.sc-ic.red    { background: var(--red-lt);    color: var(--red); }
+.sc-ic.green  { background: var(--green-lt);  color: var(--green); }
+.sc-ic.orange { background: var(--orange-lt); color: var(--orange); }
+
+.sc-lbl { font-size: 0.64rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-mute); margin-bottom: 0.28rem; }
+.sc-val { font-family: 'Fraunces', serif; font-size: 1.45rem; font-weight: 700; color: var(--ink); line-height: 1; text-align: center; }
+.sc-val.green  { color: var(--green); }
+.sc-val.red    { color: var(--red); }
+.sc-val.accent { color: var(--accent); }
+.sc-sub { font-size: 0.68rem; color: var(--ink-mute); margin-top: 3px; text-align: center; }
+
+/* ── Panel ────────────────────────── */
+.panel {
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 14px; overflow: hidden;
+    opacity: 0; animation: fadeUp 0.42s cubic-bezier(0.22,1,0.36,1) 0.28s both;
 }
 
-.detail-section h5 {
-    margin: 0 0 16px 0;
-    font-size: 13px;
-    font-weight: 700;
-    color: #333;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    border-bottom: 1px solid #f1f5f9;
-    padding-bottom: 10px;
+.panel-toolbar {
+    display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;
+    padding: 1.05rem 1.5rem; border-bottom: 1.5px solid var(--border-lt);
+    background: #fafbff;
 }
-.detail-item {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 12px;
-    font-size: 13px;
+.pt-icon {
+    width: 30px; height: 30px; background: var(--accent-lt); color: var(--accent);
+    border-radius: 7px; display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem; flex-shrink: 0;
 }
-.detail-item span.label { color: #64748b; }
-.detail-item span.amount { font-family: monospace; font-weight: 600; color: #333; font-size: 14px; }
+.pt-title { font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 600; color: var(--ink); flex: 1; }
+.pt-sub   { font-size: 0.72rem; color: var(--ink-mute); }
 
-/* Typography Helpers */
-.font-mono { font-family: 'Consolas', monospace; letter-spacing: -0.3px; }
-.text-success { color: #10b981; }
-.text-danger { color: #ef4444; }
-.text-primary { color: #3b82f6; }
-.fw-bold { font-weight: 700; }
-.fw-heavy { font-weight: 800; }
-
-/* Stats Card Hover Effect */
-.stat-info .full-value { display: none; font-size: 20px; } /* Slightly smaller for full value */
-.stat-card-modern:hover .stat-info .short-value { display: none; }
-.stat-card-modern:hover .stat-info .full-value { display: block; animation: fadeIn 0.2s ease-in; }
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(2px); }
-    to { opacity: 1; transform: translateY(0); }
+/* ── P&L Table ────────────────────── */
+.pl-table { width: 100%; border-collapse: collapse; font-size: 0.855rem; }
+.pl-table thead tr { background: #eef2fb; border-bottom: 1.5px solid var(--border); }
+.pl-table thead th {
+    padding: 0.65rem 1rem;
+    font-size: 0.63rem; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--ink-soft); text-align: left; white-space: nowrap;
 }
+.pl-table thead th.al-c { text-align: center; }
+.pl-table thead th.al-r { text-align: right; }
+
+/* main data row */
+.pl-row td { padding: 0.92rem 1rem; border-bottom: 1px solid var(--border-lt); vertical-align: middle; transition: background 0.12s; }
+.pl-row:hover td { background: #f4f7fd; }
+.pl-row.open td  { background: var(--accent-bg); border-bottom: none; }
+.pl-row { cursor: pointer; }
+.pl-row.row-in { animation: rowIn 0.26s cubic-bezier(0.22,1,0.36,1) forwards; }
+
+/* toggle chevron */
+.toggle-btn {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--cream); border: 1.5px solid var(--border); color: var(--ink-mute);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 0.6rem; transition: all 0.22s; flex-shrink: 0;
+}
+.pl-row.open .toggle-btn { background: var(--accent); border-color: var(--accent); color: white; transform: rotate(180deg); }
+
+/* project name cell */
+.proj-name { font-weight: 700; color: var(--ink); font-size: 0.9rem; }
+.proj-loc  { font-size: 0.72rem; color: var(--ink-mute); margin-top: 2px; display: flex; align-items: center; gap: 0.28rem; }
+
+/* bookings */
+.bookings-val { font-family: 'Fraunces', serif; font-weight: 700; color: var(--ink); font-size: 1rem; text-align: center; }
+
+/* financial cells */
+.money { font-family: 'Fraunces', serif; font-weight: 700; color: var(--ink); font-size: 0.92rem; }
+.money.income { color: var(--accent); }
+.money.expense { color: var(--red); }
+.money.profit-pos { color: var(--green); }
+.money.profit-neg { color: var(--red); }
+
+/* margin pill */
+.margin-pill {
+    display: inline-block; padding: 0.22rem 0.72rem; border-radius: 20px;
+    font-size: 0.7rem; font-weight: 800; letter-spacing: 0.04em;
+}
+.margin-pill.hi   { background: var(--green-lt);  color: var(--green); border: 1px solid #6ee7b7; }
+.margin-pill.mid  { background: var(--orange-lt); color: var(--orange); border: 1px solid #fcd34d; }
+.margin-pill.lo   { background: var(--red-lt);    color: var(--red); border: 1px solid #fca5a5; }
+.margin-pill.neg  { background: #fef2f2; color: var(--red); border: 1px solid #fca5a5; }
+
+/* ── Expanded detail row ──────────── */
+.detail-row { display: none; }
+.detail-row.open { display: table-row; }
+
+.detail-inner {
+    padding: 0 1.5rem 1.5rem 3.5rem;
+    background: var(--accent-bg);
+    border-bottom: 1.5px solid var(--border);
+    animation: slideDown 0.25s cubic-bezier(0.22,1,0.36,1);
+}
+
+.detail-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;
+    background: white; border: 1.5px solid var(--accent-md);
+    border-radius: 10px; padding: 1.35rem;
+}
+@media (max-width: 680px) { .detail-grid { grid-template-columns: 1fr; } }
+
+.detail-col {}
+.detail-col-head {
+    font-size: 0.62rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
+    margin-bottom: 0.85rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-lt);
+    display: flex; align-items: center; gap: 0.4rem;
+}
+.detail-col-head.income  { color: var(--green); }
+.detail-col-head.expense { color: var(--red); }
+
+.detail-line {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 0.42rem 0; border-bottom: 1px solid var(--border-lt); font-size: 0.82rem;
+}
+.detail-line:last-child { border-bottom: none; }
+.detail-line .dl-key { color: var(--ink-soft); font-weight: 500; }
+.detail-line .dl-val { font-family: 'Fraunces', serif; font-weight: 700; font-size: 0.88rem; color: var(--ink); }
+.detail-line .dl-val.green { color: var(--green); }
+.detail-line .dl-val.red   { color: var(--red); }
+.detail-line .dl-val.muted { color: var(--ink-mute); font-weight: 600; font-size: 0.8rem; }
+.detail-line.pending .dl-val { color: var(--orange); }
+.detail-line.subtotal { border-top: 1px solid var(--border); margin-top: 0.35rem; padding-top: 0.55rem; }
+.detail-line.subtotal .dl-key { font-weight: 700; color: var(--ink); }
+
+/* ── Tfoot ────────────────────────── */
+.pl-table tfoot tr td {
+    padding: 0.85rem 1rem; background: #fafbff;
+    border-top: 1.5px solid var(--border); font-size: 0.855rem;
+}
+.tfoot-label { font-size: 0.65rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-mute); text-align: right; }
+.tfoot-total { font-family: 'Fraunces', serif; font-weight: 700; font-size: 0.92rem; }
+
+/* empty state */
+.empty-state { text-align: center; padding: 4rem 1.5rem; }
+.empty-state .es-icon { font-size: 2.5rem; display: block; margin-bottom: 0.75rem; color: var(--accent); opacity: 0.18; }
+.empty-state h4 { font-family: 'Fraunces', serif; font-size: 1.1rem; font-weight: 600; color: var(--ink-soft); margin: 0 0 0.35rem; }
+.empty-state p  { font-size: 0.82rem; color: var(--ink-mute); margin: 0; }
 </style>
 
-<!-- Top Stats -->
-<div class="stats-container">
-    <div class="stat-card-modern blue">
-        <div class="stat-icon blue"><i class="fas fa-coins"></i></div>
-        <div class="stat-info">
-            <h4>Total Collected</h4>
-            <div class="value">
-                <span class="short-value"><?= formatCurrencyShort($totals['turnover']) ?></span>
-                <span class="full-value"><?= formatCurrency($totals['turnover']) ?></span>
-            </div>
-        </div>
-    </div>
-    <div class="stat-card-modern red">
-        <div class="stat-icon red"><i class="fas fa-wallet"></i></div>
-        <div class="stat-info">
-            <h4>Total Payout</h4>
-            <div class="value">
-                <span class="short-value"><?= formatCurrencyShort($totals['expense']) ?></span>
-                <span class="full-value"><?= formatCurrency($totals['expense']) ?></span>
-            </div>
-        </div>
-    </div>
-    <div class="stat-card-modern green">
-        <div class="stat-icon green"><i class="fas fa-chart-line"></i></div>
-        <div class="stat-info">
-            <h4>Net Cash Flow</h4>
-            <div class="value" style="color: <?= $totals['net'] >= 0 ? '#10b981' : '#ef4444' ?>;">
-                <span class="short-value"><?= formatCurrencyShort($totals['net']) ?></span>
-                <span class="full-value"><?= formatCurrency($totals['net']) ?></span>
-            </div>
-        </div>
-    </div>
-</div>
+<div class="pw">
 
-<!-- Main Accordion Table -->
-<div class="pl-container">
-    <div class="pl-header">
-        <div class="pl-title">
-            <h3><div class="chart-icon-box blue" style="width:32px; height:32px; font-size:14px; display:inline-flex; align-items:center; justify-content:center; border-radius:8px; background:#eff6ff; color:#3b82f6;"><i class="fas fa-balance-scale"></i></div> Project Financials</h3>
-            <div class="pl-subtitle">Click row to view detailed breakdown</div>
+    <!-- ── Page Header ─────────────── -->
+    <div class="page-header">
+        <div>
+            <div class="eyebrow">Reports &rsaquo; Financial</div>
+            <h1>Project <em>P&amp;L</em></h1>
         </div>
-        <div style="display:flex; gap:10px;">
-            <a href="<?= BASE_URL ?>modules/reports/download.php?action=download_report&report=project_pl&format=excel" class="action-btn excel"><i class="fas fa-file-excel"></i> Excel</a>
-            <a href="<?= BASE_URL ?>modules/reports/download.php?action=download_report&report=project_pl&format=csv" class="action-btn csv"><i class="fas fa-file-code"></i> CSV</a>
-            <button class="action-btn print" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+        <div class="hdr-actions">
+            <a href="<?= BASE_URL ?>modules/reports/download.php?action=download_report&report=project_pl&format=excel" class="btn-export">
+                <i class="fas fa-file-excel"></i> Excel
+            </a>
+            <a href="<?= BASE_URL ?>modules/reports/download.php?action=download_report&report=project_pl&format=csv" class="btn-export">
+                <i class="fas fa-file-csv"></i> CSV
+            </a>
+            <button onclick="window.print()" class="btn-export">
+                <i class="fas fa-print"></i> Print
+            </button>
         </div>
     </div>
 
-    <table class="pl-table">
-        <thead>
-            <tr>
-                <th style="width: 50px;"></th> <!-- Toggle -->
-                <th>Project Details</th>
-                <th>Bookings</th>
-                <th>Total Received</th>
-                <th>Total Payout</th>
-                <th>Net Cash</th>
-                <th>Margin</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php if (empty($projects)): ?>
-                <tr><td colspan="7" style="text-align:center; padding:50px; color:#64748b;">No data found</td></tr>
-            <?php else: ?>
-                <?php foreach ($projects as $idx => $row): ?>
-                    <!-- Main Row -->
-                    <tr class="pl-row" onclick="toggleDetails(this)">
-                        <td style="text-align: center;">
-                            <div class="toggle-icon"><i class="fas fa-chevron-down"></i></div>
-                        </td>
-                        <td>
-                            <div style="font-weight:700; color:#0f172a; font-size:15px;"><?= htmlspecialchars($row['project_name']) ?></div>
-                            <div style="font-size:12px; color:#64748b; margin-top:2px;"><i class="fas fa-map-marker-alt" style="font-size:11px; margin-right:4px;"></i> <?= htmlspecialchars($row['location']) ?></div>
-                        </td>
-                        <td style="text-align:center; font-weight:600;"><?= $row['total_bookings'] ?></td>
-                        <td class="font-mono fw-bold"><?= formatCurrency($row['calc_turnover']) ?></td>
-                        <td class="font-mono fw-bold text-danger"><?= formatCurrency($row['calc_expense']) ?></td>
-                        <td class="font-mono fw-heavy" style="font-size:16px; color:<?= $row['calc_profit'] >= 0 ? '#10b981' : '#ef4444' ?>;">
-                            <?= formatCurrency($row['calc_profit']) ?>
-                        </td>
-                        <td>
-                            <?php $m = $row['calc_margin']; $c = $m>=20?'green':($m>=10?'orange':'red'); ?>
-                            <span class="badge-soft <?= $c ?>"><?= number_format($m, 1) ?>%</span>
-                        </td>
+    <!-- ── Stat Cards ──────────────── -->
+    <div class="stat-row">
+        <div class="stat-card s1">
+            <div class="sc-ic blue"><i class="fas fa-coins"></i></div>
+            <div>
+                <div class="sc-lbl">Total Collected</div>
+                <div class="sc-val accent"><?= formatCurrencyShort($totals['turnover']) ?></div>
+                <div class="sc-sub"><?= formatCurrency($totals['turnover']) ?></div>
+            </div>
+        </div>
+        <div class="stat-card s2">
+            <div class="sc-ic red"><i class="fas fa-wallet"></i></div>
+            <div>
+                <div class="sc-lbl">Total Payout</div>
+                <div class="sc-val red"><?= formatCurrencyShort($totals['expense']) ?></div>
+                <div class="sc-sub"><?= formatCurrency($totals['expense']) ?></div>
+            </div>
+        </div>
+        <div class="stat-card s3">
+            <div class="sc-ic <?= $totals['net'] >= 0 ? 'green' : 'red' ?>">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div>
+                <div class="sc-lbl">Net Cash Flow</div>
+                <div class="sc-val <?= $totals['net'] >= 0 ? 'green' : 'red' ?>"><?= formatCurrencyShort($totals['net']) ?></div>
+                <div class="sc-sub"><?= formatCurrency($totals['net']) ?></div>
+            </div>
+        </div>
+        <div class="stat-card s4" style="animation-delay:0.22s;">
+            <div class="sc-ic orange"><i class="fas fa-percentage"></i></div>
+            <div>
+                <div class="sc-lbl">Net Margin</div>
+                <div class="sc-val <?= $net_margin >= 0 ? 'green' : 'red' ?>"><?= number_format($net_margin, 1) ?>%</div>
+                <div class="sc-sub"><?= count($projects) ?> project<?= count($projects) !== 1 ? 's' : '' ?></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── P&L Panel ───────────────── -->
+    <div class="panel">
+
+        <!-- Toolbar -->
+        <div class="panel-toolbar">
+            <div class="pt-icon"><i class="fas fa-balance-scale"></i></div>
+            <div class="pt-title">Project Financials</div>
+            <span class="pt-sub">Click any row to expand detailed breakdown</span>
+        </div>
+
+        <div style="overflow-x:auto;">
+            <table class="pl-table">
+                <thead>
+                    <tr>
+                        <th style="width:46px;"></th>
+                        <th>Project</th>
+                        <th class="al-c">Bookings</th>
+                        <th class="al-r">Total Received</th>
+                        <th class="al-r">Total Payout</th>
+                        <th class="al-r">Net Cash</th>
+                        <th class="al-c">Margin</th>
                     </tr>
-                    
-                    <!-- Details Row -->
-                    <tr class="details-row">
-                        <td colspan="7" style="padding:0;">
-                            <div class="details-wrapper">
-                                <div class="details-grid">
-                                    <!-- Income Section -->
-                                    <div class="detail-section">
-                                        <h5 style="color:#059669;"><i class="fas fa-arrow-down"></i> Income Breakdown</h5>
-                                        <div class="detail-item">
-                                            <span class="label">Total Sales Booked</span>
-                                            <span class="amount" style="color: #64748b;"><?= formatCurrency($row['total_sales']) ?></span>
+                </thead>
+                <tbody>
+                    <?php if (empty($projects)): ?>
+                        <tr><td colspan="7">
+                            <div class="empty-state">
+                                <span class="es-icon"><i class="fas fa-chart-bar"></i></span>
+                                <h4>No project data found</h4>
+                                <p>Financial data will appear once projects have transactions.</p>
+                            </div>
+                        </td></tr>
+                    <?php else:
+                        foreach ($projects as $idx => $row):
+                            $profit    = $row['calc_profit'];
+                            $margin    = $row['calc_margin'];
+                            $mclass    = $margin >= 20 ? 'hi' : ($margin >= 10 ? 'mid' : ($margin >= 0 ? 'lo' : 'neg'));
+                            $uid       = 'proj_' . $row['id'];
+                    ?>
+                        <!-- Main row -->
+                        <tr class="pl-row row-in" id="row_<?= $uid ?>"
+                            style="animation-delay:<?= $idx * 35 ?>ms;"
+                            onclick="toggleRow('<?= $uid ?>')">
+                            <td style="text-align:center;">
+                                <div class="toggle-btn"><i class="fas fa-chevron-down"></i></div>
+                            </td>
+                            <td>
+                                <div class="proj-name"><?= renderProjectBadge($row['project_name'], $row['id']) ?></div>
+                                <?php if (!empty($row['location'])): ?>
+                                <div class="proj-loc">
+                                    <i class="fas fa-map-marker-alt" style="font-size:0.6rem;"></i>
+                                    <?= htmlspecialchars($row['location']) ?>
+                                </div>
+                                <?php endif; ?>
+                            </td>
+                            <td><div class="bookings-val"><?= $row['total_bookings'] ?></div></td>
+                            <td style="text-align:right;"><span class="money income"><?= formatCurrency($row['calc_turnover']) ?></span></td>
+                            <td style="text-align:right;"><span class="money expense"><?= formatCurrency($row['calc_expense']) ?></span></td>
+                            <td style="text-align:right;">
+                                <span class="money <?= $profit >= 0 ? 'profit-pos' : 'profit-neg' ?>"><?= formatCurrency($profit) ?></span>
+                            </td>
+                            <td style="text-align:center;">
+                                <span class="margin-pill <?= $mclass ?>"><?= number_format($margin, 1) ?>%</span>
+                            </td>
+                        </tr>
+
+                        <!-- Detail row -->
+                        <tr class="detail-row" id="detail_<?= $uid ?>">
+                            <td colspan="7" style="padding:0;">
+                                <div class="detail-inner">
+                                    <div class="detail-grid">
+
+                                        <!-- Income -->
+                                        <div class="detail-col">
+                                            <div class="detail-col-head income">
+                                                <i class="fas fa-arrow-circle-down"></i> Income Breakdown
+                                            </div>
+                                            <div class="detail-line">
+                                                <span class="dl-key">Total Sales Booked</span>
+                                                <span class="dl-val muted"><?= formatCurrency($row['total_sales']) ?></span>
+                                            </div>
+                                            <div class="detail-line">
+                                                <span class="dl-key">Customer Receipts</span>
+                                                <span class="dl-val green"><?= formatCurrency($row['total_received']) ?></span>
+                                            </div>
+                                            <div class="detail-line">
+                                                <span class="dl-key">Cancellation Income</span>
+                                                <span class="dl-val green"><?= formatCurrency($row['cancellation_income']) ?></span>
+                                            </div>
+                                            <div class="detail-line pending">
+                                                <span class="dl-key">Pending Collection</span>
+                                                <span class="dl-val"><?= formatCurrency($row['customer_pending']) ?></span>
+                                            </div>
                                         </div>
-                                        <div class="detail-item">
-                                            <span class="label">Customer Receipts</span>
-                                            <span class="amount text-success"><?= formatCurrency($row['total_received']) ?></span>
+
+                                        <!-- Expense -->
+                                        <div class="detail-col">
+                                            <div class="detail-col-head expense">
+                                                <i class="fas fa-arrow-circle-up"></i> Expense Breakdown
+                                            </div>
+                                            <div class="detail-line">
+                                                <span class="dl-key">Vendor Payments</span>
+                                                <span class="dl-val"><?= formatCurrency($row['vendor_payments']) ?></span>
+                                            </div>
+
+                                            <div class="detail-line">
+                                                <span class="dl-key">Contractor Payments</span>
+                                                <span class="dl-val"><?= formatCurrency($row['contractor_payments']) ?></span>
+                                            </div>
+                                            <div class="detail-line">
+                                                <span class="dl-key">Other Expenses</span>
+                                                <span class="dl-val"><?= formatCurrency($row['other_expenses']) ?></span>
+                                            </div>
+                                            <div class="detail-line">
+                                                <span class="dl-key">Refunds Issued</span>
+                                                <span class="dl-val red"><?= formatCurrency($row['total_refunds']) ?></span>
+                                            </div>
+                                            <div class="detail-line subtotal">
+                                                <span class="dl-key">Total Outflow</span>
+                                                <span class="dl-val red"><?= formatCurrency($row['calc_expense']) ?></span>
+                                            </div>
                                         </div>
-                                        <div class="detail-item">
-                                            <span class="label">Cancellation Income</span>
-                                            <span class="amount text-success"><?= formatCurrency($row['cancellation_income']) ?></span>
-                                        </div>
-                                        <div class="detail-item" style="margin-top:15px; border-top:1px dashed #e2e8f0; padding-top:10px;">
-                                            <span class="label" style="font-weight:600;">Pending Collection</span>
-                                            <span class="amount" style="color:#f59e0b;"><?= formatCurrency($row['customer_pending']) ?></span>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Expense Section -->
-                                    <div class="detail-section">
-                                        <h5 style="color:#dc2626;"><i class="fas fa-arrow-up"></i> Expense Breakdown (Cash)</h5>
-                                        <div class="detail-item">
-                                            <span class="label">Vendor Payments</span>
-                                            <span class="amount"><?= formatCurrency($row['vendor_payments']) ?></span>
-                                        </div>
-                                        <div class="detail-item">
-                                            <span class="label">Labour Payments</span>
-                                            <span class="amount"><?= formatCurrency($row['labour_payments']) ?></span>
-                                        </div>
-                                        <div class="detail-item">
-                                            <span class="label">Other Expenses</span>
-                                            <span class="amount"><?= formatCurrency($row['other_expenses']) ?></span>
-                                        </div>
-                                         <div class="detail-item">
-                                            <span class="label">Refunds Issued</span>
-                                            <span class="amount text-danger"><?= formatCurrency($row['total_refunds']) ?></span>
-                                        </div>
+
                                     </div>
                                 </div>
-                            </div>
+                            </td>
+                        </tr>
+                    <?php endforeach; endif; ?>
+                </tbody>
+
+                <!-- Totals footer -->
+                <?php if (!empty($projects)): ?>
+                <tfoot>
+                    <tr>
+                        <td></td>
+                        <td class="tfoot-label">All Projects</td>
+                        <td style="text-align:center;">
+                            <span style="font-family:'Fraunces',serif;font-weight:700;font-size:0.95rem;color:var(--ink);"><?= $totals['bookings'] ?></span>
+                        </td>
+                        <td style="text-align:right;">
+                            <span class="tfoot-total" style="color:var(--accent);"><?= formatCurrency($totals['turnover']) ?></span>
+                        </td>
+                        <td style="text-align:right;">
+                            <span class="tfoot-total" style="color:var(--red);"><?= formatCurrency($totals['expense']) ?></span>
+                        </td>
+                        <td style="text-align:right;">
+                            <span class="tfoot-total" style="color:<?= $totals['net'] >= 0 ? 'var(--green)' : 'var(--red)' ?>; font-size:1rem;">
+                                <?= formatCurrency($totals['net']) ?>
+                            </span>
+                        </td>
+                        <td style="text-align:center;">
+                            <?php $mc = $net_margin >= 20 ? 'hi' : ($net_margin >= 10 ? 'mid' : ($net_margin >= 0 ? 'lo' : 'neg')); ?>
+                            <span class="margin-pill <?= $mc ?>"><?= number_format($net_margin, 1) ?>%</span>
                         </td>
                     </tr>
-                <?php endforeach; ?>
-            <?php endif; ?>
-        </tbody>
-        <!-- Total Footer -->
-        <tfoot style="background:#f8fafc;">
-            <tr>
-                <td></td>
-                <td style="text-align:right; font-weight:700; padding:20px;">TOTALS:</td>
-                <td style="text-align:center; font-weight:700;"><?= $totals['bookings'] ?></td>
-                <td class="font-mono fw-bold"><?= formatCurrency($totals['turnover']) ?></td>
-                <td class="font-mono fw-bold text-danger"><?= formatCurrency($totals['expense']) ?></td>
-                <td class="font-mono fw-heavy" style="font-size:16px; color:<?= $totals['net']>=0 ? '#10b981':'#ef4444' ?>;">
-                    <?= formatCurrency($totals['net']) ?>
-                </td>
-                <td>
-                    <span class="badge-soft blue"><?= $totals['turnover']>0 ? number_format(($totals['net']/$totals['turnover'])*100, 1) : 0 ?>%</span>
-                </td>
-            </tr>
-        </tfoot>
-    </table>
+                </tfoot>
+                <?php endif; ?>
+            </table>
+        </div>
+    </div>
 </div>
 
 <script>
-function toggleDetails(row) {
-    row.classList.toggle('expanded');
-    const nextRow = row.nextElementSibling;
-    if (nextRow && nextRow.classList.contains('details-row')) {
-        nextRow.classList.toggle('active');
+function toggleRow(uid) {
+    const mainRow   = document.getElementById('row_'   + uid);
+    const detailRow = document.getElementById('detail_' + uid);
+    const isOpen    = mainRow.classList.contains('open');
+
+    // Close all first
+    document.querySelectorAll('.pl-row.open').forEach(r => r.classList.remove('open'));
+    document.querySelectorAll('.detail-row.open').forEach(r => r.classList.remove('open'));
+
+    // Toggle clicked
+    if (!isOpen) {
+        mainRow.classList.add('open');
+        detailRow.classList.add('open');
     }
 }
 </script>

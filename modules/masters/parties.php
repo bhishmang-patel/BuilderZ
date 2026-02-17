@@ -28,8 +28,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($action === 'create') {
             $data = [
                 'party_type' => $_POST['party_type'],
+                'contractor_type' => $_POST['contractor_type'] ?? null,
                 'name' => sanitize($_POST['name']),
-
                 'mobile' => sanitize($_POST['mobile']),
                 'email' => sanitize($_POST['email']),
                 'address' => sanitize($_POST['address']),
@@ -46,6 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($action === 'update') {
             $data = [
                 'party_type' => $_POST['party_type'],
+                'contractor_type' => $_POST['contractor_type'] ?? null,
                 'name' => sanitize($_POST['name']),
 
                 'mobile' => sanitize($_POST['mobile']),
@@ -589,7 +590,7 @@ include __DIR__ . '/../../includes/header.php';
                             <option value="">All Types</option>
                             <option value="customer" <?= $filters['type'] === 'customer' ? 'selected' : '' ?>>Customer</option>
                             <option value="vendor" <?= $filters['type'] === 'vendor' ? 'selected' : '' ?>>Vendor</option>
-                            <option value="labour" <?= $filters['type'] === 'labour' ? 'selected' : '' ?>>Labour</option>
+                            <option value="contractor" <?= $filters['type'] === 'contractor' ? 'selected' : '' ?>>Contractor</option>
                         </select>
                         <button type="submit" class="modern-btn">Apply</button>
                         <a href="parties.php" class="modern-btn" style="background:#94a3b8;">Reset</a>
@@ -627,8 +628,11 @@ include __DIR__ . '/../../includes/header.php';
                             <td style="text-align: left;">
                                 <div style="display:flex; align-items:center;">
                                     <div class="avatar-square" style="background: <?= $color ?>;"><?= $initial ?></div>
-                                    <div>
+                                    <div style="display:flex; flex-direction:column;">
                                         <div style="font-weight:700; color:#1e293b;"><?= htmlspecialchars($party['name'] ?? '') ?></div>
+                                        <?php if(!empty($party['contractor_type'])): ?>
+                                            <span style="font-size:11px; color:#64748b; font-weight:500;"><?= htmlspecialchars($party['contractor_type']) ?></span>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
                             </td>
@@ -738,7 +742,22 @@ include __DIR__ . '/../../includes/header.php';
                             <option value="">Select Type</option>
                             <option value="customer">Customer</option>
                             <option value="vendor">Vendor</option>
-                            <option value="labour">Labour/Contractor</option>
+                            <option value="contractor">Contractor</option>
+                        </select>
+                    </div>
+
+                    <div class="full-width" id="add_contractor_type_div" style="display:none;">
+                        <label class="input-label">Contractor Type</label>
+                        <select name="contractor_type" class="modern-select">
+                            <option value="">Select Trade</option>
+                            <option value="Civil">Civil</option>
+                            <option value="Plumbing">Plumbing</option>
+                            <option value="Electrical">Electrical</option>
+                            <option value="Carpentry">Carpentry</option>
+                            <option value="Painting">Painting</option>
+                            <option value="Fabrication">Fabrication</option>
+                            <option value="Labour Supply">Labour Supply</option>
+                            <option value="Other">Other</option>
                         </select>
                     </div>
 
@@ -809,7 +828,22 @@ include __DIR__ . '/../../includes/header.php';
                             <option value="">Select Type</option>
                             <option value="customer">Customer</option>
                             <option value="vendor">Vendor</option>
-                            <option value="labour">Labour/Contractor</option>
+                            <option value="contractor">Contractor</option>
+                        </select>
+                    </div>
+
+                     <div class="full-width" id="edit_contractor_type_div" style="display:none;">
+                        <label class="input-label">Contractor Type</label>
+                        <select name="contractor_type" id="edit_contractor_type" class="modern-select">
+                            <option value="">Select Trade</option>
+                            <option value="Civil">Civil</option>
+                            <option value="Plumbing">Plumbing</option>
+                            <option value="Electrical">Electrical</option>
+                            <option value="Carpentry">Carpentry</option>
+                            <option value="Painting">Painting</option>
+                            <option value="Fabrication">Fabrication</option>
+                            <option value="Labour Supply">Labour Supply</option>
+                            <option value="Other">Other</option>
                         </select>
                     </div>
 
@@ -912,11 +946,42 @@ function openDeleteModal(id) {
     openPartyModal('deletePartyModal');
 }
 
+
+// Logic to show/hide Contractor Type
+document.querySelector('#addPartyModal select[name="party_type"]').addEventListener('change', function() {
+    const div = document.getElementById('add_contractor_type_div');
+    if (this.value === 'contractor') {
+        div.style.display = 'block';
+    } else {
+        div.style.display = 'none';
+        div.querySelector('select').value = '';
+    }
+});
+
+document.querySelector('#editPartyModal select[name="party_type"]').addEventListener('change', function() {
+    const div = document.getElementById('edit_contractor_type_div');
+    if (this.value === 'contractor') {
+        div.style.display = 'block';
+    } else {
+        div.style.display = 'none';
+        div.querySelector('select').value = '';
+    }
+});
+
 function editParty(party) {
     document.getElementById('edit_id').value = party.id;
     document.getElementById('edit_party_type').value = party.party_type;
-    document.getElementById('edit_name').value = party.name;
+    
+    // Trigger change to show/hide contractor type
+    const event = new Event('change');
+    document.getElementById('edit_party_type').dispatchEvent(event);
+    
+    // Set contractor type if available
+    if (party.party_type === 'contractor' && party.contractor_type) {
+         document.getElementById('edit_contractor_type').value = party.contractor_type;
+    }
 
+    document.getElementById('edit_name').value = party.name;
     document.getElementById('edit_mobile').value = party.mobile;
     document.getElementById('edit_email').value = party.email;
     document.getElementById('edit_gst_number').value = party.gst_number;
@@ -956,6 +1021,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const typeSelect = document.querySelector('#addPartyModal select[name="party_type"]');
             if (typeSelect) {
                 typeSelect.value = urlParams.get('pre_party_type');
+                typeSelect.dispatchEvent(new Event('change'));
             }
         }
         

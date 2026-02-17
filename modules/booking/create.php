@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/functions.php';
 require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/../../includes/BookingService.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -14,29 +15,31 @@ $db = Database::getInstance();
 $page_title = 'Create Booking';
 $current_page = 'booking';
 
-// Fetch data
-$customers = $db->query("SELECT id, name, mobile, email, address FROM parties WHERE party_type = 'customer' ORDER BY name")->fetchAll();
-$projects = $db->query("SELECT id, project_name FROM projects WHERE status = 'active' ORDER BY project_name")->fetchAll();
-$stage_of_works = $db->query("SELECT id, name, total_stages FROM stage_of_work WHERE status = 'active' ORDER BY name")->fetchAll();
-$available_flats = $db->query("SELECT f.id, f.flat_no, f.area_sqft, f.total_value, p.project_name, p.id as project_id
-                                FROM flats f
-                                JOIN projects p ON f.project_id = p.id
-                                WHERE f.status = 'available'
-                                ORDER BY p.project_name, f.flat_no")->fetchAll();
-
-require_once __DIR__ . '/../../includes/BookingService.php';
-
+// Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
         setFlashMessage('error', 'Security token expired. Please try again.');
         redirect('modules/booking/create.php');
     }
 
-
     $bookingService = new BookingService();
     $result = $bookingService->createBooking($_POST, $_SESSION['user_id']);
 
     if ($result['success']) {
+        
+        // ── Notification Trigger ──
+        require_once __DIR__ . '/../../includes/NotificationService.php';
+        $ns = new NotificationService();
+        $notifTitle = "New Booking Created";
+        $notifMsg   = "Booking for Flat ID {$_POST['flat_id']} has been created successfully.";
+        $notifLink  = BASE_URL . "modules/booking/view.php?id=" . $result['booking_id'];
+        
+        // Notify current user (or Admin user ID 1)
+        $ns->create($_SESSION['user_id'], $notifTitle, $notifMsg, 'success', $notifLink);
+        if ($_SESSION['user_id'] != 1) {
+             $ns->create(1, $notifTitle, $notifMsg . " (Created by " . $_SESSION['username'] . ")", 'info', $notifLink);
+        }
+
         setFlashMessage('success', $result['message']);
         redirect('modules/booking/view.php?id=' . $result['booking_id']);
     } else {
@@ -44,359 +47,437 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+$customers = $db->query("SELECT id, name, mobile, email, address FROM parties WHERE party_type = 'customer' ORDER BY name")->fetchAll();
+$projects = $db->query("SELECT id, project_name FROM projects WHERE status = 'active' ORDER BY project_name")->fetchAll();
+$stage_of_works = $db->query("SELECT * FROM stage_of_work WHERE status = 'active' ORDER BY name ASC")->fetchAll();
+
+$available_flats = $db->query("SELECT f.id, f.flat_no, f.area_sqft, f.total_value, p.project_name, p.id as project_id
+                                FROM flats f
+                                JOIN projects p ON f.project_id = p.id
+                                WHERE f.status = 'available'
+                                ORDER BY p.project_name, f.flat_no")->fetchAll();
+
 include __DIR__ . '/../../includes/header.php';
 ?>
 
-<link rel="stylesheet" href="<?= BASE_URL ?>assets/css/booking.css">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
 <style>
-    /* Styling for Sticky Summary */
-    .sticky-summary {
-        position: sticky;
-        top: 20px;
-    }
-    
-    .summary-card {
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-        border: 1px solid #e1e7ef;
-        overflow: hidden;
-    }
-
-    .summary-header {
-        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-        padding: 1.5rem;
-        color: white;
+    :root {
+        --ink:       #1a1714;
+        --ink-soft:  #6b6560;
+        --ink-mute:  #9e9690;
+        --cream:     #f5f3ef;
+        --surface:   #ffffff;
+        --border:    #e8e3db;
+        --border-lt: #f0ece5;
+        --accent:    #2a58b5ff;
+        --accent-bg: #fdf8f3;
+        --accent-lt: #fef3ea;
     }
 
-    .summary-project-name {
-        font-size: 0.9rem;
-        opacity: 0.8;
-        letter-spacing: 0.5px;
-        text-transform: uppercase;
-        margin-bottom: 0.25rem;
+    /* ── Page Wrapper ────────────────────────── */
+    .bc-wrap { max-width: 1100px; margin: 2.5rem auto; padding: 0 1.5rem 4rem; }
+
+    /* ── Header ──────────────────────────────── */
+    .bc-header {
+        margin-bottom: 2rem; padding-bottom: 1.5rem;
+        border-bottom: 1.5px solid var(--border);
+        display: flex; align-items: center; justify-content: space-between;
+        flex-wrap: wrap; gap: 1rem;
     }
 
-    .summary-flat-no {
-        font-size: 1.75rem;
-        font-weight: 700;
-        margin: 0;
+    .header-left { display: flex; align-items: center; gap: 0.75rem; }
+    .back-btn {
+        width: 38px; height: 38px; border-radius: 9px;
+        background: var(--surface); border: 1.5px solid var(--border);
+        display: flex; align-items: center; justify-content: center;
+        color: var(--ink-soft); text-decoration: none;
+        transition: all 0.18s; flex-shrink: 0;
     }
-    
-    .summary-body {
-        padding: 1.5rem;
+    .back-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+
+    .bc-header .eyebrow {
+        font-size: 0.68rem; font-weight: 700; letter-spacing: 0.15em;
+        text-transform: uppercase; color: var(--accent); margin-bottom: 0.3rem;
+    }
+    .bc-header h1 {
+        font-family: 'Fraunces', serif; font-size: 1.7rem; font-weight: 700;
+        line-height: 1.1; color: var(--ink); margin: 0;
     }
 
-    .summary-row {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 1rem;
-        font-size: 0.95rem;
+    /* ── Layout ──────────────────────────────── */
+    .bc-grid { display: grid; grid-template-columns: 1fr 360px; gap: 2rem; }
+    @media (max-width: 1024px) { .bc-grid { grid-template-columns: 1fr; } }
+
+    /* ── Cards ───────────────────────────────── */
+    .bc-card {
+        background: var(--surface); border: 1.5px solid var(--border);
+        border-radius: 14px; overflow: hidden;
+        animation: fadeUp 0.4s ease both;
     }
 
-    .summary-row.total-row {
-        border-top: 2px dashed #e2e8f0;
-        margin-top: 1rem;
-        padding-top: 1rem;
-        font-weight: 700;
-        font-size: 1.1rem;
-        color: #11998e;
+    .card-header {
+        padding: 1.15rem 1.5rem; border-bottom: 1.5px solid var(--border-lt);
+        background: #fdfcfa;
+    }
+    .card-header h3 {
+        font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 600;
+        color: var(--ink); margin: 0; display: flex; align-items: center; gap: 0.6rem;
+    }
+    .card-header h3 i { font-size: 0.85rem; color: var(--accent); }
+
+    .card-body { padding: 1.5rem; }
+
+    /* ── Form Fields ─────────────────────────── */
+    .field { margin-bottom: 1.1rem; }
+    .field label {
+        display: block; font-size: 0.75rem; font-weight: 700;
+        letter-spacing: 0.03em; text-transform: uppercase;
+        color: var(--ink-soft); margin-bottom: 0.4rem;
+    }
+    .field input, .field select {
+        width: 100%; padding: 0.65rem 0.85rem;
+        border: 1.5px solid var(--border); border-radius: 8px;
+        font-size: 0.875rem; color: var(--ink); background: #fdfcfa;
+        outline: none; transition: border-color 0.18s, box-shadow 0.18s;
+    }
+    .field select {
+        -webkit-appearance: none; appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%236b6560' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+        background-repeat: no-repeat; background-position: right 0.8rem center;
+        padding-right: 2.2rem;
+    }
+    .field input:focus, .field select:focus {
+        border-color: var(--accent); background: white;
+        box-shadow: 0 0 0 3px rgba(181,98,42,0.1);
+    }
+    .field input[readonly] { background: #f0ece5; color: var(--ink-mute); cursor: not-allowed; }
+
+    .field-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+    @media (max-width: 640px) { .field-row { grid-template-columns: 1fr; } }
+
+    /* Autocomplete */
+    .ac-wrap { position: relative; }
+    .ac-list {
+        position: absolute; z-index: 100; top: 100%; left: 0; right: 0;
+        background: white; border: 1.5px solid var(--border);
+        border-radius: 8px; margin-top: 0.25rem;
+        max-height: 240px; overflow-y: auto;
+        box-shadow: 0 10px 25px rgba(26,23,20,0.1);
+        display: none;
+    }
+    .ac-list.show { display: block; }
+    .ac-item {
+        padding: 0.65rem 0.85rem; cursor: pointer;
+        transition: background 0.12s;
+        border-bottom: 1px solid var(--border-lt);
+    }
+    .ac-item:last-child { border-bottom: none; }
+    .ac-item:hover, .ac-item.active { background: var(--accent-bg); }
+    .ac-item strong { color: var(--ink); }
+
+    /* ── Summary Card ────────────────────────── */
+    .sum-card {
+        background: var(--surface); border: 1.5px solid var(--border);
+        border-radius: 14px; overflow: hidden;
+        animation: fadeUp 0.5s 0.1s ease both;
+    }
+    .sum-head {
+        padding: 1.5rem; background: linear-gradient(135deg, var(--ink) 0%, #3e3936 100%);
+        color: white; text-align: center;
+    }
+    .sum-head .sp { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.7; margin-bottom: 0.3rem; }
+    .sum-head .sn { font-family: 'Fraunces', serif; font-size: 1.8rem; font-weight: 700; }
+
+    .sum-body { padding: 1.5rem; }
+    .sum-row {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 0.6rem 0; border-bottom: 1px solid var(--border-lt);
+    }
+    .sum-row:last-child { border-bottom: none; }
+    .sum-label { font-size: 0.75rem; font-weight: 600; color: var(--ink-soft); }
+    .sum-val { font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+    .sum-row input[type="number"] {
+        width: 100px; padding: 0.35rem 0.6rem; border: 1.5px solid var(--border);
+        border-radius: 6px; text-align: right; font-size: 0.8rem;
+        background: white; outline: none; transition: border-color 0.15s;
+    }
+    .sum-row input[type="number"]:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(181,98,42,0.1); }
+
+    .sum-total {
+        background: #ecfdf5; border: 1.5px dashed #10b981;
+        border-radius: 10px; padding: 1rem;
+        text-align: center; margin-top: 1rem;
+    }
+    .sum-total .st-lbl {
+        font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em;
+        text-transform: uppercase; color: #065f46; margin-bottom: 0.3rem;
+    }
+    .sum-total .st-val { font-family: 'Fraunces', serif; font-size: 1.4rem; font-weight: 700; color: #065f46; }
+
+    /* ── Buttons ─────────────────────────────── */
+    .btn-row {
+        display: flex; justify-content: flex-end; gap: 0.75rem;
+        margin-top: 1.5rem; padding-top: 1.5rem;
+        border-top: 1.5px solid var(--border-lt);
     }
 
-    .summary-label {
-        color: #64748b;
+    .btn {
+        padding: 0.7rem 1.4rem; border-radius: 8px;
+        font-size: 0.875rem; font-weight: 600; cursor: pointer;
+        transition: all 0.18s; display: inline-flex;
+        align-items: center; gap: 0.5rem; text-decoration: none;
     }
+    .btn-secondary { background: white; color: var(--ink-soft); border: 1.5px solid var(--border); }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-primary {
+        background: var(--ink); color: white; border: 1.5px solid var(--ink);
+    }
+    .btn-primary:hover { background: var(--accent); border-color: var(--accent); box-shadow: 0 4px 14px rgba(181,98,42,0.3); }
 
-    .summary-value {
-        font-weight: 600;
-        color: #1e293b;
+    .btn-submit {
+        width: 100%; margin-top: 1.25rem; padding: 0.85rem;
+        background: var(--ink); color: white; border: none;
+        border-radius: 8px; font-size: 0.875rem; font-weight: 700;
+        cursor: pointer; transition: all 0.18s;
+        display: flex; align-items: center; justify-content: center; gap: 0.5rem;
     }
-    
-    .calculation-input {
-        background: transparent;
-        border: none;
-        text-align: right;
-        width: 120px;
-        font-weight: 600;
-        color: #1e293b;
-    }
-    
-    .calculation-input:focus {
-        outline: none;
-    }
+    .btn-submit:hover { background: var(--accent); box-shadow: 0 4px 14px rgba(181,98,42,0.3); transform: translateY(-1px); }
+
+    /* Animations */
+    @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
 </style>
 
-<div class="create-booking-container">
-    <form method="POST" id="bookingForm" onsubmit="return validateForm()">
-        <?= csrf_field() ?>
-        
-        <div class="row">
-            <!-- LEFT COLUMN: Forms -->
-            <div class="col-lg-8">
-                
-                <!-- Customer Information Card -->
-                <div class="info-card">
-                    <div class="card-header-custom">
-                        <div class="card-icon icon-customer">
-                            <i class="fas fa-user-tie"></i>
-                        </div>
-                        <h2 class="card-title-custom">Customer Information</h2>
-                    </div>
-                    <div class="card-body-custom">
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <div class="form-group-custom mb-0">
-                                    <label class="form-label-custom">Customer Name *</label>
-                                    <div class="autocomplete-wrapper">
-                                        <input type="text" name="customer_name" id="customer_name" class="form-control-custom" placeholder="Search or enter customer" autocomplete="off" required>
-                                        <ul id="customer_suggestions" class="autocomplete-list"></ul>
-                                    </div>
-                                    <input type="hidden" name="customer_id" id="customer_id">
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group-custom mb-0">
-                                    <label class="form-label-custom">Mobile Number *</label>
-                                    <input type="text" name="mobile" id="customer_mobile" class="form-control-custom" placeholder="Enter mobile" required>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <div class="form-group-custom mb-0">
-                                    <label class="form-label-custom">Email Address</label>
-                                    <input type="email" name="email" id="customer_email" class="form-control-custom" placeholder="Enter email">
-                                </div>
-                            </div>
-                             <div class="col-md-6">
-                                <div class="form-group-custom mb-0">
-                                    <label class="form-label-custom">Referred By</label>
-                                    <input type="text" name="referred_by" id="referred_by" class="form-control-custom" placeholder="Enter referrer name (Optional)">
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="form-group-custom mb-0">
-                                    <label class="form-label-custom">Address</label>
-                                    <input type="text" name="address" id="customer_address" class="form-control-custom" placeholder="Enter complete address">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+<div class="bc-wrap">
 
-                <!-- Booking Details Card -->
-                <div class="info-card">
-                    <div class="card-header-custom">
-                        <div class="card-icon icon-flat">
-                            <i class="fas fa-building"></i>
-                        </div>
-                        <h2 class="card-title-custom">Booking Details</h2>
-                    </div>
-                    <div class="card-body-custom">
-                        <!-- NEW: Stage of Work -->
-                        <div class="row mb-3">
-                            <div class="col-12">
-                                <div class="form-group-custom mb-0" style="background: #f0f9ff; padding: 10px; border-radius: 8px; border: 1px dashed #0284c7;">
-                                    <label class="form-label-custom" style="color: #0284c7; font-weight: 700;">Select Stage of Work (Payment Plan)</label>
-                                    <select name="stage_of_work_id" class="form-control-custom">
-                                        <option value="">Select Plan (Optional)</option>
-                                        <?php if(empty($stage_of_works)): ?>
-                                            <option value="" disabled>No Templates Found (Check Database)</option>
-                                        <?php else: ?>
-                                            <?php foreach ($stage_of_works as $plan): ?>
-                                                <option value="<?= $plan['id'] ?>"><?= htmlspecialchars($plan['name']) ?> (<?= $plan['total_stages'] ?> Stages)</option>
-                                            <?php endforeach; ?>
-                                        <?php endif; ?>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <div class="form-group-custom mb-0">
-                                    <label class="form-label-custom">Select Project *</label>
-                                    <select name="project_id" id="project_select" class="form-control-custom" required onchange="filterFlats()">
-                                        <option value="">Choose Project First</option>
-                                        <?php foreach ($projects as $project): ?>
-                                            <option value="<?= $project['id'] ?>"><?= htmlspecialchars($project['project_name']) ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <div class="form-group-custom mb-0">
-                                    <label class="form-label-custom">Select Flat *</label>
-                                    <select name="flat_id" id="flat_select" class="form-control-custom" required onchange="updateFlatDetails()" disabled>
-                                        <option value="">Select project first</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                             <div class="col-md-6">
-                                <div class="form-group-custom mb-0">
-                                    <label class="form-label-custom">Booking Date *</label>
-                                    <input type="date" name="booking_date" class="form-control-custom" required value="<?= date('Y-m-d') ?>">
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group-custom mb-0">
-                                    <label class="form-label-custom">Agreement Value (₹) *</label>
-                                    <input type="number" name="agreement_value" id="agreement_value" class="form-control-custom" placeholder="0.00" step="0.01" required oninput="calculateFinancials()">
-                                    <small class="text-muted">Enter the base agreement value.</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Deduction Card -->
-                <div class="info-card">
-                    <div class="card-header-custom">
-                        <div class="card-icon icon-flat" style="background: rgba(245, 87, 108, 0.1); color: #f5576c;">
-                            <i class="fas fa-minus-circle"></i>
-                        </div>
-                        <h2 class="card-title-custom">Deduction</h2>
-                    </div>
-                    <div class="card-body-custom">
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="form-group-custom mb-0">
-                                    <label class="form-label-custom">Development Charge</label>
-                                    <input type="number" name="development_charge" id="development_charge" class="form-control-custom" placeholder="0.00" step="0.01" oninput="calculateFinancials()">
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-group-custom mb-0">
-                                    <label class="form-label-custom">Parking Charge</label>
-                                    <input type="number" name="parking_charge" id="parking_charge" class="form-control-custom" placeholder="0.00" step="0.01" oninput="calculateFinancials()">
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-group-custom mb-0">
-                                    <label class="form-label-custom">Society Charge</label>
-                                    <input type="number" name="society_charge" id="society_charge" class="form-control-custom" placeholder="0.00" step="0.01" oninput="calculateFinancials()">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="text-left mt-4 mb-5">
-                    <a href="index.php" class="btn-secondary-custom" style="margin-right: 1rem;">
-                        <i class="fas fa-arrow-left mr-2"></i>Back to List
-                    </a>
-                </div>
+    <!-- Header -->
+    <div class="bc-header">
+        <div class="header-left">
+            <a href="index.php" class="back-btn" title="Back to Bookings">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <div>
+                <div class="eyebrow">New Reservation</div>
+                <h1>Create Booking</h1>
             </div>
+        </div>
+    </div>
 
-            <!-- RIGHT COLUMN: Summary (Sticky) -->
-            <div class="col-lg-4">
-                <div class="sticky-summary">
-                    <div class="summary-card">
-                        <div class="summary-header">
-                            <div class="summary-project-name" id="display_project_name">Select Project</div>
-                            <h3 class="summary-flat-no" id="display_flat_no">---</h3>
+    <form method="POST" id="bookingForm" action="create.php">
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="create_booking">
+
+        <div class="bc-grid">
+
+            <!-- Main Form -->
+            <div>
+
+                <!-- Customer Card -->
+                <div class="bc-card" style="margin-bottom:1.5rem">
+                    <div class="card-header">
+                        <h3><i class="fas fa-user-circle"></i> Customer Information</h3>
+                    </div>
+                    <div class="card-body">
+
+                        <div class="field-row">
+                            <div class="field">
+                                <label>Customer Name *</label>
+                                <div class="ac-wrap">
+                                    <input type="text" name="customer_name" id="customer_name" 
+                                           placeholder="Search or type name" autocomplete="off" required>
+                                    <ul id="customer_suggestions" class="ac-list"></ul>
+                                </div>
+                                <input type="hidden" name="customer_id" id="customer_id">
+                            </div>
+                            <div class="field">
+                                <label>Referred By</label>
+                                <input type="text" name="referred_by" placeholder="Optional">
+                            </div>
                         </div>
-                        <div class="summary-body">
-                            <div class="summary-row">
-                                <span class="summary-label">Area</span>
-                                <span class="summary-value" id="display_area">- sqft</span>
-                            </div>
-                            <hr style="border-top: 1px solid #f1f5f9;">
-                            
-                            <div class="summary-row">
-                                <span class="summary-label">Rate (₹/sqft)</span>
-                                <input type="number" name="rate" id="booking_rate" class="calculation-input" placeholder="0.00" readonly tabindex="-1">
-                            </div>
-                            
-                            <div class="summary-row">
-                                <span class="summary-label">Agreement Value</span>
-                                <span class="summary-value" id="display_agreement_value">₹ 0.00</span>
-                            </div>
-                            
-                            <div class="summary-row">
-                                <span class="summary-label">Stamp Duty</span>
-                                <input type="number" name="stamp_duty_registration" id="stamp_duty_registration" class="calculation-input" placeholder="0.00" readonly tabindex="-1">
-                            </div>
-                            
-                            <div class="summary-row">
-                                <span class="summary-label">Registration</span>
-                                <input type="number" name="registration_amount" id="registration_amount" class="calculation-input" placeholder="0.00" readonly tabindex="-1">
-                            </div>
 
-                            <div class="summary-row">
-                                <span class="summary-label">GST</span>
-                                <input type="number" name="gst_amount" id="gst_amount" class="calculation-input" placeholder="0.00" readonly tabindex="-1">
+                        <div class="field-row">
+                            <div class="field">
+                                <label>Mobile Number *</label>
+                                <input type="text" name="mobile" id="cust_mobile" 
+                                       placeholder="10-digit number" required
+                                       pattern="\d{10}" maxlength="10" minlength="10"
+                                       oninput="this.value=this.value.replace(/[^0-9]/g,'')">
                             </div>
-
-                            <div class="summary-row total-row">
-                                <span>Est. Total Cost</span>
-                                <span id="display_total_cost">₹ 0.00</span>
+                            <div class="field">
+                                <label>Email Address</label>
+                                <input type="email" name="email" id="cust_email" 
+                                       placeholder="optional@email.com">
                             </div>
+                        </div>
 
-                            <button type="submit" class="btn-primary-custom" style="width: 100%; margin-top: 1.5rem; justify-content: center; display: flex;">
-                                <i class="fas fa-check-circle mr-2"></i> Confirm Booking
+                        <div class="field">
+                            <label>Address</label>
+                            <input type="text" name="address" id="cust_address" 
+                                   placeholder="City, Area">
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Property Card -->
+                <div class="bc-card" style="margin-bottom:1.5rem">
+                    <div class="card-header">
+                        <h3><i class="fas fa-building"></i> Property & Booking Details</h3>
+                    </div>
+                    <div class="card-body">
+
+                        <div class="field-row">
+                            <div class="field">
+                                <label>Select Project *</label>
+                                <select name="project_id" id="project_select" required onchange="filterFlats()">
+                                    <option value="">Choose Project</option>
+                                    <?php foreach ($projects as $project): ?>
+                                        <option value="<?= $project['id'] ?>"><?= htmlspecialchars($project['project_name']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label>Select Flat *</label>
+                                <select name="flat_id" id="flat_select" required onchange="updateFlatDetails()" disabled>
+                                    <option value="">Select project first</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label>Payment Plan (Stage of Work)</label>
+                            <select name="stage_of_work_id">
+                                <option value="">Optional</option>
+                                <?php foreach ($stage_of_works as $plan): ?>
+                                    <option value="<?= $plan['id'] ?>">
+                                        <?= htmlspecialchars($plan['name']) ?> (<?= $plan['total_stages'] ?> Stages)
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
+                        <div class="field-row">
+                            <div class="field">
+                                <label>Booking Date *</label>
+                                <input type="date" name="booking_date" required value="<?= date('Y-m-d') ?>">
+                            </div>
+                            <div class="field">
+                                <label>Agreement Value (₹) *</label>
+                                <input type="number" name="agreement_value" id="agreement_value" 
+                                       step="0.01" required placeholder="0.00"
+                                       oninput="calculateFinancials()">
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Charges Card -->
+                <div class="bc-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-minus-circle"></i> Additional Charges</h3>
+                    </div>
+                    <div class="card-body">
+
+                        <div class="field-row">
+                            <div class="field">
+                                <label>Development Charge</label>
+                                <input type="number" name="development_charge" id="development_charge" 
+                                       placeholder="0.00" step="0.01" oninput="calculateFinancials()">
+                            </div>
+                            <div class="field">
+                                <label>Parking Charge</label>
+                                <input type="number" name="parking_charge" id="parking_charge" 
+                                       placeholder="0.00" step="0.01" oninput="calculateFinancials()">
+                            </div>
+                        </div>
+
+                        <div class="field-row">
+                            <div class="field">
+                                <label>Society Charge</label>
+                                <input type="number" name="society_charge" id="society_charge" 
+                                       placeholder="0.00" step="0.01" oninput="calculateFinancials()">
+                            </div>
+                            <div class="field"></div>
+                        </div>
+
+                        <div class="btn-row">
+                            <a href="index.php" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-check"></i> Create Booking
                             </button>
                         </div>
+
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Summary Sidebar -->
+            <div>
+                <div class="sum-card">
+                    <div class="sum-head">
+                        <div class="sp" id="display_project_name">SELECT PROJECT</div>
+                        <div class="sn" id="display_flat_no">---</div>
+                    </div>
+                    <div class="sum-body">
+                        <div class="sum-row">
+                            <span class="sum-label">Area</span>
+                            <span class="sum-val" id="display_area" data-area="0">— sqft</span>
+                        </div>
+                        <div class="sum-row">
+                            <span class="sum-label">Rate (₹/sqft)</span>
+                            <input type="number" name="rate" id="booking_rate" readonly placeholder="0.00">
+                        </div>
+                        <div class="sum-row">
+                            <span class="sum-label">Agreement Value</span>
+                            <span class="sum-val" id="display_agreement_value">₹ 0.00</span>
+                        </div>
+                        <div class="sum-row">
+                            <span class="sum-label">Stamp Duty (6%)</span>
+                            <input type="number" name="stamp_duty_registration" id="stamp_duty_registration" readonly placeholder="0.00">
+                        </div>
+                        <div class="sum-row">
+                            <span class="sum-label">Registration (1%)</span>
+                            <input type="number" name="registration_amount" id="registration_amount" readonly placeholder="0.00">
+                        </div>
+                        <div class="sum-row">
+                            <span class="sum-label">GST (1%)</span>
+                            <input type="number" name="gst_amount" id="gst_amount" readonly placeholder="0.00">
+                        </div>
+
+                        <div class="sum-total">
+                            <div class="st-lbl">Est. Total Cost</div>
+                            <div class="st-val" id="display_total_cost">₹ 0.00</div>
+                        </div>
+
+                        <button type="submit" class="btn-submit">
+                            <i class="fas fa-check-circle"></i> Create Booking
+                        </button>
                     </div>
                 </div>
             </div>
+
         </div>
+
     </form>
+
 </div>
 
-<!-- Toast Notification Container -->
-<div class="toast-container" id="toastContainer"></div>
-
 <script>
-// Toast Notification System
-function showToast(message, type = 'error', title = '') {
-    const container = document.getElementById('toastContainer');
-    const toast = document.createElement('div');
-    toast.className = `toast-notification ${type}`;
-    
-    // ... (Keep existing toast icons) ...
-    const icons = {
-        error: '<svg class="toast-icon" fill="currentColor" style="color: #f5576c;" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>',
-        success: '<svg class="toast-icon" fill="currentColor" style="color: #38ef7d;" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>',
-        warning: '<svg class="toast-icon" fill="currentColor" style="color: #ffd89b;" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>'
-    };
-    
-    // ... (Keep existing toast logic) ...
-    const defaultTitles = { error: 'Error', success: 'Success', warning: 'Warning' };
-    
-    toast.innerHTML = `
-        ${icons[type] || icons.error}
-        <div class="toast-content">
-            <div class="toast-title">${title || defaultTitles[type]}</div>
-            <p class="toast-message">${message}</p>
-        </div>
-        <button class="toast-close" onclick="this.parentElement.remove()">×</button>
-    `;
-    container.appendChild(toast);
-    setTimeout(() => {
-        toast.style.animation = 'slideOut 0.3s ease-out';
-        setTimeout(() => toast.remove(), 300);
-    }, 4000);
-}
-
 const customers = <?= json_encode($customers) ?>;
 const allFlats = <?= json_encode($available_flats) ?>;
 
-// ... (Keep autocomplete function) ...
+// Autocomplete
 function setupAutocomplete(inputId, listId, data, onSelect) {
     const input = document.getElementById(inputId);
     const list = document.getElementById(listId);
     let currentFocus = -1;
+    
     function closeAllLists(elmnt) { if (elmnt !== input) list.classList.remove('show'); }
     function addActive(items) {
         if (!items || items.length === 0) return false;
@@ -412,7 +493,7 @@ function setupAutocomplete(inputId, listId, data, onSelect) {
         if (matches.length === 0) { list.classList.remove('show'); return; }
         matches.forEach(item => {
             const li = document.createElement('li');
-            li.className = 'autocomplete-item';
+            li.className = 'ac-item';
             li.innerHTML = `<strong>${item.name}</strong>`;
             li.onclick = function() { onSelect(item); list.classList.remove('show'); };
             list.appendChild(li);
@@ -426,14 +507,19 @@ function setupAutocomplete(inputId, listId, data, onSelect) {
         renderList(matches);
         currentFocus = -1;
     }
+    
     input.addEventListener('input', function() { filterAndShow(this.value); });
     input.addEventListener('focus', function() { filterAndShow(this.value); });
     input.addEventListener('keydown', function(e) {
-        let items = list.getElementsByClassName('autocomplete-item');
+        let items = list.getElementsByClassName('ac-item');
         if (!list.classList.contains('show')) return;
         if (e.keyCode == 40) { currentFocus++; addActive(items); e.preventDefault(); }
         else if (e.keyCode == 38) { currentFocus--; addActive(items); e.preventDefault(); }
-        else if (e.keyCode == 13) { e.preventDefault(); if (currentFocus > -1 && items[currentFocus]) items[currentFocus].click(); else if (items.length === 1) items[0].click(); }
+        else if (e.keyCode == 13) { 
+            e.preventDefault(); 
+            if (currentFocus > -1 && items[currentFocus]) items[currentFocus].click(); 
+            else if (items.length === 1) items[0].click(); 
+        }
     });
     document.addEventListener('click', function(e) { if (e.target !== input) closeAllLists(e.target); });
 }
@@ -441,40 +527,42 @@ function setupAutocomplete(inputId, listId, data, onSelect) {
 setupAutocomplete('customer_name', 'customer_suggestions', customers, function(customer) {
     document.getElementById('customer_name').value = customer.name;
     document.getElementById('customer_id').value = customer.id;
-    document.getElementById('customer_mobile').value = customer.mobile || '';
-    document.getElementById('customer_email').value = customer.email || '';
-    document.getElementById('customer_address').value = customer.address || '';
+    document.getElementById('cust_mobile').value = customer.mobile || '';
+    document.getElementById('cust_email').value = customer.email || '';
+    document.getElementById('cust_address').value = customer.address || '';
 });
 
 document.getElementById('customer_name').addEventListener('input', function() {
     document.getElementById('customer_id').value = '';
 });
 
+// Flat Selection
 function filterFlats() {
     const projectId = document.getElementById('project_select').value;
     const flatSelect = document.getElementById('flat_select');
     
-    // Reset Summary
-    document.getElementById('display_project_name').textContent = projectId ? document.getElementById('project_select').options[document.getElementById('project_select').selectedIndex].text : 'Select Project';
+    document.getElementById('display_project_name').textContent = projectId 
+        ? document.getElementById('project_select').options[document.getElementById('project_select').selectedIndex].text 
+        : 'SELECT PROJECT';
     document.getElementById('display_flat_no').textContent = '---';
-    document.getElementById('display_area').textContent = '- sqft';
+    document.getElementById('display_area').textContent = '— sqft';
+    document.getElementById('display_area').setAttribute('data-area', 0);
     
     flatSelect.innerHTML = '<option value="">Select Flat</option>';
     
     if (!projectId) {
         flatSelect.disabled = true;
         flatSelect.innerHTML = '<option value="">Select project first</option>';
+        calculateFinancials();
         return;
     }
     
-    // Sort and Filter flats
     const projectFlats = allFlats.filter(flat => flat.project_id == projectId)
         .sort((a, b) => a.flat_no.localeCompare(b.flat_no, undefined, {numeric: true, sensitivity: 'base'}));
     
     if (projectFlats.length === 0) {
         flatSelect.disabled = true;
         flatSelect.innerHTML = '<option value="">No available flats</option>';
-        showToast('No available flats found in this project', 'warning', 'No Flats Available');
         return;
     }
     
@@ -488,6 +576,7 @@ function filterFlats() {
         option.textContent = `${flat.flat_no} - ${parseFloat(flat.area_sqft).toFixed(0)} sqft`;
         flatSelect.appendChild(option);
     });
+    calculateFinancials();
 }
 
 function updateFlatDetails() {
@@ -499,56 +588,44 @@ function updateFlatDetails() {
         const value = option.getAttribute('data-value');
         const flatNo = option.getAttribute('data-flat-no');
         
-        // Update Summary Card
         document.getElementById('display_flat_no').textContent = flatNo;
         document.getElementById('display_area').textContent = parseFloat(area).toFixed(2) + ' sqft';
-        
-        // Auto-fill Value
+        document.getElementById('display_area').setAttribute('data-area', area);
         document.getElementById('agreement_value').value = value;
-        calculateFinancials();
     } else {
         document.getElementById('display_flat_no').textContent = '---';
-        document.getElementById('display_area').textContent = '- sqft';
+        document.getElementById('display_area').textContent = '— sqft';
+        document.getElementById('display_area').setAttribute('data-area', 0);
         document.getElementById('agreement_value').value = '';
-        calculateFinancials();
     }
+    calculateFinancials();
 }
 
+// Financial Calculations
 function calculateFinancials() {
     const agreementValue = parseFloat(document.getElementById('agreement_value').value) || 0;
-    const flatOption = document.getElementById('flat_select').selectedOptions[0];
-    const area = flatOption && flatOption.value ? parseFloat(flatOption.getAttribute('data-area')) || 0 : 0;
+    const area = parseFloat(document.getElementById('display_area').getAttribute('data-area')) || 0;
     
-    // Update Agreement Value Display
     document.getElementById('display_agreement_value').textContent = '₹ ' + agreementValue.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
     
-    // Calculate Stamp Duty (6%) - Rounded
     const stampDuty = Math.round(agreementValue * 0.06);
     document.getElementById('stamp_duty_registration').value = stampDuty.toFixed(2);
     
-    // Calculate Registration (1% with Cap) - Rounded
     let registration = Math.round(agreementValue * 0.01);
-    if (agreementValue >= 3000000) {
-        registration = 30000;
-    }
+    if (agreementValue >= 3000000) registration = 30000;
     document.getElementById('registration_amount').value = registration.toFixed(2);
 
-    // Calculate GST (1%) - Rounded
     const gst = Math.round(agreementValue * 0.01);
     document.getElementById('gst_amount').value = gst.toFixed(2);
     
-    // Get Charges
     const devCharge = parseFloat(document.getElementById('development_charge').value) || 0;
     const parkingCharge = parseFloat(document.getElementById('parking_charge').value) || 0;
     const societyCharge = parseFloat(document.getElementById('society_charge').value) || 0;
     const totalCharges = devCharge + parkingCharge + societyCharge;
 
-    // Calculate Total Cost (Net)
-    // Total Cost = Agreement Value - Charges - Stamp - Reg - GST
     const totalCost = agreementValue - totalCharges - stampDuty - registration - gst;
     document.getElementById('display_total_cost').textContent = '₹ ' + totalCost.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-    
-    // Calculate Rate = Total Cost / Area
+
     if (area > 0) {
         const rate = totalCost / area;
         document.getElementById('booking_rate').value = rate.toFixed(2);
@@ -557,20 +634,25 @@ function calculateFinancials() {
     }
 }
 
-function validateForm() {
-    const projectId = document.getElementById('project_select').value;
-    const flatId = document.getElementById('flat_select').value;
+// Check for query params
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const projectId = urlParams.get('project_id');
+    const flatId = urlParams.get('flat_id');
     
-    if (!projectId) {
-        showToast('Please select a project', 'warning');
-        return false;
+    if (projectId) {
+        const projectSelect = document.getElementById('project_select');
+        projectSelect.value = projectId;
+        filterFlats();
+        
+        if (flatId) {
+            setTimeout(() => {
+                document.getElementById('flat_select').value = flatId;
+                updateFlatDetails();
+            }, 100);
+        }
     }
-    if (!flatId) {
-        showToast('Please select a flat', 'warning');
-        return false;
-    }
-    return true;
-}
+});
 </script>
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>

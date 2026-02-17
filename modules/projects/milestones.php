@@ -45,8 +45,7 @@ if ($selected_project_id) {
         $milestones = $db->query($sql, [$selected_project_id])->fetchAll();
     }
 
-    // 3. Fetch Completed Stages (Independent Table + Legacy Demands check)
-    // We check both the new 'project_completed_stages' table AND existing demands for backward compatibility
+    // 3. Fetch Completed Stages
     $completed_sql = "SELECT stage_name FROM project_completed_stages WHERE project_id = ?
                       UNION
                       SELECT DISTINCT bd.stage_name 
@@ -59,301 +58,340 @@ if ($selected_project_id) {
 include __DIR__ . '/../../includes/header.php';
 ?>
 
-<link rel="stylesheet" href="<?= BASE_URL ?>assets/css/booking.css">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
 <style>
-/* Reusing Project/Booking Styles */
-.progress-card {
-    background: white;
-    border-radius: 16px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    border: 1px solid #f1f5f9;
-    overflow: hidden;
-    margin-bottom: 24px;
-    transition: all 0.3s ease;
-}
+    :root {
+        --ink:       #1a1714;
+        --ink-soft:  #6b6560;
+        --ink-mute:  #9e9690;
+        --cream:     #f5f3ef;
+        --surface:   #ffffff;
+        --border:    #e8e3db;
+        --border-lt: #f0ece5;
+        --accent:    #2a58b5ff;
+        --accent-bg: #fdf8f3;
+        --accent-lt: #fef3ea;
+    }
 
-.progress-header {
-    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-    padding: 20px 24px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    color: white;
-}
+    /* ── Page Wrapper ────────────────────────── */
+    .pp-wrap { max-width: 1080px; margin: 2.5rem auto; padding: 0 1.5rem 4rem; }
 
-.milestone-row {
-    display: flex;
-    align-items: center;
-    padding: 20px 24px;
-    border-bottom: 1px solid #f1f5f9;
-    transition: background 0.2s;
-}
+    /* ── Header ──────────────────────────────── */
+    .pp-header {
+        margin-bottom: 2rem; padding-bottom: 1.5rem;
+        border-bottom: 1.5px solid var(--border);
+    }
 
-.milestone-row:last-child {
-    border-bottom: none;
-}
+    .pp-header .eyebrow {
+        font-size: 0.68rem; font-weight: 700; letter-spacing: 0.15em;
+        text-transform: uppercase; color: var(--accent); margin-bottom: 0.3rem;
+    }
+    .pp-header h1 {
+        font-family: 'Fraunces', serif; font-size: 1.7rem; font-weight: 700;
+        line-height: 1.1; color: var(--ink); margin: 0;
+    }
+    .pp-header h1 em { color: var(--accent); font-style: italic; }
 
-.milestone-row:hover {
-    background: #f8fafc;
-}
+    /* ── Selector Card ───────────────────────── */
+    .selector-card {
+        background: var(--surface); border: 1.5px solid var(--border);
+        border-radius: 14px; padding: 1.5rem; margin-bottom: 1.75rem;
+        animation: fadeUp 0.4s ease both;
+    }
 
-.milestone-info {
-    flex: 1;
-}
+    .selector-card label {
+        display: block; font-size: 0.75rem; font-weight: 700;
+        letter-spacing: 0.03em; text-transform: uppercase;
+        color: var(--ink-soft); margin-bottom: 0.6rem;
+    }
 
-.milestone-name {
-    font-size: 16px;
-    font-weight: 700;
-    color: #1e293b;
-    margin-bottom: 4px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
+    .selector-card select {
+        width: 100%; max-width: 420px; padding: 0.7rem 0.9rem;
+        border: 1.5px solid var(--border); border-radius: 8px;
+        font-size: 0.875rem; color: var(--ink); background: #fdfcfa;
+        outline: none; transition: border-color 0.18s, box-shadow 0.18s;
+        -webkit-appearance: none; appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%236b6560' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+        background-repeat: no-repeat; background-position: right 0.8rem center;
+        padding-right: 2.5rem;
+    }
+    .selector-card select:focus {
+        border-color: var(--accent); background: white;
+        box-shadow: 0 0 0 3px rgba(181,98,42,0.1);
+    }
 
-.milestone-meta {
-    font-size: 13px;
-    color: #64748b;
-}
+    /* ── Progress Card ───────────────────────── */
+    .prog-card {
+        background: var(--surface); border: 1.5px solid var(--border);
+        border-radius: 14px; overflow: hidden;
+        animation: fadeUp 0.5s 0.1s ease both;
+    }
 
-.status-badge-outline {
-    border: 1px solid #e2e8f0;
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-    color: #64748b;
-    background: white;
-}
+    .prog-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 1.3rem 1.5rem; border-bottom: 1.5px solid var(--border-lt);
+        background: #fdfcfa; flex-wrap: wrap; gap: 1rem;
+    }
+    .prog-header h3 {
+        font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 600;
+        color: var(--ink); margin: 0; display: flex; align-items: center; gap: 0.6rem;
+    }
+    .prog-header h3 i { font-size: 0.85rem; color: var(--accent); }
+    .prog-header p {
+        font-size: 0.78rem; color: var(--ink-mute); margin: 0.25rem 0 0;
+    }
 
-.status-badge-success {
-    background: #dcfce7;
-    color: #166534;
-    border: 1px solid #bbf7d0;
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-}
+    .stage-badge {
+        display: inline-flex; align-items: center; gap: 0.4rem;
+        padding: 0.4rem 0.9rem; border-radius: 20px;
+        font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em;
+        text-transform: uppercase; background: var(--accent-bg);
+        color: var(--accent); border: 1px solid #e0c9b5;
+    }
 
-.btn-mark-complete {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 10px;
-    font-weight: 600;
-    font-size: 14px;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
+    /* ── Milestone Rows ──────────────────────── */
+    .ml-list {}
+    .ml-row {
+        display: flex; align-items: center; gap: 1.25rem;
+        padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-lt);
+        transition: background 0.15s;
+    }
+    .ml-row:last-child { border-bottom: none; }
+    .ml-row:hover { background: #fdfcfa; }
 
-.btn-mark-complete:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
-}
+    .ml-icon {
+        width: 44px; height: 44px; border-radius: 10px;
+        background: var(--accent-bg); display: flex;
+        align-items: center; justify-content: center;
+        color: var(--accent); font-size: 0.9rem; flex-shrink: 0;
+    }
 
-.btn-disabled {
-    background: #e2e8f0;
-    color: #94a3b8;
-    cursor: not-allowed;
-    box-shadow: none;
-}
-/* CSS for Modal Overlay */
-.custom-modal {
-    display: none; 
-    position: fixed; 
-    z-index: 99999; /* High z-index to cover sidebar */
-    left: 0;
-    top: 0;
-    width: 100%; 
-    height: 100%; 
-    overflow: auto; 
-    background-color: rgba(15, 23, 42, 0.75); /* Darker backdrop */
-    backdrop-filter: blur(8px);
-    align-items: center; /* Center vertically */
-    justify-content: center; /* Center horizontally */
-    display: none; /* Keep hidden by default, JS toggles flex */
-}
+    .ml-info { flex: 1; }
+    .ml-name {
+        font-size: 0.925rem; font-weight: 700; color: var(--ink);
+        margin-bottom: 0.25rem;
+    }
+    .ml-meta {
+        font-size: 0.78rem; color: var(--ink-mute);
+    }
+    .ml-meta strong { color: var(--ink-soft); }
 
-/* Important: JS sets this to 'flex' so we need !important or strict rule if JS uses 'block' by default for modals */
-.custom-modal[style*="display: block"] {
-    display: flex !important;
-}
+    .ml-action { flex-shrink: 0; }
 
-.custom-modal-content {
-    background-color: #ffffff;
-    margin: auto; /* Center in flex container */
-    border: none;
-    width: 90%; 
-    max-width: 500px;
-    border-radius: 20px;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-    position: relative;
-    animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    overflow: hidden;
-}
+    .btn-complete {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        padding: 0.6rem 1.2rem; background: var(--ink); color: white;
+        border: 1.5px solid var(--ink); border-radius: 8px;
+        font-size: 0.8rem; font-weight: 600; cursor: pointer;
+        transition: all 0.18s; text-decoration: none;
+    }
+    .btn-complete:hover {
+        background: var(--accent); border-color: var(--accent);
+        box-shadow: 0 4px 14px rgba(181,98,42,0.28);
+        transform: translateY(-1px); color: white;
+    }
 
-@keyframes modalPop {
-    from { transform: scale(0.95) translateY(20px); opacity: 0; }
-    to { transform: scale(1) translateY(0); opacity: 1; }
-}
+    .btn-completed {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        padding: 0.6rem 1.2rem; background: #ecfdf5; color: #065f46;
+        border: 1.5px solid #a7f3d0; border-radius: 8px;
+        font-size: 0.8rem; font-weight: 600; cursor: default;
+    }
 
-/* Header & Body styling reused from Project Styles */
-.modal-header-premium {
-    background: linear-gradient(135deg, #0f172a 0%, #334155 100%);
-    padding: 20px 24px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
+    /* Empty State */
+    .empty-state {
+        padding: 4rem 1rem; text-align: center;
+    }
+    .empty-state i {
+        font-size: 2.5rem; color: var(--border);
+        margin-bottom: 0.75rem; display: block;
+    }
+    .empty-state h3 {
+        font-size: 1.1rem; font-weight: 700; color: var(--ink-soft);
+        margin: 0 0 0.4rem;
+    }
+    .empty-state p {
+        font-size: 0.875rem; color: var(--ink-mute); margin: 0;
+    }
 
-.modal-title-group h3 {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 800;
-    color: #ffffff;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
+    /* ── Modal ───────────────────────────────── */
+    .pp-modal-backdrop {
+        display: none; position: fixed; inset: 0; z-index: 10000;
+        background: rgba(26,23,20,0.5); backdrop-filter: blur(3px);
+        align-items: center; justify-content: center; padding: 1rem;
+    }
+    .pp-modal-backdrop.open { display: flex; }
 
-.modal-title-group p {
-    margin: 4px 0 0 0;
-    font-size: 13px;
-    color: rgba(255, 255, 255, 0.7);
-}
+    .pp-modal {
+        background: white; border-radius: 16px; overflow: hidden;
+        width: 100%; max-width: 480px;
+        box-shadow: 0 25px 50px rgba(26,23,20,0.2);
+        animation: modalIn 0.25s ease;
+    }
+    @keyframes modalIn { from { opacity:0; transform:translateY(-16px); } to { opacity:1; transform:translateY(0); } }
 
-.modal-close-btn {
-    background: rgba(255, 255, 255, 0.1);
-    border: none;
-    color: white;
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-.modal-close-btn:hover { background: rgba(255, 255, 255, 0.25); }
+    .modal-head {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 1.3rem 1.6rem; border-bottom: 1.5px solid var(--border-lt);
+        background: #fdfcfa;
+    }
+    .modal-head h3 {
+        font-family: 'Fraunces', serif; font-size: 1.1rem;
+        font-weight: 600; color: var(--ink); margin: 0;
+        display: flex; align-items: center; gap: 0.6rem;
+    }
+    .modal-head h3 i { color: var(--accent); }
+    .modal-head p { font-size: 0.75rem; color: var(--ink-mute); margin: 0.25rem 0 0; }
+    .modal-close {
+        width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+        border: none; background: var(--cream); font-size: 1.2rem;
+        color: var(--ink-mute); cursor: pointer; border-radius: 8px; transition: all 0.15s;
+    }
+    .modal-close:hover { background: var(--border); color: var(--ink); }
 
-.modal-body-premium {
-    padding: 30px;
-    background: #ffffff;
-}
+    .modal-body { padding: 1.75rem 1.6rem; text-align: center; }
+
+    .modal-icon {
+        width: 64px; height: 64px; border-radius: 50%;
+        background: var(--accent-bg); display: flex;
+        align-items: center; justify-content: center;
+        margin: 0 auto 1.25rem; color: var(--accent); font-size: 1.5rem;
+    }
+
+    .modal-body h4 {
+        font-size: 1.05rem; font-weight: 700; color: var(--ink);
+        margin: 0 0 0.6rem;
+    }
+    .modal-body p {
+        font-size: 0.85rem; color: var(--ink-soft); line-height: 1.6;
+        margin: 0 0 1.5rem;
+    }
+
+    .modal-footer {
+        display: flex; justify-content: center; gap: 0.65rem;
+        padding: 1.25rem 1.6rem; border-top: 1.5px solid var(--border-lt);
+        background: #fdfcfa;
+    }
+
+    .btn {
+        padding: 0.7rem 1.4rem; border-radius: 8px;
+        font-size: 0.875rem; font-weight: 600; cursor: pointer;
+        transition: all 0.18s; display: inline-flex;
+        align-items: center; gap: 0.5rem; text-decoration: none;
+    }
+    .btn-secondary { background: white; color: var(--ink-soft); border: 1.5px solid var(--border); }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-primary {
+        background: var(--ink); color: white; border: 1.5px solid var(--ink);
+        width: 100%; justify-content: center;
+    }
+    .btn-primary:hover { background: var(--accent); border-color: var(--accent); box-shadow: 0 4px 14px rgba(181,98,42,0.3); }
+
+    /* Animations */
+    @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
 </style>
 
-<div class="booking-details-container"> <!-- Reuse container for padding -->
-    <div class="row">
-        <div class="col-12">
-            <div class="info-card-modern" style="margin-bottom: 30px;">
-                <div class="card-body-modern" style="padding: 24px;">
-                    <form method="GET" style="display: flex; align-items: flex-end; gap: 20px;">
-                        <div style="flex: 1; max-width: 400px;">
-                            <label class="input-label" style="margin-bottom: 8px; display: block;">Select Project to Manage Progress</label>
-                            <select name="project_id" class="modern-select" onchange="this.form.submit()">
-                                <option value="">-- Choose Project --</option>
-                                <?php foreach ($projects as $p): ?>
-                                    <option value="<?= $p['id'] ?>" <?= $selected_project_id == $p['id'] ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($p['project_name']) ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
+<div class="pp-wrap">
+
+    <!-- Header -->
+    <div class="pp-header">
+        <div class="eyebrow">Construction Tracking</div>
+        <h1>Project <em>Progress</em></h1>
+    </div>
+
+    <!-- Project Selector -->
+    <div class="selector-card">
+        <form method="GET">
+            <label>Select Project to Manage Progress</label>
+            <select name="project_id" onchange="this.form.submit()">
+                <option value="">— Choose Project —</option>
+                <?php foreach ($projects as $p): ?>
+                    <option value="<?= $p['id'] ?>" <?= $selected_project_id == $p['id'] ? 'selected' : '' ?>>
+                        <?= htmlspecialchars($p['project_name']) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </form>
     </div>
 
     <?php if ($selected_project_id): ?>
         <?php if (empty($milestones)): ?>
-            <div class="empty-state">
-                <i class="fas fa-search" style="font-size: 48px; color: #cbd5e1; margin-bottom: 16px;"></i>
-                <h3 style="color: #64748b;">No Linked Payment Plans Found</h3>
-                <p style="color: #94a3b8;">This project doesn't have any bookings with construction-linked payment plans yet.</p>
+            <div class="prog-card">
+                <div class="empty-state">
+                    <i class="fas fa-search"></i>
+                    <h3>No Linked Payment Plans Found</h3>
+                    <p>This project doesn't have any bookings with construction-linked payment plans yet.</p>
+                </div>
             </div>
         <?php else: ?>
-            <div class="row">
-                <div class="col-12">
-                    <div class="progress-card">
-                        <div class="progress-header">
-                            <div>
-                                <h3 style="margin: 0; font-size: 18px; font-weight: 700;">Construction Milestones</h3>
-                                <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.8;">Mark stages as complete to trigger demand generation</p>
-                            </div>
-                            <div class="status-badge-outline" style="color: white; border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.1);">
-                                <?= count($milestones) ?> Stages Identified
-                            </div>
-                        </div>
-                        
-                        <div class="milestones-list">
-                            <?php foreach ($milestones as $stage): ?>
-                                <div class="milestone-row">
-                                    <div class="milestone-icon" style="width: 48px; height: 48px; background: #f1f5f9; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-right: 20px; color: #64748b;">
-                                        <i class="fas fa-layer-group"></i>
-                                    </div>
-                                    <div class="milestone-info">
-                                        <div class="milestone-name">
-                                            <?= htmlspecialchars($stage['stage_name']) ?>
-                                        </div>
-                                        <div class="milestone-meta">
-                                            Usually linked to <strong><?= floatval($stage['percentage']) ?>%</strong> demand
-                                        </div>
-                                    </div>
-                                    <div class="milestone-actions">
-                                        <?php if (in_array($stage['stage_name'], $completed_stages ?? [])): ?>
-                                            <button class="modern-btn btn-ghost" style="color: #10b981; border-color: #10b981; cursor: default; background: #ecfdf5;">
-                                                <i class="fas fa-check-double"></i> Completed
-                                            </button>
-                                        <?php else: ?>
-                                            <button class="btn-mark-complete" onclick="confirmMilestone('<?= htmlspecialchars($stage['stage_name']) ?>')">
-                                                <i class="fas fa-check-circle"></i> Mark Complete
-                                            </button>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
+            <div class="prog-card">
+                <div class="prog-header">
+                    <div>
+                        <h3><i class="fas fa-layer-group"></i> Construction Milestones</h3>
+                        <p>Mark stages as complete to trigger demand generation</p>
                     </div>
+                    <span class="stage-badge">
+                        <i class="fas fa-list-check"></i> <?= count($milestones) ?> Stages
+                    </span>
+                </div>
+                
+                <div class="ml-list">
+                    <?php foreach ($milestones as $stage): ?>
+                        <div class="ml-row">
+                            <div class="ml-icon">
+                                <i class="fas fa-hard-hat"></i>
+                            </div>
+                            <div class="ml-info">
+                                <div class="ml-name"><?= htmlspecialchars($stage['stage_name']) ?></div>
+                                <div class="ml-meta">
+                                    Usually linked to <strong><?= floatval($stage['percentage']) ?>%</strong> demand
+                                </div>
+                            </div>
+                            <div class="ml-action">
+                                <?php if (in_array($stage['stage_name'], $completed_stages ?? [])): ?>
+                                    <span class="btn-completed">
+                                        <i class="fas fa-check-double"></i> Completed
+                                    </span>
+                                <?php else: ?>
+                                    <button class="btn-complete" onclick="confirmMilestone('<?= htmlspecialchars($stage['stage_name']) ?>')">
+                                        <i class="fas fa-check-circle"></i> Mark Complete
+                                    </button>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
                 </div>
             </div>
         <?php endif; ?>
     <?php endif; ?>
+
 </div>
 
 <!-- Trigger Demand Modal -->
-<div id="triggerModal" class="custom-modal">
-    <div class="custom-modal-content" style="max-width: 500px;">
-        <div class="modal-header-premium">
-            <div class="modal-title-group">
+<div class="pp-modal-backdrop" id="triggerModal">
+    <div class="pp-modal">
+        <div class="modal-head">
+            <div>
                 <h3><i class="fas fa-bell"></i> Trigger Demands</h3>
                 <p>Generating payment demands for customers</p>
             </div>
-            <button class="modal-close-btn" onclick="document.getElementById('triggerModal').style.display='none'">&times;</button>
+            <button type="button" class="modal-close" onclick="closeModal()">×</button>
         </div>
-        <div class="modal-body-premium" style="text-align: center;">
-            <div style="width: 72px; height: 72px; background: #e0f2fe; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px auto;">
-                <i class="fas fa-paper-plane" style="font-size: 32px; color: #0284c7;"></i>
+        <div class="modal-body">
+            <div class="modal-icon">
+                <i class="fas fa-paper-plane"></i>
             </div>
-            <h3 style="margin-bottom: 12px; font-weight: 800; color: #0f172a;">Confirm "<span id="modal_stage_name"></span>"?</h3>
-            <p style="color: #64748b; margin-bottom: 30px;">
+            <h4>Confirm "<span id="modal_stage_name"></span>"?</h4>
+            <p>
                 This will automatically generate payment demands for all eligible customers who are pending this stage.
             </p>
             <form method="POST" action="trigger_demand.php">
                 <?= csrf_field() ?>
                 <input type="hidden" name="project_id" value="<?= $selected_project_id ?>">
                 <input type="hidden" name="stage_name" id="input_stage_name">
-                <button type="submit" class="modern-btn" style="width: 100%; justify-content: center; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);">
-                    Yes, Generate Demands
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-check"></i> Yes, Generate Demands
                 </button>
             </form>
         </div>
@@ -364,15 +402,15 @@ include __DIR__ . '/../../includes/header.php';
 function confirmMilestone(stageName) {
     document.getElementById('modal_stage_name').textContent = stageName;
     document.getElementById('input_stage_name').value = stageName;
-    document.getElementById('triggerModal').style.display = 'block';
+    openModal();
 }
 
-// Close modal when clicking outside
-window.onclick = function(event) {
-    if (event.target.classList.contains('custom-modal')) {
-        event.target.style.display = "none";
-    }
-}
+function openModal() { document.getElementById('triggerModal').classList.add('open'); }
+function closeModal() { document.getElementById('triggerModal').classList.remove('open'); }
+
+document.getElementById('triggerModal').addEventListener('click', e => {
+    if (e.target.id === 'triggerModal') closeModal();
+});
 </script>
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>

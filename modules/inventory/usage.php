@@ -9,63 +9,62 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 requireAuth();
 
-$db = Database::getInstance();
-$page_title = 'Material Usage';
+$db           = Database::getInstance();
+$page_title   = 'Material Usage';
 $current_page = 'usage';
 
-// Handle Usage Entry
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
-         setFlashMessage('error', 'Security token expired. Please try again.');
-         redirect('modules/inventory/usage.php');
+        setFlashMessage('error', 'Security token expired. Please try again.');
+        redirect('modules/inventory/usage.php');
     }
-
-    $action = $_POST['action'] ?? '';
-    
-    if ($action === 'record_usage') {
-        $project_id = intval($_POST['project_id']);
+    if (($_POST['action'] ?? '') === 'record_usage') {
+        $project_id  = intval($_POST['project_id']);
         $material_id = intval($_POST['material_id']);
-        $quantity = floatval($_POST['quantity']);
-        $usage_date = $_POST['usage_date'];
-        $remarks = sanitize($_POST['remarks'] ?? '');
-        
-        // Check current stock (Dynamic Calculation)
+        $quantity    = floatval($_POST['quantity']);
+        $usage_date  = $_POST['usage_date'];
+        $remarks     = sanitize($_POST['remarks'] ?? '');
+
         $stock_sql = "SELECT m.material_name, m.unit,
                         (
-                            (SELECT COALESCE(SUM(ci.quantity), 0) FROM challan_items ci JOIN challans c ON ci.challan_id = c.id WHERE ci.material_id = m.id AND c.status = 'approved') 
-                            - 
+                            (SELECT COALESCE(SUM(ci.quantity), 0) FROM challan_items ci JOIN challans c ON ci.challan_id = c.id WHERE ci.material_id = m.id AND c.status = 'approved')
+                            -
                             (SELECT COALESCE(SUM(mu.quantity), 0) FROM material_usage mu WHERE mu.material_id = m.id)
                         ) as current_stock
                       FROM materials m WHERE m.id = ?";
-        $material = $db->query($stock_sql, [$material_id])->fetch();
-        
+        $mat = $db->query($stock_sql, [$material_id])->fetch();
+
         if ($quantity <= 0) {
             setFlashMessage('error', 'Usage quantity must be greater than zero.');
-        } elseif ($material['current_stock'] < $quantity) {
-            setFlashMessage(
-                'error',
-                "Insufficient stock for {$material['material_name']}. Available: {$material['current_stock']} {$material['unit']}"
-            );
+        } elseif ($mat['current_stock'] < $quantity) {
+            setFlashMessage('error', "Insufficient stock for {$mat['material_name']}. Available: {$mat['current_stock']} {$mat['unit']}");
         } else {
             $db->beginTransaction();
             try {
-                $data = [
-                    'project_id' => $project_id,
-                    'material_id' => $material_id,
-                    'quantity' => $quantity,
-                    'usage_date' => $usage_date,
-                    'remarks' => $remarks,
-                    'created_by' => $_SESSION['user_id']
-                ];
-                
-                $id = $db->insert('material_usage', $data);
-                
+                $data = ['project_id' => $project_id, 'material_id' => $material_id, 'quantity' => $quantity, 'usage_date' => $usage_date, 'remarks' => $remarks, 'created_by' => $_SESSION['user_id']];
+                $id   = $db->insert('material_usage', $data);
                 logAudit('create', 'material_usage', $id, null, $data);
+
+                // ── Low Stock Notification ──
+                // Calculate new stock
+                $new_stock = $mat['current_stock'] - $quantity;
+                $min_limit = $mat['min_limit'] ?? 10.0; // Default to 10 if not set
+
+                if ($new_stock < $min_limit) {
+                    require_once __DIR__ . '/../../includes/NotificationService.php';
+                    $ns = new NotificationService();
+                    
+                    $notifTitle = "Low Stock Alert: " . $mat['material_name'];
+                    $notifMsg   = "Stock for {$mat['material_name']} has fallen to {$new_stock} {$mat['unit']} (Below limit: $min_limit)";
+                    $notifLink  = BASE_URL . "modules/inventory/index.php";
+
+                    // Notify Admin and potentially Store Manager
+                    $ns->create(1, $notifTitle, $notifMsg, 'warning', $notifLink);
+                }
+
                 $db->commit();
-                
                 setFlashMessage('success', 'Material usage recorded successfully');
                 redirect('modules/inventory/usage.php');
-                
             } catch (Exception $e) {
                 $db->rollback();
                 setFlashMessage('error', 'Error recording usage: ' . $e->getMessage());
@@ -74,335 +73,443 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Fetch usage history
-$sql = "SELECT mu.*, p.project_name, m.material_name, m.unit,
-               COALESCE(NULLIF(u.full_name, ''), u.username, 'Unknown') AS used_by_name
-        FROM material_usage mu
-        JOIN projects p ON mu.project_id = p.id
-        JOIN materials m ON mu.material_id = m.id
-        LEFT JOIN users u ON mu.created_by = u.id
-        ORDER BY mu.usage_date DESC, mu.created_at DESC";
+$usage_history = $db->query(
+    "SELECT mu.*, p.project_name, m.material_name, m.unit,
+            COALESCE(NULLIF(u.full_name, ''), u.username, 'Unknown') AS used_by_name
+     FROM material_usage mu
+     JOIN projects p ON mu.project_id = p.id
+     JOIN materials m ON mu.material_id = m.id
+     LEFT JOIN users u ON mu.created_by = u.id
+     ORDER BY mu.usage_date DESC, mu.created_at DESC"
+)->fetchAll();
 
-$usage_history = $db->query($sql)->fetchAll();
-
-// Fetch projects and materials for form (Dynamic Stock)
-$projects = $db->query("SELECT id, project_name FROM projects WHERE status = 'active' ORDER BY project_name")->fetchAll();
-$materials_sql = "SELECT m.id, m.material_name, m.unit,
+$projects  = $db->query("SELECT id, project_name FROM projects WHERE status = 'active' ORDER BY project_name")->fetchAll();
+$materials = $db->query(
+    "SELECT m.id, m.material_name, m.unit,
         (
-            (SELECT COALESCE(SUM(ci.quantity), 0)
-            FROM challan_items ci
-            JOIN challans c ON ci.challan_id = c.id
-            WHERE ci.material_id = m.id AND c.status = 'approved')
+            (SELECT COALESCE(SUM(ci.quantity), 0) FROM challan_items ci JOIN challans c ON ci.challan_id = c.id WHERE ci.material_id = m.id AND c.status = 'approved')
             -
-            (SELECT COALESCE(SUM(mu.quantity), 0)
-            FROM material_usage mu
-            WHERE mu.material_id = m.id)
+            (SELECT COALESCE(SUM(mu.quantity), 0) FROM material_usage mu WHERE mu.material_id = m.id)
         ) AS current_stock
-    FROM materials m
-    HAVING current_stock > 0
-    ORDER BY m.material_name";
-
-$materials = $db->query($materials_sql)->fetchAll();
+     FROM materials m HAVING current_stock > 0 ORDER BY m.material_name"
+)->fetchAll();
 
 include __DIR__ . '/../../includes/header.php';
 ?>
 
-<!-- Include Booking CSS -->
-<link rel="stylesheet" href="<?= BASE_URL ?>assets/css/booking.css">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,600&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
 
 <style>
-/* Page Specific Styles */
-.chart-card-custom {
-    background: #fff;
-    border-radius: 16px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-    border: 1px solid #f1f5f9;
-    padding: 25px;
-    height: 100%; /* Match height */
+*, *::before, *::after { box-sizing: border-box; }
+
+:root {
+    --ink:        #1a1714;
+    --ink-soft:   #6b6560;
+    --ink-mute:   #9e9690;
+    --cream:      #f5f3ef;
+    --surface:    #ffffff;
+    --border:     #e8e3db;
+    --border-lt:  #f0ece5;
+    --accent:     #2a58b5;
+    --accent-lt:  #eff4ff;
+    --accent-md:  #c7d9f9;
+    --accent-bg:  #f0f5ff;
+    --accent-dk:  #1e429f;
+    --green:      #059669;
+    --green-lt:   #d1fae5;
+    --orange:     #d97706;
+    --orange-lt:  #fef3c7;
+    --red:        #dc2626;
+    --red-lt:     #fee2e2;
 }
 
-.chart-header-custom {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 25px;
+body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(--ink); }
+.pw  { max-width: 1240px; margin: 2.5rem auto; padding: 0 1.5rem 5rem; }
+
+/* ── Animations ───────────────────── */
+@keyframes hdrIn  { from { opacity:0; transform:translateY(-14px); } to { opacity:1; transform:translateY(0); } }
+@keyframes fadeUp { from { opacity:0; transform:translateY(16px);  } to { opacity:1; transform:translateY(0); } }
+@keyframes rowIn  { from { opacity:0; transform:translateX(-7px);  } to { opacity:1; transform:translateX(0); } }
+
+/* ── Page header ──────────────────── */
+.page-header {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 1rem; flex-wrap: wrap;
+    margin-bottom: 2.25rem; padding-bottom: 1.5rem;
+    border-bottom: 1.5px solid var(--border);
+    opacity: 0;
+    animation: hdrIn 0.45s cubic-bezier(0.22,1,0.36,1) 0.05s forwards;
+}
+.eyebrow { font-size: 0.67rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.28rem; }
+.page-header h1 { font-family: 'Fraunces', serif; font-size: 2rem; font-weight: 700; color: var(--ink); margin: 0; line-height: 1.1; }
+.page-header h1 em { font-style: italic; color: var(--accent); }
+.back-link {
+    display: inline-flex; align-items: center; gap: 0.42rem;
+    padding: 0.52rem 1rem; font-size: 0.82rem; font-weight: 500;
+    color: var(--ink-soft); border: 1.5px solid var(--border);
+    border-radius: 7px; background: white; text-decoration: none; transition: all 0.18s;
+}
+.back-link:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); text-decoration: none; }
+
+/* ── Two-col layout ───────────────── */
+.layout { display: grid; grid-template-columns: 360px 1fr; gap: 1.25rem; align-items: start; }
+@media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+
+/* ── Card base ────────────────────── */
+.card {
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 14px; overflow: hidden;
+    box-shadow: 0 1px 4px rgba(26,23,20,0.04);
+    opacity: 0; animation: fadeUp 0.42s cubic-bezier(0.22,1,0.36,1) both;
+}
+.card.c1 { animation-delay: 0.08s; }
+.card.c2 { animation-delay: 0.16s; }
+
+.card-head {
+    display: flex; align-items: center; gap: 0.7rem;
+    padding: 1.05rem 1.5rem; border-bottom: 1.5px solid var(--border-lt);
+    background: #fafbff;
+}
+.ch-ic {
+    width: 30px; height: 30px; border-radius: 7px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 0.78rem;
+}
+.ch-ic.orange { background: var(--orange-lt); color: var(--orange); border: 1px solid #fcd34d; }
+.ch-ic.blue   { background: var(--accent-lt); color: var(--accent); }
+.card-head h2 {
+    font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 600;
+    color: var(--ink); margin: 0; flex: 1;
+}
+.card-head p { font-size: 0.72rem; color: var(--ink-mute); margin: 2px 0 0; }
+.step-tag {
+    font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--ink-mute); background: var(--cream); border: 1px solid var(--border);
+    padding: 0.18rem 0.6rem; border-radius: 20px;
+}
+.count-tag {
+    font-size: 0.62rem; font-weight: 800; padding: 0.15rem 0.55rem; border-radius: 20px;
+    background: var(--cream); color: var(--ink-mute); border: 1px solid var(--border);
+    font-family: 'DM Sans', sans-serif;
 }
 
-.chart-title-group h3 {
-    font-size: 18px;
-    font-weight: 800;
-    color: #0f172a;
-    margin: 0 0 5px 0;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+.card-body { padding: 1.5rem; }
+
+/* ── Section labels ──────────────── */
+.sec {
+    font-size: 0.63rem; font-weight: 700; letter-spacing: 0.13em; text-transform: uppercase;
+    color: var(--ink-mute); margin: 1.2rem 0 0.75rem;
+    padding-bottom: 0.38rem; border-bottom: 1px solid var(--border-lt);
+    display: flex; align-items: center; gap: 0.38rem;
+}
+.sec:first-child { margin-top: 0; }
+
+/* ── Form fields ──────────────────── */
+.mf { display: flex; flex-direction: column; gap: 0.32rem; margin-bottom: 1rem; }
+.mf:last-of-type { margin-bottom: 0; }
+.mf label { font-size: 0.63rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-mute); }
+.mf label .req { color: #dc2626; margin-left: 2px; }
+.mf input, .mf select, .mf textarea {
+    width: 100%; height: 40px; padding: 0 0.85rem;
+    border: 1.5px solid var(--border); border-radius: 8px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.875rem; color: var(--ink);
+    background: #fdfcfa; outline: none;
+    transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+    -webkit-appearance: none; appearance: none;
+}
+.mf textarea { height: auto; padding: 0.65rem 0.85rem; resize: vertical; min-height: 72px; }
+.mf select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%236b6560' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 0.85rem center; padding-right: 2.2rem;
+}
+.mf input:focus, .mf select:focus, .mf textarea:focus {
+    border-color: var(--accent); box-shadow: 0 0 0 3px rgba(42,88,181,0.11); background: white;
+}
+.mf-row { display: grid; grid-template-columns: 1fr auto; gap: 0.65rem; align-items: end; }
+.unit-badge {
+    height: 40px; padding: 0 0.85rem; display: flex; align-items: center;
+    background: var(--cream); border: 1.5px solid var(--border); border-radius: 8px;
+    font-size: 0.82rem; font-weight: 700; color: var(--ink-mute); white-space: nowrap;
+    min-width: 56px; justify-content: center;
 }
 
-.chart-subtitle {
-    font-size: 13px;
-    color: #64748b;
-    margin-left: 12px;
+/* stock hint */
+.stock-hint {
+    margin-top: 0.4rem; padding: 0.45rem 0.75rem;
+    background: var(--green-lt); border: 1px solid #6ee7b7; border-radius: 6px;
+    font-size: 0.72rem; font-weight: 600; color: var(--green);
+    display: none; align-items: center; gap: 0.38rem;
+}
+.stock-hint.show { display: flex; }
+.stock-hint.low  { background: var(--red-lt); border-color: #fca5a5; color: var(--red); }
+
+/* submit button */
+.btn-submit {
+    display: flex; align-items: center; justify-content: center; gap: 0.45rem;
+    width: 100%; height: 42px;
+    background: var(--orange); color: white; border: none; border-radius: 8px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 700;
+    cursor: pointer; transition: all 0.18s; margin-top: 1.25rem;
+}
+.btn-submit:hover { background: #b45309; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(217,119,6,0.35); }
+.btn-submit:active { transform: translateY(0); }
+
+/* ── History table ────────────────── */
+.hist-table { width: 100%; border-collapse: collapse; font-size: 0.855rem; }
+.hist-table thead tr { background: #eef2fb; border-bottom: 1.5px solid var(--border); }
+.hist-table thead th {
+    padding: 0.65rem 1rem;
+    font-size: 0.63rem; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--ink-soft); text-align: left; white-space: nowrap;
+}
+.hist-table thead th.al-c { text-align: center; }
+.hist-table tbody tr { border-bottom: 1px solid var(--border-lt); transition: background 0.12s; }
+.hist-table tbody tr:last-child { border-bottom: none; }
+.hist-table tbody tr:hover { background: #f4f7fd; }
+.hist-table tbody tr.row-in { animation: rowIn 0.26s cubic-bezier(0.22,1,0.36,1) forwards; }
+.hist-table td { padding: 0.78rem 1rem; vertical-align: middle; color: var(--ink-soft); }
+.hist-table td.al-c { text-align: center; }
+
+/* date */
+.date-main { font-size: 0.82rem; font-weight: 700; color: var(--ink); }
+.date-sub  { font-size: 0.68rem; color: var(--ink-mute); margin-top: 1px; }
+
+/* project pill */
+.proj-pill {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    padding: 0.22rem 0.65rem; border-radius: 20px; font-size: 0.68rem; font-weight: 700;
+    background: var(--cream); color: var(--ink-soft); border: 1px solid var(--border);
 }
 
-/* Icon Box */
-.chart-icon-box {
-    width: 42px;
-    height: 42px;
-    background: #f1f5f9;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    color: #475569;
-}
-.chart-icon-box.orange { background: #fff7ed; color: #f59e0b; }
-.chart-icon-box.blue { background: #eff6ff; color: #3b82f6; }
+/* material name */
+.mat-name { font-weight: 700; color: var(--ink); font-size: 0.875rem; }
 
-/* Form Elements */
-.form-group { margin-bottom: 20px; }
-.form-label {
-    display: block;
-    font-size: 13px;
-    font-weight: 600;
-    color: #475569;
-    margin-bottom: 8px;
+/* qty badge */
+.qty-badge {
+    display: inline-flex; align-items: center; gap: 0.28rem;
+    padding: 0.22rem 0.65rem; border-radius: 20px;
+    font-size: 0.72rem; font-weight: 700;
+    background: var(--red-lt); color: var(--red); border: 1px solid #fca5a5;
 }
-.modern-input, .modern-select {
-    width: 100%;
-    padding: 10px 15px;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    font-size: 14px;
-    color: #1e293b;
-    background: #fff;
-    transition: all 0.2s;
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-}
-.modern-input:focus, .modern-select:focus {
-    border-color: #3b82f6;
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-textarea.modern-input { resize: vertical; min-height: 100px; height: auto; }
 
-/* Modern Table */
-.modern-table { width: 100%; border-collapse: separate; border-spacing: 0; }
-.modern-table th {
-    background: #f8fafc;
-    color: #64748b;
-    font-weight: 600;
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    padding: 15px;
-    text-align: left;
-    border-bottom: 1px solid #e2e8f0;
-}
-.modern-table td {
-    padding: 16px 15px;
-    vertical-align: middle;
-    border-bottom: 1px solid #f1f5f9;
-    font-size: 14px;
-    color: #1e293b;
-}
-.modern-table tr:last-child td { border-bottom: none; }
-.modern-table tbody tr { transition: background 0.1s; }
-.modern-table tbody tr:hover { background: #f8fafc; }
+/* remarks */
+.remarks-text { font-size: 0.8rem; color: var(--ink-mute); max-width: 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.badge-soft {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-weight: 700;
-    font-size: 12px;
+/* user avatar */
+.user-cell { display: flex; align-items: center; gap: 0.45rem; }
+.user-av {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--accent-lt); color: var(--accent); border: 1px solid var(--accent-md);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.6rem; font-weight: 800; flex-shrink: 0;
 }
-.badge-soft.green { background: #ecfdf5; color: #059669; }
-.badge-soft.red { background: #fef2f2; color: #ef4444; }
+.user-name { font-size: 0.8rem; font-weight: 600; color: var(--ink-soft); }
 
-.modern-btn {
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    gap: 8px;
-    background: #0f172a;
-    color: white;
-    border: none;
-    padding: 12px 20px;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-decoration: none;
-    width: 100%;
-}
-.modern-btn:hover { background: #1e293b; transform: translateY(-1px); color: white; }
-.modern-btn.secondary { background: #f1f5f9; color: #475569; width: auto; }
-.modern-btn.secondary:hover { background: #e2e8f0; color: #1e293b; }
-.modern-btn.warning { background: #f59e0b; color: white; }
-.modern-btn.warning:hover { background: #d97706; }
-
+/* empty */
+.empty-state { text-align: center; padding: 3.5rem 1.5rem; }
+.empty-state .es-icon { font-size: 2.25rem; display: block; margin-bottom: 0.65rem; color: var(--accent); opacity: 0.18; }
+.empty-state h4 { font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 600; color: var(--ink-soft); margin: 0 0 0.3rem; }
+.empty-state p  { font-size: 0.8rem; color: var(--ink-mute); margin: 0; }
 </style>
 
-<div class="row">
-    <!-- Record Consumption Form -->
-    <div class="col-md-5 mb-4" style="width: 35%;">
-        <div class="chart-card-custom">
-            
-            <div class="chart-header-custom" style="margin-bottom: 20px;">
-                <div class="chart-title-group">
-                    <h3>
-                        <div class="chart-icon-box orange"><i class="fas fa-minus-circle"></i></div>
-                        Record Usage
-                    </h3>
-                    <div class="chart-subtitle" style="margin-left: 12px; margin-top: -2px;">Book material consumption</div>
+<div class="pw">
+
+    <!-- ── Page Header ─────────────── -->
+    <div class="page-header">
+        <div>
+            <div class="eyebrow">Inventory &rsaquo; Usage</div>
+            <h1>Record <em>Usage</em></h1>
+        </div>
+        <a href="<?= BASE_URL ?>modules/inventory/index.php" class="back-link">
+            <i class="fas fa-arrow-left"></i> Back to Stock
+        </a>
+    </div>
+
+    <div class="layout">
+
+        <!-- ── Left: Record Form ──────── -->
+        <div class="card c1">
+            <div class="card-head">
+                <div class="ch-ic orange"><i class="fas fa-minus-circle"></i></div>
+                <div>
+                    <h2>Record Consumption</h2>
+                    <p>Book material usage against a project</p>
                 </div>
             </div>
+            <div class="card-body">
+                <form method="POST" id="usageForm">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="action" value="record_usage">
 
-            <form method="POST">
-                <?= csrf_field() ?>
-                <input type="hidden" name="action" value="record_usage">
-                
-                <div class="form-group">
-                    <label class="form-label">Date *</label>
-                    <input type="date" name="usage_date" class="modern-input" required value="<?= date('Y-m-d') ?>">
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Project *</label>
-                    <div style="position: relative;">
-                        <select name="project_id" class="modern-select" required>
-                            <option value="">Select Project</option>
-                            <?php foreach ($projects as $project): ?>
-                                <option value="<?= $project['id'] ?>">
-                                    <?= htmlspecialchars($project['project_name']) ?>
+                    <div class="sec"><i class="fas fa-calendar-day"></i> When</div>
+
+                    <div class="mf">
+                        <label>Usage Date <span class="req">*</span></label>
+                        <input type="date" name="usage_date" required value="<?= date('Y-m-d') ?>">
+                    </div>
+
+                    <div class="sec"><i class="fas fa-building"></i> Where</div>
+
+                    <div class="mf">
+                        <label>Project <span class="req">*</span></label>
+                        <select name="project_id" required>
+                            <option value="">Select project…</option>
+                            <?php foreach ($projects as $p): ?>
+                                <option value="<?= $p['id'] ?>"><?= htmlspecialchars($p['project_name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="sec"><i class="fas fa-cube"></i> What</div>
+
+                    <div class="mf">
+                        <label>Material <span class="req">*</span></label>
+                        <select name="material_id" id="material_select" required>
+                            <option value="">Select material…</option>
+                            <?php foreach ($materials as $m): ?>
+                                <option value="<?= $m['id'] ?>"
+                                        data-stock="<?= $m['current_stock'] ?>"
+                                        data-unit="<?= htmlspecialchars($m['unit']) ?>">
+                                    <?= htmlspecialchars($m['material_name']) ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
-                        <i class="fas fa-chevron-down" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none; font-size: 12px; margin-top: 2px;"></i>
+                        <div class="stock-hint" id="stock_hint">
+                            <i class="fas fa-layer-group" style="font-size:0.7rem;"></i>
+                            <span id="stock_hint_text">Available: —</span>
+                        </div>
                     </div>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Material *</label>
-                    <div style="position: relative;">
-                        <select name="material_id" class="modern-select" required id="material_select">
-                            <option value="">Select Material</option>
-                            <?php foreach ($materials as $material): ?>
-                                <option value="<?= $material['id'] ?>" data-stock="<?= $material['current_stock'] ?>" data-unit="<?= $material['unit'] ?>">
-                                    <?= htmlspecialchars($material['material_name']) ?> (Avail: <?= $material['current_stock'] ?> <?= $material['unit'] ?>)
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                        <i class="fas fa-chevron-down" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none; font-size: 12px; margin-top: 2px;"></i>
+
+                    <div class="mf">
+                        <label>Quantity <span class="req">*</span></label>
+                        <div class="mf-row">
+                            <input type="number" name="quantity" id="qty_input"
+                                   step="0.01" min="0.01" required placeholder="0.00">
+                            <div class="unit-badge" id="unit_badge">—</div>
+                        </div>
                     </div>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Quantity *</label>
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <input type="number" name="quantity" step="0.01" class="modern-input" required placeholder="0.00">
-                        <span id="unit_display" style="font-weight: 600; color: #64748b; background: #f1f5f9; padding: 10px 15px; border-radius: 8px; border: 1px solid #e2e8f0; min-width: 60px; text-align: center;">-</span>
+
+                    <div class="mf">
+                        <label>Remarks</label>
+                        <textarea name="remarks" placeholder="e.g. Block A foundation pour…"></textarea>
                     </div>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Remarks</label>
-                    <textarea name="remarks" class="modern-input" rows="3" placeholder="Description of usage (e.g. Block A Foundation)"></textarea>
-                </div>
-                
-                <div style="margin-top: 30px;">
-                    <button type="submit" class="modern-btn warning">
+
+                    <button type="submit" class="btn-submit">
                         <i class="fas fa-check-circle"></i> Submit Consumption
                     </button>
-                </div>
-            </form>
+                </form>
+            </div>
         </div>
-    </div>
-    
-    <!-- Usage History Table -->
-    <div class="col-md-7 mb-4" style="width: 65%;">
-        <div class="chart-card-custom">
-             <div class="chart-header-custom">
-                <div class="chart-title-group">
-                    <h3>
-                        <div class="chart-icon-box blue"><i class="fas fa-history"></i></div>
-                        Usage History
-                    </h3>
-                    <div class="chart-subtitle">Recent material consumption log</div>
-                </div>
-                <div>
-                     <a href="<?= BASE_URL ?>modules/inventory/index.php" class="modern-btn secondary" style="padding: 10px 15px;">
-                        <i class="fas fa-arrow-left"></i> Stock
-                    </a>
-                </div>
+
+        <!-- ── Right: History ─────────── -->
+        <div class="card c2">
+            <div class="card-head">
+                <div class="ch-ic blue"><i class="fas fa-history"></i></div>
+                <h2>Usage History
+                    <span class="count-tag" style="margin-left:0.3rem;"><?= count($usage_history) ?></span>
+                </h2>
             </div>
 
-            <div class="table-responsive">
-                <table class="modern-table">
+            <div style="overflow-x:auto;">
+                <table class="hist-table">
                     <thead>
                         <tr>
                             <th>Date</th>
                             <th>Project</th>
                             <th>Material</th>
-                            <th>Quantity</th>
+                            <th class="al-c">Quantity</th>
                             <th>Remarks</th>
-                            <th>Entered By</th>
+                            <th>By</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if (empty($usage_history)): ?>
                             <tr>
-                                <td colspan="6" style="text-align: center; padding: 40px; color: #64748b;">
-                                    <i class="fas fa-clipboard-list" style="font-size: 24px; margin-bottom: 10px; display: block; opacity: 0.5;"></i>
-                                    No usage records found.
-                                </td>
-                            </tr>
-                        <?php else: ?>
-                            <?php foreach ($usage_history as $record): ?>
-                            <tr>
-                                <td><span style="font-weight:600; color:#475569;"><?= formatDate($record['usage_date']) ?></span></td>
-                                <td>
-                                    <div style="font-weight:700; color:#1e293b;"><?= htmlspecialchars($record['project_name']) ?></div>
-                                </td>
-                                <td><?= htmlspecialchars($record['material_name']) ?></td>
-                                <td>
-                                    <span class="badge-soft red">
-                                        - <?= $record['quantity'] ?> <?= $record['unit'] ?>
-                                    </span>
-                                </td>
-                                <td><span style="font-size:13px; color:#64748b;"><?= htmlspecialchars($record['remarks']) ?></span></td>
-                                <td>
-                                    <div style="display:flex; align-items:center; gap:6px;">
-                                        <div style="width:24px; height:24px; background:#e2e8f0; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; color:#64748b;">
-                                            <?= strtoupper(substr(trim($record['used_by_name'] ?: 'U'), 0, 1)) ?>
-                                        </div>
-                                        <span style="font-size:13px;"><?= htmlspecialchars($record['used_by_name'] ?: 'Unknown') ?></span>
+                                <td colspan="6">
+                                    <div class="empty-state">
+                                        <span class="es-icon"><i class="fas fa-clipboard-list"></i></span>
+                                        <h4>No usage records yet</h4>
+                                        <p>Submitted entries will appear here.</p>
                                     </div>
                                 </td>
                             </tr>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
+                        <?php else:
+                            foreach ($usage_history as $i => $r):
+                                $d = date_create($r['usage_date']);
+                                $initial = strtoupper(substr(trim($r['used_by_name'] ?: 'U'), 0, 1));
+                        ?>
+                            <tr class="row-in" style="animation-delay:<?= $i * 25 ?>ms;">
+                                <td>
+                                    <div class="date-main"><?= date_format($d, 'd M Y') ?></div>
+                                    <div class="date-sub"><?= date_format($d, 'D') ?></div>
+                                </td>
+                                <td>
+                                    <span class="proj-pill">
+                                        <i class="fas fa-building" style="font-size:0.58rem;"></i>
+                                        <?= htmlspecialchars($r['project_name']) ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="mat-name"><?= htmlspecialchars($r['material_name']) ?></span>
+                                </td>
+                                <td class="al-c">
+                                    <span class="qty-badge">
+                                        <i class="fas fa-arrow-up" style="font-size:0.55rem;"></i>
+                                        <?= number_format($r['quantity'], 2) ?> <?= htmlspecialchars($r['unit']) ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="remarks-text" title="<?= htmlspecialchars($r['remarks']) ?>">
+                                        <?= $r['remarks'] ? htmlspecialchars($r['remarks']) : '<span style="color:var(--ink-mute)">—</span>' ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="user-cell">
+                                        <div class="user-av"><?= $initial ?></div>
+                                        <span class="user-name"><?= htmlspecialchars($r['used_by_name'] ?: 'Unknown') ?></span>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endforeach; endif; ?>
                     </tbody>
                 </table>
             </div>
         </div>
+
     </div>
 </div>
 
 <script>
-document.getElementById('material_select').addEventListener('change', function() {
-    const option = this.options[this.selectedIndex];
-    if (option.value) {
-        document.getElementById('unit_display').textContent = option.getAttribute('data-unit');
-    } else {
-        document.getElementById('unit_display').textContent = '-';
+const matSelect = document.getElementById('material_select');
+const unitBadge = document.getElementById('unit_badge');
+const stockHint = document.getElementById('stock_hint');
+const stockText = document.getElementById('stock_hint_text');
+const qtyInput  = document.getElementById('qty_input');
+
+matSelect.addEventListener('change', function () {
+    const opt = this.options[this.selectedIndex];
+    if (!opt.value) {
+        unitBadge.textContent = '—';
+        stockHint.classList.remove('show', 'low');
+        return;
     }
+    const unit  = opt.getAttribute('data-unit');
+    const stock = parseFloat(opt.getAttribute('data-stock'));
+    unitBadge.textContent = unit;
+    stockText.textContent = `Available: ${stock.toFixed(2)} ${unit}`;
+    stockHint.classList.add('show');
+    stockHint.classList.toggle('low', stock < 10);
+    qtyInput.max = stock;
+});
+
+qtyInput.addEventListener('input', function () {
+    const opt = matSelect.options[matSelect.selectedIndex];
+    if (!opt.value) return;
+    const stock = parseFloat(opt.getAttribute('data-stock'));
+    const qty   = parseFloat(this.value) || 0;
+    stockHint.classList.toggle('low', qty > stock || stock < 10);
+    stockText.textContent = qty > stock
+        ? `⚠ Exceeds available stock (${stock.toFixed(2)} ${opt.getAttribute('data-unit')})`
+        : `Available: ${stock.toFixed(2)} ${opt.getAttribute('data-unit')}`;
 });
 </script>
 

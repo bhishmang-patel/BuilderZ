@@ -43,13 +43,12 @@ body {
 .sidebar {
     width: var(--sidebar-width);
     background: var(--sidebar-bg);
-    /* Dark Navy */
     color: #94a3b8;
     position: fixed;
     height: 100vh;
     display: flex;
     flex-direction: column;
-    transition: width 0.3s ease;
+    transition: none;
     z-index: 1000;
     box-shadow: 4px 0 24px rgba(0, 0, 0, 0.1);
 }
@@ -310,7 +309,7 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    transition: margin-left 0.3s ease;
+    transition: none;
     width: 100%;
 }
 

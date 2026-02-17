@@ -18,7 +18,7 @@ $current_page = 'financial_overview';
 $date_from = $_GET['date_from'] ?? date('Y-m-01');
 $date_to = $_GET['date_to'] ?? date('Y-m-d');
 $project_filter = $_GET['project'] ?? '';
-$view_mode = $_GET['view'] ?? 'summary'; // summary, daily, category
+$view_mode = $_GET['view'] ?? 'summary';
 
 require_once __DIR__ . '/../../includes/ReportService.php';
 $reportService = new ReportService();
@@ -32,419 +32,530 @@ $projects = $db->query("SELECT id, project_name FROM projects ORDER BY project_n
 include __DIR__ . '/../../includes/header.php';
 ?>
 
-<link rel="stylesheet" href="<?= BASE_URL ?>assets/css/booking.css">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 
 <style>
-/* Stats Grid */
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 20px;
-    margin-bottom: 25px;
-}
+    :root {
+        --ink:       #1a1714;
+        --ink-soft:  #6b6560;
+        --ink-mute:  #9e9690;
+        --cream:     #f5f3ef;
+        --surface:   #ffffff;
+        --border:    #e8e3db;
+        --border-lt: #f0ece5;
+        --accent:    #2a58b5;
+        --accent-bg: #eff6ff;
+        --accent-lt: #dbeafe;
+    }
 
-.stat-card-modern {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 16px;
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
-}
+    /* ── Page Wrapper ────────────────────────── */
+    .fin-wrap { max-width: 1380px; margin: 2.5rem auto; padding: 0 1.5rem 4rem; }
 
-.stat-card-modern:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
-    border-color: #cbd5e1;
-}
+    /* ── Header ──────────────────────────────── */
+    .fin-header {
+        margin-bottom: 2rem; padding-bottom: 1.5rem;
+        border-bottom: 1.5px solid var(--border);
+        display: flex; align-items: flex-end; justify-content: space-between;
+        flex-wrap: wrap; gap: 1rem;
+    }
 
-.stat-card-modern.income { border-bottom: 4px solid #10b981; }
-.stat-card-modern.expense { border-bottom: 4px solid #f5576c; }
-.stat-card-modern.profit { border-bottom: 4px solid #3b82f6; }
-.stat-card-modern.invested { border-bottom: 4px solid #f59e0b; }
-.stat-card-modern.roi { border-bottom: 4px solid #8b5cf6; }
-.stat-card-modern.balance { border-bottom: 4px solid #06b6d4; }
-.stat-card-modern.transactions { border-bottom: 4px solid #64748b; }
+    .fin-header .eyebrow {
+        font-size: 0.68rem; font-weight: 700; letter-spacing: 0.15em;
+        text-transform: uppercase; color: var(--accent); margin-bottom: 0.3rem;
+    }
+    .fin-header h1 {
+        font-family: 'Fraunces', serif; font-size: 1.7rem; font-weight: 700;
+        line-height: 1.1; color: var(--ink); margin: 0;
+    }
+    .fin-header h1 em { font-style: italic; color: var(--accent); }
+    
+    .header-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+    .btn-dl {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        padding: 0.68rem 1.4rem; background: white; color: var(--ink-soft);
+        border-radius: 8px; text-decoration: none;
+        font-size: 0.875rem; font-weight: 600;
+        transition: all 0.18s; border: 1.5px solid var(--border);
+    }
+    .btn-dl:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
 
-.stat-label-modern {
-    font-size: 13px;
-    font-weight: 600;
-    color: #64748b;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 8px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
+    /* ── Filter Section ──────────────────────── */
+    .filter-card {
+        background: var(--surface); border: 1.5px solid var(--border);
+        border-radius: 14px; padding: 1.5rem; margin-bottom: 1.75rem;
+        animation: fadeUp 0.4s ease both;
+    }
 
-.stat-value-modern {
-    font-size: 28px;
-    font-weight: 800;
-    color: #1e293b;
-    margin-bottom: 4px;
-    letter-spacing: -0.5px;
-}
+    .filter-form { display: flex; align-items: flex-end; gap: 0.65rem; flex-wrap: wrap; }
 
-.stat-icon-circle {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-}
+    .f-group { flex: 1; min-width: 180px; }
+    .f-label {
+        display: block; font-size: 0.7rem; font-weight: 700;
+        letter-spacing: 0.05em; text-transform: uppercase;
+        color: var(--ink-soft); margin-bottom: 0.4rem;
+    }
+    .f-input, .f-select {
+        width: 100%; height: 42px; padding: 0 0.85rem;
+        border: 1.5px solid var(--border); border-radius: 8px;
+        font-size: 0.875rem; color: var(--ink); background: #fdfcfa;
+        outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .f-select {
+        -webkit-appearance: none; appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%236b6560' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+        background-repeat: no-repeat; background-position: right 0.8rem center;
+        padding-right: 2.2rem;
+    }
+    .f-input:focus, .f-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(42,88,181,0.1); }
 
-/* Category Panels */
-.breakdown-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-    gap: 25px;
-    margin-bottom: 25px;
-}
+    .date-range { display: flex; gap: 0.5rem; align-items: center; }
+    .date-range span { color: var(--ink-mute); font-size: 0.82rem; }
 
-.category-panel {
-    background: #f8fafc;
-    border-radius: 12px;
-    border: 1px solid #e2e8f0;
-    padding: 20px;
-}
+    .btn-filter {
+        height: 42px; padding: 0 1.4rem; border: none; border-radius: 8px;
+        display: flex; align-items: center; gap: 0.4rem;
+        font-size: 0.875rem; font-weight: 600; cursor: pointer;
+        transition: all 0.18s; background: var(--ink); color: white;
+    }
+    .btn-filter:hover { background: var(--accent); }
 
-.category-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 0;
-    border-bottom: 1px solid #e2e8f0;
-}
-.category-item:last-child { border-bottom: none; }
+    /* ── Stats Grid ──────────────────────────── */
+    .stats-grid {
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1.1rem; margin-bottom: 1.75rem;
+    }
 
-.cat-name { font-weight: 600; color: #334155; font-size: 14px; }
-.cat-count { font-size: 12px; color: #94a3b8; margin-left: 5px; }
+    .stat-card {
+        background: var(--surface); border: 1.5px solid var(--border);
+        border-radius: 12px; padding: 1.3rem 1.5rem;
+        transition: transform 0.2s, box-shadow 0.2s;
+        animation: fadeUp 0.4s ease both;
+        position: relative; overflow: hidden;
+    }
+    .stat-card:nth-child(1) { animation-delay: .05s; }
+    .stat-card:nth-child(2) { animation-delay: .1s; }
+    .stat-card:nth-child(3) { animation-delay: .15s; }
+    .stat-card:nth-child(4) { animation-delay: .2s; }
+    .stat-card:nth-child(5) { animation-delay: .25s; }
+    .stat-card:nth-child(6) { animation-delay: .3s; }
+    .stat-card:nth-child(7) { animation-delay: .35s; }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(26,23,20,0.07); }
 
-/* View Tabs */
-.view-tabs {
-    display: flex;
-    background: #f1f5f9;
-    padding: 4px;
-    border-radius: 8px;
-    margin-bottom: 25px;
-    display: inline-flex;
-}
+    .stat-card::before {
+        content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+        height: 3px; opacity: 0.8;
+    }
+    .stat-card.income::before { background: #10b981; }
+    .stat-card.expense::before { background: #ef4444; }
+    .stat-card.profit::before { background: var(--accent); }
+    .stat-card.invested::before { background: #f59e0b; }
+    .stat-card.roi::before { background: #8b5cf6; }
+    .stat-card.balance::before { background: #0ea5e9; }
+    .stat-card.trans::before { background: #64748b; }
 
-.view-tab {
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-weight: 600;
-    font-size: 14px;
-    color: #64748b;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
+    .stat-top {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 0.6rem;
+    }
 
-.view-tab:hover { color: #1e293b; }
+    .stat-label {
+        font-size: 0.68rem; font-weight: 700; letter-spacing: 0.07em;
+        text-transform: uppercase; color: var(--ink-soft);
+    }
 
-.view-tab.active {
-    background: white;
-    color: #0f172a;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
+    .stat-icon {
+        width: 28px; height: 28px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.7rem;
+    }
+    .ico-green { background: #ecfdf5; color: #10b981; }
+    .ico-red { background: #fef2f2; color: #ef4444; }
+    .ico-blue { background: var(--accent-bg); color: var(--accent); }
+    .ico-orange { background: #fffbeb; color: #f59e0b; }
+    .ico-purple { background: #f5f3ff; color: #8b5cf6; }
+    .ico-cyan { background: #ecfeff; color: #0ea5e9; }
+    .ico-gray { background: #f8fafc; color: #64748b; }
 
-.filter-card {
-    background: white;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 25px;
-}
+    .stat-value {
+        font-family: 'Fraunces', serif; font-size: 1.5rem; font-weight: 700;
+        color: var(--ink); line-height: 1; font-variant-numeric: tabular-nums;
+        margin-bottom: 0.4rem;
+    }
+    .stat-value.green { color: #10b981; }
+    .stat-value.red { color: #ef4444; }
+    .stat-value.blue { color: var(--accent); }
+    .stat-value.orange { color: #f59e0b; }
+    .stat-value.purple { color: #8b5cf6; }
+    .stat-value.cyan { color: #0ea5e9; }
+
+    .stat-sub {
+        font-size: 0.72rem; color: var(--ink-mute);
+    }
+
+    /* ── View Tabs ───────────────────────────── */
+    .view-tabs {
+        display: inline-flex; background: #fdfcfa; padding: 0.3rem;
+        border-radius: 10px; border: 1.5px solid var(--border-lt);
+        margin-bottom: 1.75rem; gap: 0.25rem;
+    }
+
+    .view-tab {
+        padding: 0.65rem 1.2rem; border-radius: 8px;
+        font-weight: 600; font-size: 0.82rem; color: var(--ink-soft);
+        border: none; background: transparent; cursor: pointer;
+        transition: all 0.18s; display: flex; align-items: center; gap: 0.5rem;
+    }
+    .view-tab:hover { color: var(--ink); background: white; }
+    .view-tab.active {
+        background: white; color: var(--accent);
+        box-shadow: 0 1px 3px rgba(26,23,20,0.08);
+    }
+
+    /* ── Breakdown Grid ──────────────────────── */
+    .breakdown-grid {
+        display: grid; grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem; margin-bottom: 1.75rem;
+    }
+    @media (max-width: 920px) { .breakdown-grid { grid-template-columns: 1fr; } }
+
+    .category-panel {
+        background: var(--surface); border: 1.5px solid var(--border);
+        border-radius: 14px; overflow: hidden;
+        animation: fadeUp 0.45s 0.4s ease both;
+    }
+
+    .panel-head {
+        padding: 1rem 1.5rem; border-bottom: 1.5px solid var(--border-lt);
+        background: #fdfcfa; display: flex; align-items: center; gap: 0.6rem;
+    }
+    .panel-head h3 {
+        font-family: 'Fraunces', serif; font-size: 0.95rem;
+        font-weight: 600; color: var(--ink); margin: 0;
+    }
+    .panel-bar {
+        width: 3px; height: 18px; border-radius: 2px;
+    }
+    .bar-green { background: #10b981; }
+    .bar-red { background: #ef4444; }
+
+    .panel-body { padding: 0; }
+
+    .cat-item {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 0.75rem 1.5rem; border-bottom: 1px solid var(--border-lt);
+        transition: background 0.13s;
+    }
+    .cat-item:last-child { border-bottom: none; }
+    .cat-item:hover { background: #fdfcfa; }
+
+    .cat-left { display: flex; align-items: center; gap: 0.4rem; }
+    .cat-name { font-weight: 600; color: var(--ink); font-size: 0.82rem; }
+    .cat-count { font-size: 0.72rem; color: var(--ink-mute); }
+
+    .cat-total {
+        background: #fdfcfa; padding: 1rem 1.5rem;
+        display: flex; justify-content: space-between; align-items: center;
+        border-top: 1.5px solid var(--border);
+    }
+    .cat-total .cat-name { text-transform: uppercase; font-size: 0.68rem; letter-spacing: 0.05em; }
+
+    /* Empty state */
+    .empty-panel {
+        padding: 3rem 1rem; text-align: center;
+    }
+    .empty-panel i {
+        font-size: 2rem; color: var(--border);
+        margin-bottom: 0.5rem; display: block; opacity: 0.5;
+    }
+    .empty-panel p {
+        font-size: 0.82rem; color: var(--ink-mute); margin: 0;
+    }
+
+    /* ── Daily Table ─────────────────────────── */
+    .daily-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+
+    .daily-table thead tr { background: #fdfcfa; border-bottom: 1.5px solid var(--border); }
+    .daily-table thead th {
+        padding: 0.7rem 1rem; text-align: left;
+        font-size: 0.64rem; font-weight: 700; letter-spacing: 0.1em;
+        text-transform: uppercase; color: var(--ink-soft); white-space: nowrap;
+    }
+    .daily-table thead th.th-r { text-align: right; }
+
+    .daily-table tbody tr { border-bottom: 1px solid var(--border-lt); transition: background 0.13s; }
+    .daily-table tbody tr:last-child { border-bottom: none; }
+    .daily-table tbody tr:hover { background: #fdfcfa; }
+
+    .daily-table td { padding: 0.8rem 1rem; vertical-align: middle; }
+    .daily-table td.td-r { text-align: right; }
+
+    .daily-panel {
+        background: var(--surface); border: 1.5px solid var(--border);
+        border-radius: 14px; overflow: hidden;
+        animation: fadeUp 0.45s 0.4s ease both;
+    }
+
+    /* Animations */
+    @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
 </style>
 
-<div class="row">
-    <div class="col-12">
-        <div class="chart-card-custom" style="height: auto;">
-            
-            <!-- Header -->
-            <div class="chart-header-custom">
-                <div class="chart-title-group">
-                    <h3>
-                        <div class="chart-icon-box blue"><i class="fas fa-chart-pie"></i></div>
-                        Financial Overview
-                    </h3>
-                    <div class="chart-subtitle">Analyze income, expenses, and cash flow performance</div>
-                </div>
-                <div class="chart-actions-group">
-                    <a href="<?= BASE_URL ?>modules/reports/download.php?action=download_report&report=financial_overview&format=excel&date_from=<?= $date_from ?>&date_to=<?= $date_to ?>" class="modern-btn" style="background: white; border: 1px solid #e2e8f0; color: #475569;">
-                        <i class="fas fa-file-excel" style="color: #10b981;"></i> Excel
-                    </a>
-                    <a href="<?= BASE_URL ?>modules/reports/download.php?action=download_report&report=financial_overview&format=csv&date_from=<?= $date_from ?>&date_to=<?= $date_to ?>" class="modern-btn" style="background: white; border: 1px solid #e2e8f0; color: #475569;">
-                        <i class="fas fa-file-csv" style="color: #0ea5e9;"></i> CSV
-                    </a>
-                    <button class="modern-btn" style="background: white; border: 1px solid #e2e8f0; color: #475569;" onclick="window.print()">
-                        <i class="fas fa-print" style="color: #64748b;"></i> Print
-                    </button>
-                </div>
-            </div>
+<div class="fin-wrap">
 
-            <div style="padding: 25px;">
-
-                <!-- Filters -->
-                <form method="GET" class="filter-card">
-                    <div class="filter-row" style="display: flex; gap: 15px; align-items: flex-end;">
-                        <div style="flex: 1; min-width: 200px;">
-                            <label class="input-label" style="font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 5px; display: block;">Date Range</label>
-                            <div style="display: flex; gap: 10px; align-items: center;">
-                                <input type="date" name="date_from" class="form-control-custom" value="<?= htmlspecialchars($date_from) ?>" style="height: 42px;">
-                                <span style="color: #94a3b8;">to</span>
-                                <input type="date" name="date_to" class="form-control-custom" value="<?= htmlspecialchars($date_to) ?>" style="height: 42px;">
-                            </div>
-                        </div>
-                        
-                        <div style="flex: 1; min-width: 200px;">
-                            <label class="input-label" style="font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 5px; display: block;">Project</label>
-                            <select name="project" class="form-control-custom" style="height: 42px;">
-                                <option value="">All Projects</option>
-                                <?php foreach ($projects as $project): ?>
-                                    <option value="<?= $project['id'] ?>" <?= $project_filter == $project['id'] ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($project['project_name']) ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-
-                        <div style="width: 140px;">
-                            <button type="submit" class="modern-btn" style="width: 100%; justify-content: center; background: linear-gradient(135deg, #2563eb 0%, #06b6d4 100%); color: white; margin-bottom: 5px;">
-                                <i class="fas fa-filter"></i> Apply
-                            </button>
-                        </div>
-                    </div>
-                </form>
-
-                <!-- Stats Grid -->
-                <div class="stats-grid">
-                    <div class="stat-card-modern income">
-                        <div class="stat-label-modern">
-                            Total Income
-                            <div class="stat-icon-circle" style="background: #ecfdf5; color: #10b981;"><i class="fas fa-arrow-down"></i></div>
-                        </div>
-                        <div class="stat-value-modern" style="color: #10b981;">
-                            <span class="short-value"><?= formatCurrencyShort($total_income) ?></span>
-                            <span class="full-value"><?= formatCurrencyIndian($total_income) ?></span>
-                        </div>
-                        <div class="stat-subtext"><?= count($income_data) ?> transactions recorded</div>
-                    </div>
-                    <div class="stat-card-modern expense">
-                        <div class="stat-label-modern">
-                            Total Expenditure
-                            <div class="stat-icon-circle" style="background: #fef2f2; color: #ef4444;"><i class="fas fa-arrow-up"></i></div>
-                        </div>
-                        <div class="stat-value-modern" style="color: #ef4444;">
-                            <span class="short-value"><?= formatCurrencyShort($total_expenditure) ?></span>
-                            <span class="full-value"><?= formatCurrencyIndian($total_expenditure) ?></span>
-                        </div>
-                        <div class="stat-subtext"><?= count($expenditure_data) ?> transactions recorded</div>
-                    </div>
-                    <div class="stat-card-modern profit">
-                        <div class="stat-label-modern">
-                            Net Profit
-                            <div class="stat-icon-circle" style="background: #eff6ff; color: #3b82f6;"><i class="fas fa-wallet"></i></div>
-                        </div>
-                        <div class="stat-value-modern" style="color: <?= $net_profit >= 0 ? '#3b82f6' : '#ef4444' ?>;">
-                            <span class="short-value"><?= formatCurrencyShort($net_profit) ?></span>
-                            <span class="full-value"><?= formatCurrencyIndian($net_profit) ?></span>
-                        </div>
-                        <div class="stat-subtext">
-                            <?= $total_income > 0 ? number_format(($net_profit / $total_income) * 100, 1) : 0 ?>% Net Margin
-                        </div>
-                    </div>
-
-                    <div class="stat-card-modern invested">
-                        <div class="stat-label-modern">
-                            Total Invested
-                            <div class="stat-icon-circle" style="background: #fffbeb; color: #f59e0b;"><i class="fas fa-hand-holding-usd"></i></div>
-                        </div>
-                        <div class="stat-value-modern" style="color: #f59e0b;">
-                            <span class="short-value"><?= formatCurrencyShort($total_invested) ?></span>
-                            <span class="full-value"><?= formatCurrencyIndian($total_invested) ?></span>
-                        </div>
-                        <div class="stat-subtext">Capital employed</div>
-                    </div>
-
-                    <?php if ($total_invested > 0): ?>
-                    <div class="stat-card-modern roi">
-                        <div class="stat-label-modern">
-                            Return on Investment
-                            <div class="stat-icon-circle" style="background: #f5f3ff; color: #8b5cf6;" title="ROI = (Net Profit / Total Invested) * 100"><i class="fas fa-percentage"></i></div>
-                        </div>
-                        <div class="stat-value-modern" style="color: #8b5cf6;">
-                            <?= number_format($roi, 1) ?>%
-                        </div>
-                        <div class="stat-subtext">Returns on capital</div>
-                    </div>
-                    <?php endif; ?>
-
-                    <div class="stat-card-modern balance">
-                        <div class="stat-label-modern">
-                            Cash Balance
-                            <div class="stat-icon-circle" style="background: #e0f2fe; color: #0ea5e9;"><i class="fas fa-coins"></i></div>
-                        </div>
-                        <div class="stat-value-modern" style="color: #0ea5e9;">
-                            <span class="short-value"><?= formatCurrencyShort($cash_balance) ?></span>
-                            <span class="full-value"><?= formatCurrencyIndian($cash_balance) ?></span>
-                        </div>
-                        <div class="stat-subtext">Invested + Income - Expenses</div>
-                    </div>
-
-                    <div class="stat-card-modern transactions">
-                        <div class="stat-label-modern">
-                            Total Volume
-                            <div class="stat-icon-circle" style="background: #f1f5f9; color: #64748b;"><i class="fas fa-exchange-alt"></i></div>
-                        </div>
-                        <div class="stat-value-modern" style="color: #475569;"><?= count($income_data) + count($expenditure_data) ?></div>
-                        <div class="stat-subtext">Combined transaction count</div>
-                    </div>
-                </div>
-                
-                <!-- View Tabs -->
-                <div class="view-tabs">
-                    <button class="view-tab <?= $view_mode === 'summary' ? 'active' : '' ?>" onclick="location.href='?view=summary&date_from=<?= $date_from ?>&date_to=<?= $date_to ?>&project=<?= $project_filter ?>'">
-                        <i class="fas fa-chart-pie"></i> Category Summary
-                    </button>
-                    <button class="view-tab <?= $view_mode === 'daily' ? 'active' : '' ?>" onclick="location.href='?view=daily&date_from=<?= $date_from ?>&date_to=<?= $date_to ?>&project=<?= $project_filter ?>'">
-                        <i class="fas fa-calendar-alt"></i> Daily Cash Flow
-                    </button>
-                    <!-- <button class="view-tab <?= $view_mode === 'category' ? 'active' : '' ?>" onclick="location.href='?view=category&date_from=<?= $date_from ?>&date_to=<?= $date_to ?>&project=<?= $project_filter ?>'">
-                        <i class="fas fa-list"></i> Detailed List
-                    </button> -->
-                </div>
-
-                <!-- Content Area -->
-                <?php if ($view_mode === 'summary' || $view_mode === 'category'): ?>
-                    <div class="breakdown-grid">
-                        <!-- Income Breakdown -->
-                        <div class="category-panel">
-                            <h5 style="margin-bottom: 20px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 10px;">
-                                <span style="width: 4px; height: 20px; background: #10b981; border-radius: 2px;"></span>
-                                Income Breakdown
-                            </h5>
-                            <?php if (empty($income_by_category)): ?>
-                                <div style="text-align: center; color: #94a3b8; padding: 40px 0;">
-                                    <i class="fas fa-inbox" style="font-size: 32px; margin-bottom: 10px; display: block; opacity: 0.5;"></i>
-                                    No income data
-                                </div>
-                            <?php else: ?>
-                                <?php foreach ($income_by_category as $category => $data): ?>
-                                    <div class="category-item">
-                                        <div style="display: flex; align-items: center;">
-                                            <span class="cat-name"><?= htmlspecialchars($category) ?></span>
-                                            <span class="cat-count">(<?= $data['count'] ?>)</span>
-                                        </div>
-                                        <span style="font-weight: 700; color: #10b981;" title="<?= formatCurrencyIndian($data['amount']) ?>"><?= formatCurrencyShort($data['amount']) ?></span>
-                                    </div>
-                                <?php endforeach; ?>
-                                <div class="category-item" style="background: #ecfdf5; padding: 15px 10px; margin: 10px -10px -10px; border-radius: 8px; border: none;">
-                                    <span class="cat-name">TOTAL INCOME</span>
-                                    <span style="font-size: 16px; font-weight: 800; color: #10b981;" title="<?= formatCurrencyIndian($total_income) ?>"><?= formatCurrencyShort($total_income) ?></span>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-
-                        <!-- Expenditure Breakdown -->
-                        <div class="category-panel">
-                            <h5 style="margin-bottom: 20px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 10px;">
-                                <span style="width: 4px; height: 20px; background: #ef4444; border-radius: 2px;"></span>
-                                Expenditure Breakdown
-                            </h5>
-                            <?php if (empty($expenditure_by_category)): ?>
-                                <div style="text-align: center; color: #94a3b8; padding: 40px 0;">
-                                    <i class="fas fa-inbox" style="font-size: 32px; margin-bottom: 10px; display: block; opacity: 0.5;"></i>
-                                    No expenditure data
-                                </div>
-                            <?php else: ?>
-                                <?php foreach ($expenditure_by_category as $category => $data): ?>
-                                    <div class="category-item">
-                                        <div style="display: flex; align-items: center;">
-                                            <span class="cat-name"><?= htmlspecialchars($category) ?></span>
-                                            <span class="cat-count">(<?= $data['count'] ?>)</span>
-                                        </div>
-                                        <span style="font-weight: 700; color: #ef4444;" title="<?= formatCurrencyIndian($data['amount']) ?>"><?= formatCurrencyShort($data['amount']) ?></span>
-                                    </div>
-                                <?php endforeach; ?>
-                                <div class="category-item" style="background: #fef2f2; padding: 15px 10px; margin: 10px -10px -10px; border-radius: 8px; border: none;">
-                                    <span class="cat-name">TOTAL EXPENDITURE</span>
-                                    <span style="font-size: 16px; font-weight: 800; color: #ef4444;" title="<?= formatCurrencyIndian($total_expenditure) ?>"><?= formatCurrencyShort($total_expenditure) ?></span>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                <?php endif; ?>
-
-                <?php if ($view_mode === 'daily'): ?>
-                    <div class="table-responsive">
-                        <table class="modern-table">
-                            <thead>
-                                <tr>
-                                    <th>DATE</th>
-                                    <th>DAY</th>
-                                    <th>INFLOW</th>
-                                    <th>OUTFLOW</th>
-                                    <th>NET FLOW</th>
-                                    <th>CLOSING BALANCE</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php if (empty($daily_cashflow)): ?>
-                                    <tr>
-                                        <td colspan="6" class="text-center" style="padding: 40px; color: #94a3b8;">
-                                            No transactions found for this period.
-                                        </td>
-                                    </tr>
-                                <?php else: ?>
-                                    <?php foreach ($daily_cashflow as $date => $flow): ?>
-                                    <tr>
-                                        <td style="font-weight: 600; color: #1e293b;"><?= formatDate($date) ?></td>
-                                        <td style="color: #64748b;"><?= date('l', strtotime($date)) ?></td>
-                                        <td>
-                                            <?php if ($flow['inflow'] > 0): ?>
-                                                <span style="color: #10b981; font-weight: 600;">+ <?= formatCurrency($flow['inflow']) ?></span>
-                                            <?php else: ?>
-                                                <span style="color: #cbd5e1;">-</span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td>
-                                            <?php if ($flow['outflow'] > 0): ?>
-                                                <span style="color: #ef4444; font-weight: 600;">- <?= formatCurrency($flow['outflow']) ?></span>
-                                            <?php else: ?>
-                                                <span style="color: #cbd5e1;">-</span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td>
-                                            <span style="font-weight: 700; color: <?= $flow['net'] >= 0 ? '#10b981' : '#ef4444' ?>;">
-                                                <?= formatCurrency($flow['net']) ?>
-                                            </span>
-                                        </td>
-                                        <td style="font-family: monospace; font-size: 14px; font-weight: 700; color: #1e293b;">
-                                            <?= formatCurrency($flow['balance']) ?>
-                                        </td>
-                                    </tr>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                <?php endif; ?>
-
-            </div>
+    <!-- Header -->
+    <div class="fin-header">
+        <div>
+            <div class="eyebrow">Financial Analysis</div>
+            <h1>Financial <em>Overview</em></h1>
+        </div>
+        <div class="header-actions">
+            <a href="<?= BASE_URL ?>modules/reports/download.php?action=download_report&report=financial_overview&format=excel&date_from=<?= $date_from ?>&date_to=<?= $date_to ?>" class="btn-dl">
+                <i class="fas fa-file-excel" style="color:#10b981"></i> Excel
+            </a>
+            <a href="<?= BASE_URL ?>modules/reports/download.php?action=download_report&report=financial_overview&format=csv&date_from=<?= $date_from ?>&date_to=<?= $date_to ?>" class="btn-dl">
+                <i class="fas fa-file-csv" style="color:#0ea5e9"></i> CSV
+            </a>
+            <button class="btn-dl" onclick="window.print()">
+                <i class="fas fa-print"></i> Print
+            </button>
         </div>
     </div>
+
+    <!-- Filters -->
+    <div class="filter-card">
+        <form method="GET" class="filter-form">
+            <div class="f-group">
+                <label class="f-label">Date Range</label>
+                <div class="date-range">
+                    <input type="date" name="date_from" class="f-input" value="<?= htmlspecialchars($date_from) ?>">
+                    <span>to</span>
+                    <input type="date" name="date_to" class="f-input" value="<?= htmlspecialchars($date_to) ?>">
+                </div>
+            </div>
+            
+            <div class="f-group">
+                <label class="f-label">Project</label>
+                <select name="project" class="f-select">
+                    <option value="">All Projects</option>
+                    <?php foreach ($projects as $project): ?>
+                        <option value="<?= $project['id'] ?>" <?= $project_filter == $project['id'] ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($project['project_name']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <button type="submit" class="btn-filter">
+                <i class="fas fa-filter"></i> Apply
+            </button>
+        </form>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+        <div class="stat-card income">
+            <div class="stat-top">
+                <div class="stat-label">Total Income</div>
+                <div class="stat-icon ico-green"><i class="fas fa-arrow-down"></i></div>
+            </div>
+            <div class="stat-value green"><?= formatCurrencyShort($total_income) ?></div>
+            <div class="stat-sub"><?= count($income_data) ?> transactions</div>
+        </div>
+
+        <div class="stat-card expense">
+            <div class="stat-top">
+                <div class="stat-label">Total Expenditure</div>
+                <div class="stat-icon ico-red"><i class="fas fa-arrow-up"></i></div>
+            </div>
+            <div class="stat-value red"><?= formatCurrencyShort($total_expenditure) ?></div>
+            <div class="stat-sub"><?= count($expenditure_data) ?> transactions</div>
+        </div>
+
+        <div class="stat-card profit">
+            <div class="stat-top">
+                <div class="stat-label">Net Profit</div>
+                <div class="stat-icon ico-blue"><i class="fas fa-wallet"></i></div>
+            </div>
+            <div class="stat-value <?= $net_profit >= 0 ? 'blue' : 'red' ?>"><?= formatCurrencyShort($net_profit) ?></div>
+            <div class="stat-sub">
+                <?= $total_income > 0 ? number_format(($net_profit / $total_income) * 100, 1) : 0 ?>% Net Margin
+            </div>
+        </div>
+
+        <div class="stat-card invested">
+            <div class="stat-top">
+                <div class="stat-label">Total Invested</div>
+                <div class="stat-icon ico-orange"><i class="fas fa-hand-holding-usd"></i></div>
+            </div>
+            <div class="stat-value orange"><?= formatCurrencyShort($total_invested) ?></div>
+            <div class="stat-sub">Capital employed</div>
+        </div>
+
+        <?php if ($total_invested > 0): ?>
+        <div class="stat-card roi">
+            <div class="stat-top">
+                <div class="stat-label">ROI</div>
+                <div class="stat-icon ico-purple" title="ROI = (Net Profit / Total Invested) * 100"><i class="fas fa-percentage"></i></div>
+            </div>
+            <div class="stat-value purple"><?= number_format($roi, 1) ?>%</div>
+            <div class="stat-sub">Returns on capital</div>
+        </div>
+        <?php endif; ?>
+
+        <div class="stat-card balance">
+            <div class="stat-top">
+                <div class="stat-label">Cash Balance</div>
+                <div class="stat-icon ico-cyan"><i class="fas fa-coins"></i></div>
+            </div>
+            <div class="stat-value cyan"><?= formatCurrencyShort($cash_balance) ?></div>
+            <div class="stat-sub">Current position</div>
+        </div>
+
+        <div class="stat-card trans">
+            <div class="stat-top">
+                <div class="stat-label">Total Volume</div>
+                <div class="stat-icon ico-gray"><i class="fas fa-exchange-alt"></i></div>
+            </div>
+            <div class="stat-value"><?= count($income_data) + count($expenditure_data) ?></div>
+            <div class="stat-sub">Transaction count</div>
+        </div>
+    </div>
+
+    <!-- View Tabs -->
+    <div class="view-tabs">
+        <button class="view-tab <?= $view_mode === 'summary' ? 'active' : '' ?>" onclick="location.href='?view=summary&date_from=<?= $date_from ?>&date_to=<?= $date_to ?>&project=<?= $project_filter ?>'">
+            <i class="fas fa-chart-pie"></i> Category Summary
+        </button>
+        <button class="view-tab <?= $view_mode === 'daily' ? 'active' : '' ?>" onclick="location.href='?view=daily&date_from=<?= $date_from ?>&date_to=<?= $date_to ?>&project=<?= $project_filter ?>'">
+            <i class="fas fa-calendar-alt"></i> Daily Cash Flow
+        </button>
+    </div>
+
+    <!-- Content Area -->
+    <?php if ($view_mode === 'summary' || $view_mode === 'category'): ?>
+        <div class="breakdown-grid">
+            
+            <!-- Income Breakdown -->
+            <div class="category-panel">
+                <div class="panel-head">
+                    <div class="panel-bar bar-green"></div>
+                    <h3>Income Breakdown</h3>
+                </div>
+                <div class="panel-body">
+                    <?php if (empty($income_by_category)): ?>
+                        <div class="empty-panel">
+                            <i class="fas fa-inbox"></i>
+                            <p>No income data</p>
+                        </div>
+                    <?php else: ?>
+                        <?php foreach ($income_by_category as $category => $data): ?>
+                            <div class="cat-item">
+                                <div class="cat-left">
+                                    <span class="cat-name"><?= htmlspecialchars($category) ?></span>
+                                    <span class="cat-count">(<?= $data['count'] ?>)</span>
+                                </div>
+                                <span style="font-weight:700;color:#10b981" title="<?= formatCurrencyIndian($data['amount']) ?>"><?= formatCurrencyShort($data['amount']) ?></span>
+                            </div>
+                        <?php endforeach; ?>
+                        <div class="cat-total" style="background:#ecfdf5">
+                            <span class="cat-name" style="color:#065f46">Total Income</span>
+                            <span style="font-size:1.1rem;font-family:'Fraunces',serif;font-weight:800;color:#10b981" title="<?= formatCurrencyIndian($total_income) ?>"><?= formatCurrencyShort($total_income) ?></span>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- Expenditure Breakdown -->
+            <div class="category-panel">
+                <div class="panel-head">
+                    <div class="panel-bar bar-red"></div>
+                    <h3>Expenditure Breakdown</h3>
+                </div>
+                <div class="panel-body">
+                    <?php if (empty($expenditure_by_category)): ?>
+                        <div class="empty-panel">
+                            <i class="fas fa-inbox"></i>
+                            <p>No expenditure data</p>
+                        </div>
+                    <?php else: ?>
+                        <?php foreach ($expenditure_by_category as $category => $data): ?>
+                            <div class="cat-item">
+                                <div class="cat-left">
+                                    <span class="cat-name"><?= htmlspecialchars($category) ?></span>
+                                    <span class="cat-count">(<?= $data['count'] ?>)</span>
+                                </div>
+                                <span style="font-weight:700;color:#ef4444" title="<?= formatCurrencyIndian($data['amount']) ?>"><?= formatCurrencyShort($data['amount']) ?></span>
+                            </div>
+                        <?php endforeach; ?>
+                        <div class="cat-total" style="background:#fef2f2">
+                            <span class="cat-name" style="color:#b91c1c">Total Expenditure</span>
+                            <span style="font-size:1.1rem;font-family:'Fraunces',serif;font-weight:800;color:#ef4444" title="<?= formatCurrencyIndian($total_expenditure) ?>"><?= formatCurrencyShort($total_expenditure) ?></span>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+        </div>
+    <?php endif; ?>
+
+    <?php if ($view_mode === 'daily'): ?>
+        <div class="daily-panel">
+            <div style="overflow-x:auto">
+                <table class="daily-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th class="th-r">Inflow</th>
+                            <th class="th-r">Outflow</th>
+                            <th class="th-r">Net Flow</th>
+                            <th class="th-r">Closing Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($daily_cashflow)): ?>
+                            <tr>
+                                <td colspan="6" style="padding:3rem;text-align:center;color:var(--ink-mute)">
+                                    No transactions found for this period.
+                                </td>
+                            </tr>
+                        <?php else: ?>
+                            <?php foreach ($daily_cashflow as $date => $flow): ?>
+                            <tr>
+                                <td style="font-weight:600;color:var(--ink)"><?= formatDate($date) ?></td>
+                                <td style="color:var(--ink-soft)"><?= date('l', strtotime($date)) ?></td>
+                                <td class="td-r">
+                                    <?php if ($flow['inflow'] > 0): ?>
+                                        <span style="color:#10b981;font-weight:700">+ <?= formatCurrency($flow['inflow']) ?></span>
+                                    <?php else: ?>
+                                        <span style="color:var(--border)">—</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="td-r">
+                                    <?php if ($flow['outflow'] > 0): ?>
+                                        <span style="color:#ef4444;font-weight:700">- <?= formatCurrency($flow['outflow']) ?></span>
+                                    <?php else: ?>
+                                        <span style="color:var(--border)">—</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="td-r">
+                                    <span style="font-weight:700;color:<?= $flow['net'] >= 0 ? '#10b981' : '#ef4444' ?>">
+                                        <?= formatCurrency($flow['net']) ?>
+                                    </span>
+                                </td>
+                                <td class="td-r">
+                                    <span style="font-family:monospace;font-size:0.875rem;font-weight:700;color:var(--ink)">
+                                        <?= formatCurrency($flow['balance']) ?>
+                                    </span>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    <?php endif; ?>
+
 </div>
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>

@@ -15,7 +15,6 @@ $current_page = 'booking';
 
 $cancellation_id = intval($_GET['id'] ?? 0);
 
-// Fetch cancellation details with booking and customer info
 $sql = "SELECT bc.*, 
                b.booking_date, b.agreement_value, b.flat_id,
                f.flat_no, f.area_sqft,
@@ -38,7 +37,6 @@ if (!$cancellation) {
     redirect('modules/booking/index.php');
 }
 
-// Fetch payment history for the booking
 $sql = "SELECT * FROM payments 
         WHERE reference_type = 'booking' AND reference_id = ?
         ORDER BY payment_date ASC";
@@ -48,451 +46,616 @@ $payments = $stmt->fetchAll();
 include __DIR__ . '/../../includes/header.php';
 ?>
 
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
 <style>
-/* Modern Cancellation Details Design */
-.cancellation-details-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 2rem 1rem;
+*, *::before, *::after { box-sizing: border-box; }
+
+:root {
+    --ink:       #1a1714;
+    --ink-soft:  #6b6560;
+    --ink-mute:  #9e9690;
+    --cream:     #f5f3ef;
+    --surface:   #ffffff;
+    --border:    #e8e3db;
+    --border-lt: #f0ece5;
+    --accent:    #2a58b5ff;
+    --accent-bg: #fdf8f3;
 }
 
-.details-card {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    margin-bottom: 1.5rem;
-    overflow: hidden;
+body {
+    background: var(--cream);
+    font-family: 'DM Sans', sans-serif;
+    color: var(--ink);
 }
 
-.details-header {
-    background: linear-gradient(135deg, #f5576c 0%, #c92a3e 100%);
-    padding: 1.25rem 1.5rem;
-    color: white;
+/* ── Wrapper ─────────────────────────── */
+.page-wrap {
+    max-width: 1020px;
+    margin: 2.5rem auto;
+    padding: 0 1.5rem 4rem;
+}
+
+/* ════════════════════════════════════════
+   ENTRANCE ANIMATIONS
+   ════════════════════════════════════════ */
+@keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-14px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.page-header {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: space-between;
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1.5px solid var(--border);
+    gap: 1rem;
+    flex-wrap: wrap;
+    opacity: 0;
+    animation: fadeDown 0.45s cubic-bezier(0.22,1,0.36,1) 0.05s forwards;
 }
 
-.details-header h3 {
-    margin: 0;
-    font-size: 1.2rem;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.status-badge {
-    background: rgba(255, 255, 255, 0.25);
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-weight: 600;
-    font-size: 0.95rem;
-}
-
-.details-body {
-    padding: 2rem;
-}
-
-.summary-cards {
+.stats-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 1rem;
-    margin-bottom: 2rem;
-}
-
-.summary-card {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    padding: 1.25rem;
-    border-radius: 10px;
-    border-left: 4px solid;
-    text-align: center;
-}
-
-.summary-card.received {
-    border-left-color: #38ef7d;
-}
-
-.summary-card.deduction {
-    border-left-color: #f5576c;
-}
-
-.summary-card.refund {
-    border-left-color: #667eea;
-}
-
-.summary-card.agreement {
-    border-left-color: #ffd89b;
-}
-
-.summary-label {
-    font-size: 0.85rem;
-    color: #6c757d;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-}
-
-.summary-amount {
-    font-size: 1.4rem;
-    font-weight: 700;
-    margin: 0;
-}
-
-.summary-card.received .summary-amount {
-    color: #38ef7d;
-}
-
-.summary-card.deduction .summary-amount {
-    color: #f5576c;
-}
-
-.summary-card.refund .summary-amount {
-    color: #667eea;
-}
-
-.summary-card.agreement .summary-amount {
-    color: #f5a623;
-}
-
-.info-section {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    padding: 1.5rem;
-    border-radius: 10px;
     margin-bottom: 1.5rem;
 }
+@media (max-width: 860px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 480px) { .stats-grid { grid-template-columns: 1fr; } }
 
-.info-section h5 {
-    color: #2c3e50;
-    font-weight: 600;
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 2px solid #dee2e6;
+.stat-card {
+    opacity: 0;
+    animation: fadeUp 0.42s cubic-bezier(0.22,1,0.36,1) forwards;
+}
+.stat-card:nth-child(1) { animation-delay: 0.12s; }
+.stat-card:nth-child(2) { animation-delay: 0.20s; }
+.stat-card:nth-child(3) { animation-delay: 0.28s; }
+.stat-card:nth-child(4) { animation-delay: 0.36s; }
+
+/* ch-card stagger */
+.ch-card {
+    opacity: 0;
+    animation: fadeUp 0.42s cubic-bezier(0.22,1,0.36,1) forwards;
+}
+.ch-card:nth-of-type(1) { animation-delay: 0.42s; }
+.ch-card:nth-of-type(2) { animation-delay: 0.50s; }
+.ch-card:nth-of-type(3) { animation-delay: 0.58s; }
+.ch-card:nth-of-type(4) { animation-delay: 0.66s; }
+.ch-card:nth-of-type(5) { animation-delay: 0.74s; }
+
+/* ── Page Header ─────────────────────── */
+.page-header .eyebrow {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.3rem;
+}
+.page-header h1 {
+    font-family: 'Fraunces', serif;
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--ink);
+    margin: 0;
+}
+.page-header h1 em { color: var(--accent); font-style: italic; }
+
+.header-right {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.75rem;
+    flex-wrap: wrap;
 }
 
+.cancelled-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.9rem;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    background: #fee2e2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--ink-soft);
+    text-decoration: none;
+    padding: 0.45rem 1rem;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    background: white;
+    transition: all 0.18s ease;
+    white-space: nowrap;
+}
+.back-link:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+
+/* ── Stat Cards ──────────────────────── */
+.stat-card {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1.4rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 1px 4px rgba(26,23,20,0.04);
+    transition: box-shadow 0.18s ease, transform 0.18s ease;
+}
+.stat-card:hover { box-shadow: 0 6px 20px rgba(26,23,20,0.09); transform: translateY(-2px); }
+
+.stat-icon {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem; flex-shrink: 0;
+}
+.stat-icon.amber  { background: #fef3c7; color: #d97706; }
+.stat-icon.blue   { background: #dbeafe; color: #2563eb; }
+.stat-icon.red    { background: #fee2e2; color: #dc2626; }
+.stat-icon.green  { background: #d1fae5; color: #059669; }
+
+.stat-label {
+    font-size: 0.68rem; font-weight: 700;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--ink-mute); margin-bottom: 0.25rem;
+}
+.stat-value {
+    font-family: 'Fraunces', serif;
+    font-size: 1.4rem; font-weight: 700; line-height: 1; color: var(--ink);
+}
+
+/* ── Section Cards ───────────────────── */
+.ch-card {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 1px 4px rgba(26,23,20,0.04);
+}
+
+.ch-card-head {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
+    border-bottom: 1.5px solid var(--border-lt);
+    background: #fdfcfa;
+}
+
+.ch-card-icon {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.72rem; color: white;
+    flex-shrink: 0;
+}
+.ch-card-icon.blue  { background: #4f63d2; }
+.ch-card-icon.teal  { background: #0d9488; }
+.ch-card-icon.red   { background: #dc2626; }
+.ch-card-icon.amber { background: #d97706; }
+.ch-card-icon.green { background: #059669; }
+
+.ch-card-head h2 {
+    font-family: 'Fraunces', serif;
+    font-size: 0.95rem; font-weight: 600; color: var(--ink); margin: 0;
+}
+.ch-card-head .count-tag {
+    margin-left: auto;
+    font-size: 0.67rem; font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--ink-mute); background: var(--cream);
+    border: 1px solid var(--border);
+    padding: 0.18rem 0.6rem; border-radius: 20px;
+}
+
+.ch-card-body { padding: 1.5rem; }
+
+/* ── Info Grid ───────────────────────── */
 .info-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
+    gap: 0.75rem;
 }
+@media (max-width: 580px) { .info-grid { grid-template-columns: 1fr; } }
 
-.info-item {
+.info-row {
     display: flex;
-    justify-content: space-between;
-    padding: 0.75rem;
-    background: white;
-    border-radius: 6px;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 0.85rem 1rem;
+    background: #fdfcfa;
+    border: 1.5px solid var(--border-lt);
+    border-radius: 8px;
 }
 
 .info-label {
-    font-weight: 600;
-    color: #6c757d;
-    font-size: 0.9rem;
+    font-size: 0.67rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
 }
 
 .info-value {
-    font-weight: 700;
-    color: #2c3e50;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.4;
 }
 
-.payment-table {
+/* ── Payment Table ───────────────────── */
+.pay-table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 1rem;
+    font-size: 0.875rem;
 }
-
-.payment-table thead {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+.pay-table thead tr {
+    background: #f5f1eb;
+    border-bottom: 1.5px solid var(--border);
 }
-
-.payment-table th {
-    padding: 0.875rem;
+.pay-table thead th {
+    padding: 0.7rem 1rem;
     text-align: left;
-    font-weight: 600;
-    color: #2c3e50;
-    font-size: 0.9rem;
-    border-bottom: 2px solid #dee2e6;
+    font-size: 0.67rem; font-weight: 700;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--ink-soft); white-space: nowrap;
+}
+.pay-table tbody tr {
+    border-bottom: 1px solid var(--border-lt);
+    transition: background 0.12s ease;
+}
+.pay-table tbody tr:last-child { border-bottom: none; }
+.pay-table tbody tr:hover { background: #fdfcfa; }
+.pay-table td {
+    padding: 0.85rem 1rem;
+    vertical-align: middle;
+    color: var(--ink-soft);
+}
+.pay-table tfoot tr {
+    background: #f5f1eb;
+    border-top: 1.5px solid var(--border);
+}
+.pay-table tfoot td {
+    padding: 0.85rem 1rem;
+    font-size: 0.82rem; font-weight: 700;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--ink-soft);
+}
+.pay-table tfoot .total-val {
+    font-family: 'Fraunces', serif;
+    font-size: 1.05rem; color: var(--ink);
 }
 
-.payment-table td {
-    padding: 0.875rem;
-    border-bottom: 1px solid #f0f0f0;
-    font-size: 0.9rem;
+.pay-num { font-weight: 700; color: var(--ink); }
+.pay-amount {
+    font-family: 'Fraunces', serif;
+    font-size: 1rem; font-weight: 700; color: #059669;
 }
 
-.payment-table tfoot {
-    background: linear-gradient(135deg, #e0f7fa 0%, #e8f5e9 100%);
-    font-weight: 700;
+.mode-badge {
+    display: inline-block;
+    font-size: 0.68rem; font-weight: 700;
+    letter-spacing: 0.05em; text-transform: uppercase;
+    color: var(--ink-soft); background: var(--cream);
+    border: 1px solid var(--border);
+    padding: 0.18rem 0.5rem; border-radius: 4px;
 }
 
-.payment-table tfoot td {
-    padding: 1rem 0.875rem;
-    font-size: 1.05rem;
-    color: #11998e;
+.ref-text {
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    font-family: monospace;
 }
 
-.action-buttons {
-    display: flex;
-    gap: 1rem;
-    justify-content: flex-end;
-    margin-top: 2rem;
+/* ── Empty payments ──────────────────── */
+.empty-payments {
+    text-align: center;
+    padding: 2.5rem 1rem;
+    color: var(--ink-mute);
 }
+.empty-payments .ei { font-size: 2rem; opacity: 0.3; margin-bottom: 0.75rem; display: block; }
+.empty-payments .et { font-size: 0.875rem; }
 
-.btn-primary-custom {
-    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-    color: white;
-    border: none;
-    padding: 0.875rem 2rem;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 0.95rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.btn-primary-custom:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 15px rgba(17, 153, 142, 0.4);
-    color: white;
-    text-decoration: none;
-}
-
-.btn-secondary-custom {
-    background: #6c757d;
-    color: white;
-    border: none;
-    padding: 0.875rem 2rem;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 0.95rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.btn-secondary-custom:hover {
-    background: #5a6268;
-    color: white;
-    text-decoration: none;
-}
-
+/* ── Remarks box ─────────────────────── */
 .remarks-box {
-    background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%);
-    border-left: 4px solid #ffc107;
-    padding: 1.25rem;
+    background: #fdf8f3;
+    border: 1.5px solid #e0c9b5;
+    border-left: 4px solid var(--accent);
     border-radius: 8px;
-    margin-top: 1.5rem;
+    padding: 1rem 1.25rem;
+}
+.remarks-label {
+    font-size: 0.67rem; font-weight: 700;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 0.5rem;
+    display: flex; align-items: center; gap: 0.4rem;
+}
+.remarks-text {
+    font-size: 0.875rem;
+    color: var(--ink-soft);
+    line-height: 1.65;
 }
 
-.remarks-box h6 {
-    color: #856404;
-    font-weight: 600;
-    margin-bottom: 0.75rem;
+/* ── Action Bar ──────────────────────── */
+.action-bar {
     display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    padding-top: 1.5rem;
+    margin-top: 0.25rem;
+    border-top: 1.5px solid var(--border-lt);
+
+    opacity: 0;
+    animation: fadeUp 0.38s cubic-bezier(0.22,1,0.36,1) 0.82s forwards;
 }
 
-.remarks-box p {
-    color: #856404;
-    margin: 0;
-    line-height: 1.6;
+.btn {
+    display: inline-flex; align-items: center; gap: 0.45rem;
+    padding: 0.65rem 1.4rem;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.875rem; font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    border: none; letter-spacing: 0.01em;
 }
+.btn-ghost {
+    background: white;
+    color: var(--ink-soft);
+    border: 1.5px solid var(--border);
+}
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); text-decoration: none; }
+
+.btn-primary {
+    background: var(--ink);
+    color: white;
+    border: 1.5px solid var(--ink);
+}
+.btn-primary:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(181,98,42,0.28);
+    text-decoration: none;
+}
+.btn-primary:active { transform: translateY(0); }
 </style>
 
-<div class="cancellation-details-container">
-    <!-- Main Details Card -->
-    <div class="details-card">
-        <div class="details-header">
-            <h3>
-                <i class="fas fa-ban"></i>
-                Booking Cancellation Details
-            </h3>
-            <div class="status-badge">
-                CANCELLED
+<div class="page-wrap">
+
+    <!-- ── Page Header ──────────────── -->
+    <div class="page-header">
+        <div>
+            <div class="eyebrow">Bookings &rsaquo; Cancellations</div>
+            <h1>Cancellation <em>Details</em></h1>
+        </div>
+        <div class="header-right">
+            <span class="cancelled-tag">
+                <i class="fas fa-ban" style="font-size:0.6rem;"></i>
+                Cancelled
+            </span>
+            <a href="cancelled.php" class="back-link">
+                <i class="fas fa-arrow-left"></i> Back to List
+            </a>
+        </div>
+    </div>
+
+    <!-- ── Financial Summary Stats ──── -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon amber"><i class="fas fa-file-invoice-dollar"></i></div>
+            <div>
+                <div class="stat-label">Agreement Value</div>
+                <div class="stat-value"><?= formatCurrency($cancellation['agreement_value']) ?></div>
             </div>
         </div>
-        <div class="details-body">
-            <!-- Summary Cards -->
-            <div class="summary-cards">
-                <div class="summary-card agreement">
-                    <div class="summary-label">Agreement Value</div>
-                    <div class="summary-amount"><?= formatCurrency($cancellation['agreement_value']) ?></div>
-                </div>
-                <div class="summary-card received">
-                    <div class="summary-label">Total Received</div>
-                    <div class="summary-amount"><?= formatCurrency($cancellation['total_paid']) ?></div>
-                </div>
-                <div class="summary-card deduction">
-                    <div class="summary-label">Deduction Charges</div>
-                    <div class="summary-amount"><?= formatCurrency($cancellation['deduction_amount']) ?></div>
-                </div>
-                <div class="summary-card refund">
-                    <div class="summary-label">Refund Amount</div>
-                    <div class="summary-amount"><?= formatCurrency($cancellation['refund_amount']) ?></div>
-                </div>
+        <div class="stat-card">
+            <div class="stat-icon blue"><i class="fas fa-money-bill-wave"></i></div>
+            <div>
+                <div class="stat-label">Total Received</div>
+                <div class="stat-value"><?= formatCurrency($cancellation['total_paid']) ?></div>
             </div>
-
-            <!-- Booking Information -->
-            <div class="info-section">
-                <h5>
-                    <i class="fas fa-building"></i>
-                    Booking Information
-                </h5>
-                <div class="info-grid">
-                    <div class="info-item">
-                        <span class="info-label">Project:</span>
-                        <span class="info-value"><?= htmlspecialchars($cancellation['project_name']) ?></span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Flat No:</span>
-                        <span class="info-value"><?= htmlspecialchars($cancellation['flat_no']) ?></span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Area:</span>
-                        <span class="info-value"><?= number_format($cancellation['area_sqft'], 2) ?> Sqft</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Booking Date:</span>
-                        <span class="info-value"><?= formatDate($cancellation['booking_date']) ?></span>
-                    </div>
-                </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon red"><i class="fas fa-scissors"></i></div>
+            <div>
+                <div class="stat-label">Deduction</div>
+                <div class="stat-value"><?= formatCurrency($cancellation['deduction_amount']) ?></div>
             </div>
-
-            <!-- Customer Information -->
-            <div class="info-section">
-                <h5>
-                    <i class="fas fa-user-tie"></i>
-                    Customer Information
-                </h5>
-                <div class="info-grid">
-                    <div class="info-item">
-                        <span class="info-label">Name:</span>
-                        <span class="info-value"><?= htmlspecialchars($cancellation['customer_name']) ?></span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Mobile:</span>
-                        <span class="info-value"><?= htmlspecialchars($cancellation['customer_mobile']) ?></span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Email:</span>
-                        <span class="info-value"><?= htmlspecialchars($cancellation['customer_email']) ?></span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Cancellation Information -->
-            <div class="info-section">
-                <h5>
-                    <i class="fas fa-file-alt"></i>
-                    Cancellation Information
-                </h5>
-                <div class="info-grid">
-                    <div class="info-item">
-                        <span class="info-label">Cancellation Date:</span>
-                        <span class="info-value"><?= formatDate($cancellation['cancellation_date']) ?></span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Cancellation Reason:</span>
-                        <span class="info-value"><?= htmlspecialchars($cancellation['cancellation_reason']) ?></span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Deduction Reason:</span>
-                        <span class="info-value"><?= htmlspecialchars($cancellation['deduction_reason']) ?></span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Processed By:</span>
-                        <span class="info-value"><?= htmlspecialchars($cancellation['processed_by_name']) ?></span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Refund Mode:</span>
-                        <span class="info-value"><?= ucfirst($cancellation['refund_mode']) ?></span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Refund Reference:</span>
-                        <span class="info-value"><?= htmlspecialchars($cancellation['refund_reference']) ?></span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Payment History -->
-            <div class="info-section">
-                <h5>
-                    <i class="fas fa-history"></i>
-                    Payment History (<?= count($payments) ?> Installments)
-                </h5>
-                <?php if (empty($payments)): ?>
-                    <p style="text-align: center; color: #6c757d; padding: 2rem;">No payments were received for this booking</p>
-                <?php else: ?>
-                    <table class="payment-table">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Date</th>
-                                <th>Amount</th>
-                                <th>Mode</th>
-                                <th>Reference No</th>
-                                <th>Remarks</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($payments as $index => $payment): ?>
-                            <tr>
-                                <td><?= $index + 1 ?></td>
-                                <td><?= formatDate($payment['payment_date']) ?></td>
-                                <td><strong style="color: #38ef7d;"><?= formatCurrency($payment['amount']) ?></strong></td>
-                                <td><?= ucfirst($payment['payment_mode']) ?></td>
-                                <td><?= htmlspecialchars($payment['reference_no']) ?></td>
-                                <td><?= htmlspecialchars($payment['remarks']) ?></td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                        <tfoot>
-                            <tr>
-                                <td colspan="2"><strong>TOTAL RECEIVED</strong></td>
-                                <td colspan="4"><strong><?= formatCurrency($cancellation['total_paid']) ?></strong></td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                <?php endif; ?>
-            </div>
-
-            <!-- Remarks -->
-            <?php if (!empty($cancellation['remarks'])): ?>
-            <div class="remarks-box">
-                <h6>
-                    <i class="fas fa-comment-alt"></i>
-                    Additional Remarks
-                </h6>
-                <p><?= nl2br(htmlspecialchars($cancellation['remarks'])) ?></p>
-            </div>
-            <?php endif; ?>
-
-            <!-- Action Buttons -->
-            <div class="action-buttons">
-                <a href="index.php" class="btn-secondary-custom">
-                    <i class="fas fa-list"></i> Back to Bookings
-                </a>
-                <a href="view.php?id=<?= $cancellation['booking_id'] ?>" class="btn-secondary-custom">
-                    <i class="fas fa-eye"></i> View Booking
-                </a>
-                <a href="<?= BASE_URL ?>modules/reports/download.php?action=cancellation_receipt&id=<?= $cancellation_id ?>" 
-                   class="btn-primary-custom" target="_blank">
-                    <i class="fas fa-file-pdf"></i> Download Receipt
-                </a>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon green"><i class="fas fa-hand-holding-usd"></i></div>
+            <div>
+                <div class="stat-label">Refund Amount</div>
+                <div class="stat-value"><?= formatCurrency($cancellation['refund_amount']) ?></div>
             </div>
         </div>
     </div>
+
+    <!-- ── Booking Information ──────── -->
+    <div class="ch-card">
+        <div class="ch-card-head">
+            <div class="ch-card-icon blue"><i class="fas fa-building"></i></div>
+            <h2>Booking Information</h2>
+        </div>
+        <div class="ch-card-body">
+            <div class="info-grid">
+                <div class="info-row">
+                    <span class="info-label">Project</span>
+                    <span class="info-value"><?= renderProjectBadge($cancellation['project_name'], $cancellation['project_id']) ?></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Flat No.</span>
+                    <span class="info-value"><?= htmlspecialchars($cancellation['flat_no']) ?></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Area</span>
+                    <span class="info-value"><?= number_format($cancellation['area_sqft'], 2) ?> Sqft</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Booking Date</span>
+                    <span class="info-value"><?= formatDate($cancellation['booking_date']) ?></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Customer Information ─────── -->
+    <div class="ch-card">
+        <div class="ch-card-head">
+            <div class="ch-card-icon teal"><i class="fas fa-user-tie"></i></div>
+            <h2>Customer Information</h2>
+        </div>
+        <div class="ch-card-body">
+            <div class="info-grid">
+                <div class="info-row">
+                    <span class="info-label">Full Name</span>
+                    <span class="info-value"><?= htmlspecialchars($cancellation['customer_name']) ?></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Mobile</span>
+                    <span class="info-value"><?= htmlspecialchars($cancellation['customer_mobile']) ?></span>
+                </div>
+                <div class="info-row" style="grid-column: span 2">
+                    <span class="info-label">Email</span>
+                    <span class="info-value"><?= htmlspecialchars($cancellation['customer_email']) ?></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Cancellation Information ─── -->
+    <div class="ch-card">
+        <div class="ch-card-head">
+            <div class="ch-card-icon red"><i class="fas fa-ban"></i></div>
+            <h2>Cancellation Information</h2>
+        </div>
+        <div class="ch-card-body">
+            <div class="info-grid">
+                <div class="info-row">
+                    <span class="info-label">Cancellation Date</span>
+                    <span class="info-value"><?= formatDate($cancellation['cancellation_date']) ?></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Processed By</span>
+                    <span class="info-value"><?= htmlspecialchars($cancellation['processed_by_name']) ?></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Refund Mode</span>
+                    <span class="info-value"><?= ucfirst($cancellation['refund_mode']) ?></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Refund Reference</span>
+                    <span class="info-value"><?= htmlspecialchars($cancellation['refund_reference']) ?: '—' ?></span>
+                </div>
+                <div class="info-row" style="grid-column: span 2">
+                    <span class="info-label">Cancellation Reason</span>
+                    <span class="info-value"><?= htmlspecialchars($cancellation['cancellation_reason']) ?></span>
+                </div>
+                <div class="info-row" style="grid-column: span 2">
+                    <span class="info-label">Deduction Reason</span>
+                    <span class="info-value"><?= htmlspecialchars($cancellation['deduction_reason']) ?: '—' ?></span>
+                </div>
+            </div>
+
+            <?php if (!empty($cancellation['remarks'])): ?>
+            <div style="margin-top: 1rem;">
+                <div class="remarks-box">
+                    <div class="remarks-label"><i class="fas fa-comment-alt"></i> Additional Remarks</div>
+                    <div class="remarks-text"><?= nl2br(htmlspecialchars($cancellation['remarks'])) ?></div>
+                </div>
+            </div>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <!-- ── Payment History ───────────── -->
+    <div class="ch-card">
+        <div class="ch-card-head">
+            <div class="ch-card-icon green"><i class="fas fa-history"></i></div>
+            <h2>Payment History</h2>
+            <span class="count-tag"><?= count($payments) ?> installment<?= count($payments) !== 1 ? 's' : '' ?></span>
+        </div>
+
+        <?php if (empty($payments)): ?>
+            <div class="ch-card-body">
+                <div class="empty-payments">
+                    <span class="ei"><i class="fas fa-inbox"></i></span>
+                    <div class="et">No payments were received for this booking.</div>
+                </div>
+            </div>
+        <?php else: ?>
+            <table class="pay-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Date</th>
+                        <th>Amount</th>
+                        <th>Mode</th>
+                        <th>Reference No.</th>
+                        <th>Remarks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($payments as $idx => $pay): ?>
+                    <tr>
+                        <td style="color:var(--ink-mute);font-size:.75rem;width:36px;"><?= $idx + 1 ?></td>
+                        <td class="pay-num"><?= formatDate($pay['payment_date']) ?></td>
+                        <td><span class="pay-amount"><?= formatCurrency($pay['amount']) ?></span></td>
+                        <td><span class="mode-badge"><?= ucfirst($pay['payment_mode']) ?></span></td>
+                        <td><span class="ref-text"><?= htmlspecialchars($pay['reference_no']) ?: '—' ?></span></td>
+                        <td style="font-size:0.82rem; color:var(--ink-soft);"><?= htmlspecialchars($pay['remarks']) ?: '—' ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="2">Total Received</td>
+                        <td class="total-val"><?= formatCurrency($cancellation['total_paid']) ?></td>
+                        <td colspan="3"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        <?php endif; ?>
+    </div>
+
+    <!-- ── Action Bar ───────────────── -->
+    <div class="action-bar">
+        <a href="index.php" class="btn btn-ghost">
+            <i class="fas fa-list"></i> All Bookings
+        </a>
+        <a href="view.php?id=<?= $cancellation['booking_id'] ?>" class="btn btn-ghost">
+            <i class="fas fa-eye"></i> View Booking
+        </a>
+        <a href="<?= BASE_URL ?>modules/reports/download.php?action=cancellation_receipt&id=<?= $cancellation_id ?>"
+           class="btn btn-primary" target="_blank">
+            <i class="fas fa-file-pdf"></i> Download Receipt
+        </a>
+    </div>
+
 </div>
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>

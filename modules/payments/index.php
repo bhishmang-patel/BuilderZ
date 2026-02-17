@@ -36,31 +36,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         $db->beginTransaction();
         try {
-            // SPECIAL HANDLING: Distribute 'vendor_payment' across pending bills
-            // SPECIAL HANDLING: Distribute 'vendor_payment' across pending bills
             if ($payment_type === 'vendor_payment') {
-                // LOCKING: Fetch bills with FOR UPDATE to prevent race conditions
-                $bills = $db->query("SELECT id, amount, paid_amount FROM bills WHERE party_id = ? AND status != 'paid' ORDER BY bill_date ASC FOR UPDATE", [$party_id])->fetchAll();
+                $bills = $db->query("SELECT id, amount, paid_amount FROM bills WHERE party_id = ? AND payment_status != 'paid' ORDER BY bill_date ASC FOR UPDATE", [$party_id])->fetchAll();
                 $remaining_payment = $amount;
                 $payments_made = 0;
 
                 foreach ($bills as $bill) {
                     if ($remaining_payment <= 0) break;
-
                     $pending = round($bill['amount'] - $bill['paid_amount'], 2);
-                    // Logic check: if pending is 0 or negative (due to race condition resolved by lock), skip
                     if ($pending <= 0.01) continue; 
-
                     $allocate = round(min($pending, $remaining_payment), 2);
-
-                    // Ensure we don't accidentally allocate more than remaining due to some float weirdness
-                    if ($allocate > $remaining_payment) {
-                        $allocate = $remaining_payment;
-                    }
+                    if ($allocate > $remaining_payment) $allocate = $remaining_payment;
 
                     if ($allocate > 0) {
                         $payment_data = [
-                            'payment_type' => 'vendor_bill_payment', // Convert generic payment to specific bill payment
+                            'payment_type' => 'vendor_bill_payment',
                             'reference_type' => 'bill',
                             'reference_id' => $bill['id'],
                             'party_id' => $party_id,
@@ -73,50 +63,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ];
                         $pid = $db->insert('payments', $payment_data);
                         logAudit('create', 'payments', $pid, null, $payment_data);
-                        updateBillPaidAmount($bill['id']); // This recalculates based on inserted payments
-                        
+                        updateBillPaidAmount($bill['id']);
                         $remaining_payment = round($remaining_payment - $allocate, 2);
                         $payments_made++;
                     }
                 }
                 
                 if ($payments_made === 0 && $amount > 0) {
-                    // Logic decision: If we have money but no bills to pay, what do we do?
-                    // For safety in this "Fix" phase, we'll throw an exception rather than let money float.
-                    // Or we could check if user intends to pay advance, but let's stick to strict debt settlement for now.
-                    throw new Exception("No pending bills found to allocate this payment (or bills were paid by another transaction).");
+                    throw new Exception("No pending bills found to allocate this payment.");
                 }
-                
-                // If there's still remaining payment, we effectively ignore/reject it for now to prevent "floating" money.
                 if ($remaining_payment > 1.00) {
                      throw new Exception("Payment amount exceeds total pending bills. Excess: " . $remaining_payment);
                 }
 
-            } 
-            // SPECIAL HANDLING: Distribute 'labour_account_payment' across pending labour challans
-            elseif ($payment_type === 'labour_account_payment') {
-                // Fetch pending labour challans for this party
-                $challans = $db->query("SELECT id, total_amount, paid_amount FROM challans WHERE party_id = ? AND challan_type = 'labour' AND paid_amount < total_amount ORDER BY challan_date ASC FOR UPDATE", [$party_id])->fetchAll();
+            } elseif ($payment_type === 'contractor_account_payment') {
+                $bills = $db->query("SELECT id, total_payable, paid_amount FROM contractor_bills WHERE contractor_id = ? AND paid_amount < total_payable AND status != 'rejected' ORDER BY bill_date ASC FOR UPDATE", [$party_id])->fetchAll();
                 $remaining_payment = $amount;
                 $payments_made = 0;
 
-                foreach ($challans as $challan) {
+                foreach ($bills as $bill) {
                     if ($remaining_payment <= 0) break;
-
-                    $pending = round($challan['total_amount'] - $challan['paid_amount'], 2);
+                    $pending = round($bill['total_payable'] - $bill['paid_amount'], 2);
                     if ($pending <= 0.01) continue; 
-
                     $allocate = round(min($pending, $remaining_payment), 2);
-
-                    if ($allocate > $remaining_payment) {
-                        $allocate = $remaining_payment;
-                    }
+                    if ($allocate > $remaining_payment) $allocate = $remaining_payment;
 
                     if ($allocate > 0) {
                         $payment_data = [
-                            'payment_type' => 'labour_payment', 
-                            'reference_type' => 'challan',
-                            'reference_id' => $challan['id'],
+                            'payment_type' => 'contractor_payment', 
+                            'reference_type' => 'contractor_bill',
+                            'reference_id' => $bill['id'],
                             'party_id' => $party_id,
                             'payment_date' => $payment_date,
                             'amount' => $allocate,
@@ -127,60 +103,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ];
                         $pid = $db->insert('payments', $payment_data);
                         logAudit('create', 'payments', $pid, null, $payment_data);
-                        updateChallanPaidAmount($challan['id']); 
-                        
+                        updateContractorBillPaidAmount($bill['id']); 
                         $remaining_payment = round($remaining_payment - $allocate, 2);
                         $payments_made++;
                     }
                 }
                 
                 if ($payments_made === 0 && $amount > 0) {
-                    throw new Exception("No pending labour challans found to allocate this payment.");
+                    throw new Exception("No pending contractor bills found to allocate this payment.");
                 }
-                
                 if ($remaining_payment > 1.00) {
-                     throw new Exception("Payment amount exceeds total pending challans. Excess: " . $remaining_payment);
+                     throw new Exception("Payment amount exceeds total pending bills. Excess: " . $remaining_payment);
                 }
 
             } else {
-                // NORMAL LOGIC for other types with STRICT VALIDATION & LOCKING
-                
-                // 1. Vendor Bill Payment (Single)
                 if ($payment_type === 'vendor_bill_payment') {
                     $bill = $db->query("SELECT amount, paid_amount FROM bills WHERE id = ? FOR UPDATE", [$reference_id])->fetch();
                     if (!$bill) throw new Exception("Bill not found.");
-                    
                     $pending = round($bill['amount'] - $bill['paid_amount'], 2);
-                    if ($amount > $pending + 1.00) { // Allow tiny rounding buffer
+                    if ($amount > $pending + 1.00) {
                          throw new Exception("Payment amount ($amount) exceeds pending bill amount ($pending).");
                     }
-                }
-                // 2. Labour Challan / Vendor Challan
-                elseif ($payment_type === 'labour_payment' || $payment_type === 'challan_payment') { // Assuming 'challan_payment' might exist or 'labour_payment' maps to challan
-                    // Note: Front-end sends 'labour_payment' for labour challans.
-                    // 'reference_type' will be 'challan'.
-                    $challan = $db->query("SELECT total_amount, paid_amount FROM challans WHERE id = ? FOR UPDATE", [$reference_id])->fetch();
-                    if (!$challan) throw new Exception("Challan not found.");
-                    
-                    $pending = round($challan['total_amount'] - $challan['paid_amount'], 2);
+                } elseif ($payment_type === 'contractor_payment' || $payment_type === 'challan_payment') {
+                    $bill = $db->query("SELECT total_payable, paid_amount FROM contractor_bills WHERE id = ? FOR UPDATE", [$reference_id])->fetch();
+                    if (!$bill) throw new Exception("Contractor Bill not found.");
+                    $pending = round($bill['total_payable'] - $bill['paid_amount'], 2);
                     if ($amount > $pending + 1.00) {
-                        throw new Exception("Payment amount ($amount) exceeds pending challan amount ($pending).");
+                        throw new Exception("Payment amount ($amount) exceeds pending bill amount ($pending).");
                     }
-                }
-                // 3. Customer Receipt
-                elseif ($payment_type === 'customer_receipt') {
-                    // We lock the booking to ensure substantial sequential processing
+                } elseif ($payment_type === 'customer_receipt') {
                     $booking = $db->query("SELECT total_pending, agreement_value, total_received FROM bookings WHERE id = ? FOR UPDATE", [$reference_id])->fetch();
                     if (!$booking) throw new Exception("Booking not found.");
-                    
-                    // Optional: Restrict overpayment beyond Agreement Value?
-                    // Real estate often takes advances, but let's warn/block if it exceeds unreasonably?
-                    // For now, let's just allow it but the LOCK ensures we don't have parallel updates messing up the summation.
+                } elseif (in_array($payment_type, ['gst_payment', 'tds_payment', 'tax_refund'])) {
+                    // Tax payments don't necessarily have a reference ID or limit
+                    // But we might want to ensure amount > 0
+                    if ($amount <= 0) throw new Exception("Amount must be greater than 0");
                 }
 
                 $payment_data = [
                     'payment_type' => $payment_type,
-                    'reference_type' => $payment_type === 'customer_receipt' ? 'booking' : ($payment_type === 'vendor_bill_payment' ? 'bill' : 'challan'),
+                    'reference_type' => $payment_type === 'customer_receipt' ? 'booking' : ($payment_type === 'vendor_bill_payment' ? 'bill' : ($payment_type === 'contractor_payment' ? 'contractor_bill' : null)),
                     'reference_id' => $reference_id,
                     'demand_id' => !empty($_POST['demand_id']) && $payment_type === 'customer_receipt' ? intval($_POST['demand_id']) : null,
                     'party_id' => $party_id,
@@ -194,44 +156,79 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 $payment_id = $db->insert('payments', $payment_data);
                 
-                // Update totals based on payment type
                 if ($payment_type === 'customer_receipt') {
                     updateBookingTotals($reference_id);
                 } elseif ($payment_type === 'vendor_bill_payment') {
                     updateBillPaidAmount($reference_id);
-                } else {
-                    updateChallanPaidAmount($reference_id);
+                } elseif ($payment_type === 'contractor_payment') {
+                    updateContractorBillPaidAmount($reference_id);
                 }
                 
                 logAudit('create', 'payments', $payment_id, null, $payment_data);
-            }
+
+                // ── Notification Trigger ──
+                require_once __DIR__ . '/../../includes/NotificationService.php';
+                $ns = new NotificationService();
+                $notifTitle = ""; 
+                $notifMsg   = "";
+                $notifLink  = BASE_URL . "modules/payments/index.php";
+
+                // We can fetch party name for better message, or just use ID/Amount
+                // Fetch party name for clearer notification
+                $partyName = $db->query("SELECT name FROM parties WHERE id = ?", [$party_id])->fetchColumn() ?: "Party #$party_id";
+                $formattedAmount = number_format($amount, 2);
+
+                if ($payment_type === 'customer_receipt') {
+                    $notifTitle = "Payment Received";
+                    $notifMsg   = "Received ₹{$formattedAmount} from Customer: {$partyName}";
+                    $notifLink  = BASE_URL . "modules/booking/view.php?id=" . $reference_id; // Link to booking
+                } elseif (strpos($payment_type, 'vendor') !== false) {
+                    $notifTitle = "Vendor Payment Made";
+                    $notifMsg   = "Paid ₹{$formattedAmount} to Vendor: {$partyName}";
+                    $notifLink  = BASE_URL . "modules/payments/index.php?tab=vendor";
+                } elseif (strpos($payment_type, 'contractor') !== false) {
+                    $notifTitle = "Contractor Payment Made";
+                    $notifMsg   = "Paid ₹{$formattedAmount} to Contractor: {$partyName}";
+                    $notifLink  = BASE_URL . "modules/payments/index.php?tab=contractor";
+                }
+
+                if ($notifTitle) {
+                    // Notify Admin (User 1)
+                    $ns->create(1, $notifTitle, $notifMsg, 'info', $notifLink);
+                    
+                    // Also notify current user if not admin
+                    if ($_SESSION['user_id'] != 1) {
+                         $ns->create($_SESSION['user_id'], $notifTitle, "You recorded: " . $notifMsg, 'success', $notifLink);
+                    }
+                }
+            } // Restore missing brace here
 
             $db->commit();
-            
             setFlashMessage('success', 'Payment recorded successfully');
             
-            // Determine active tab for redirection
             $activeTab = 'customer';
             if (in_array($payment_type, ['vendor_payment', 'vendor_bill_payment'])) {
                 $activeTab = 'vendor';
-            } elseif ($payment_type === 'labour_payment' || $payment_type === 'labour_account_payment') {
-                $activeTab = 'labour';
+            } elseif ($payment_type === 'contractor_payment' || $payment_type === 'contractor_account_payment') {
+                $activeTab = 'contractor';
+            } elseif (in_array($payment_type, ['gst_payment', 'tds_payment', 'tax_refund'])) {
+                $activeTab = 'tax';
             }
             
             $redirect_url = $_POST['redirect_url']?? "modules/payments/index.php?tab={$activeTab}";
-
             redirect($redirect_url);
             
         } catch (Exception $e) {
             $db->rollback();
             setFlashMessage('error', 'Failed to record payment: ' . $e->getMessage());
             
-            // Determine active tab for error redirection too
             $activeTab = 'customer';
             if (in_array($payment_type, ['vendor_payment', 'vendor_bill_payment'])) {
                 $activeTab = 'vendor';
-            } elseif ($payment_type === 'labour_payment' || $payment_type === 'labour_account_payment') {
-                $activeTab = 'labour';
+            } elseif ($payment_type === 'contractor_payment' || $payment_type === 'contractor_account_payment') {
+                $activeTab = 'contractor';
+            } elseif (in_array($payment_type, ['gst_payment', 'tds_payment', 'tax_refund'])) {
+                $activeTab = 'tax';
             }
 
             $redirect_url = $_POST['redirect_url']?? "modules/payments/index.php?tab={$activeTab}";
@@ -245,12 +242,7 @@ $payment_type_filter = $_GET['type'] ?? '';
 $date_from = $_GET['date_from'] ?? '';
 $date_to = $_GET['date_to'] ?? '';
 
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
 try {
-    // Fetch pending items for payment
     $pending_bookings = $db->query("SELECT b.id, b.booking_date, b.agreement_value, b.total_received, b.total_pending,
                                             f.flat_no, p.name as customer_name, p.id as party_id, pr.project_name, pr.id as project_id, p.id as customer_id
                                      FROM bookings b
@@ -260,22 +252,21 @@ try {
                                      WHERE b.total_pending > 0 AND b.status = 'active'
                                      ORDER BY b.booking_date DESC")->fetchAll();
 
-    // Fetch Pending Bills (Replaces Vendor Challans)
     $pending_vendor_bills = $db->query("SELECT b.id, b.bill_no, b.bill_date, b.amount as total_amount, b.paid_amount, (b.amount - b.paid_amount) as pending_amount,
-                                          p.name as vendor_name, p.id as party_id, c.challan_no
+                                          p.name as vendor_name, p.id as party_id, 
+                                          (SELECT GROUP_CONCAT(c2.challan_no SEPARATOR ', ') FROM challans c2 WHERE c2.bill_id = b.id) as challan_no
                                    FROM bills b
                                    JOIN parties p ON b.party_id = p.id
-                                   LEFT JOIN challans c ON b.challan_id = c.id
-                                   WHERE b.status IN ('pending', 'partial')
+                                   WHERE b.status != 'rejected' AND b.payment_status != 'paid' AND (b.amount - b.paid_amount) > 0
                                    ORDER BY b.bill_date")->fetchAll();
 
-    $pending_labour_challans = $db->query("SELECT c.id, c.challan_no, c.challan_date, c.total_amount, c.paid_amount, c.pending_amount,
-                                                  p.name as labour_name, p.id as party_id, pr.project_name, pr.id as project_id
-                                           FROM challans c
-                                           JOIN parties p ON c.party_id = p.id
+    $pending_contractor_bills = $db->query("SELECT c.id, c.bill_no as challan_no, c.bill_date as challan_date, c.total_payable as final_payable_amount, c.basic_amount as total_amount, c.paid_amount, c.pending_amount,
+                                                  p.name as contractor_name, p.id as party_id, pr.project_name, pr.id as project_id
+                                           FROM contractor_bills c
+                                           JOIN parties p ON c.contractor_id = p.id
                                            JOIN projects pr ON c.project_id = pr.id
-                                           WHERE c.challan_type = 'labour' AND c.pending_amount > 0 AND c.status IN ('approved', 'partial')
-                                           ORDER BY c.challan_date")->fetchAll();
+                                           WHERE c.pending_amount > 0 AND c.status = 'approved' AND c.payment_status != 'paid'
+                                           ORDER BY c.bill_date")->fetchAll();
 
 } catch (Exception $e) {
     die("Error fetching data: " . $e->getMessage());
@@ -289,12 +280,10 @@ if ($payment_type_filter) {
     $where .= ' AND p.payment_type = ?';
     $params[] = $payment_type_filter;
 }
-
 if ($date_from) {
     $where .= ' AND p.payment_date >= ?';
     $params[] = $date_from;
 }
-
 if ($date_to) {
     $where .= ' AND p.payment_date <= ?';
     $params[] = $date_to;
@@ -318,683 +307,766 @@ $payments = $stmt->fetchAll();
 include __DIR__ . '/../../includes/header.php';
 ?>
 
-<!-- Include Booking CSS -->
-<link rel="stylesheet" href="<?= BASE_URL ?>assets/css/booking.css">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 
 <style>
-/* Payment Page Specific Styles */
-.chart-icon-box.emerald {
-    background: linear-gradient(135deg, #059669 0%, #10b981 100%);
-    color: white;
-}
+    :root {
+        --ink:       #1a1714;
+        --ink-soft:  #6b6560;
+        --ink-mute:  #9e9690;
+        --cream:     #f5f3ef;
+        --surface:   #ffffff;
+        --border:    #e8e3db;
+        --border-lt: #f0ece5;
+        --accent:    #2a58b5ff;
+        --accent-bg: #fdf8f3;
+        --accent-lt: #fef3ea;
+    }
 
-.modern-tabs {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 25px;
-    border-bottom: 1px solid #e2e8f0;
-    padding-bottom: 5px;
-}
+    /* ── Page Wrapper ────────────────────────── */
+    .pay-wrap { max-width: 1280px; margin: 2.5rem auto; padding: 0 1.5rem 4rem; }
 
-.modern-tab {
-    padding: 10px 20px;
-    background: transparent;
-    border: none;
-    border-bottom: 3px solid transparent;
-    font-weight: 600;
-    color: #64748b;
-    cursor: pointer;
-    transition: all 0.3s;
-    font-size: 0.95rem;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
+    /* ── Header ──────────────────────────────── */
+    .pay-header {
+        margin-bottom: 2rem; padding-bottom: 1.5rem;
+        border-bottom: 1.5px solid var(--border);
+    }
 
-.modern-tab:hover {
-    color: #059669;
-}
+    .pay-header .eyebrow {
+        font-size: 0.68rem; font-weight: 700; letter-spacing: 0.15em;
+        text-transform: uppercase; color: var(--accent); margin-bottom: 0.3rem;
+    }
+    .pay-header h1 {
+        font-family: 'Fraunces', serif; font-size: 1.7rem; font-weight: 700;
+        line-height: 1.1; color: var(--ink); margin: 0;
+    }
+    .pay-header h1 em { color: var(--accent); font-style: italic; }
 
-.modern-tab.active {
-    color: #059669;
-    border-bottom-color: #059669;
-}
+    /* ── Tabs ────────────────────────────────── */
+    .tab-bar {
+        display: flex; gap: 0.5rem; flex-wrap: wrap;
+        border-bottom: 1.5px solid var(--border);
+        padding-bottom: 0.25rem; margin-bottom: 1.75rem;
+    }
 
-.tab-badge {
-    background: #f1f5f9;
-    color: #64748b;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 700;
-}
+    .tab-btn {
+        display: flex; align-items: center; gap: 0.5rem;
+        padding: 0.7rem 1.1rem; background: transparent;
+        border: none; border-bottom: 2.5px solid transparent;
+        font-size: 0.85rem; font-weight: 600; color: var(--ink-mute);
+        cursor: pointer; transition: all 0.18s;
+    }
+    .tab-btn:hover { color: var(--accent); }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
 
-.modern-tab.active .tab-badge {
-    background: #ecfdf5;
-    color: #059669;
-}
+    .tab-badge {
+        display: inline-flex; align-items: center; justify-content: center;
+        min-width: 20px; height: 20px; padding: 0 0.4rem;
+        background: #f0ece5; color: var(--ink-soft);
+        border-radius: 10px; font-size: 0.68rem; font-weight: 700;
+    }
+    .tab-btn.active .tab-badge { background: var(--accent-bg); color: var(--accent); }
 
-/* Premium Modal Styles */
-.custom-modal {
-    display: none; 
-    position: fixed; 
-    z-index: 10000; 
-    left: 0;
-    top: 0;
-    width: 100%; 
-    height: 100%; 
-    overflow: auto; 
-    background-color: rgba(15, 23, 42, 0.6); 
-    backdrop-filter: blur(8px);
-    transition: all 0.3s;
-}
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
 
-.custom-modal.active {
-    display: block;
-    animation: fadeIn 0.3s ease-out;
-}
+    /* ── Main Panel ──────────────────────────── */
+    .pay-panel {
+        background: var(--surface); border: 1.5px solid var(--border);
+        border-radius: 14px; overflow: hidden;
+        animation: fadeUp 0.4s ease both;
+    }
 
-.custom-modal-content {
-    background-color: #ffffff;
-    margin: 4% auto;
-    border: none;
-    width: 90%; 
-    max-width: 600px;
-    border-radius: 20px;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-    position: relative;
-    animation: modalSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    overflow: hidden;
-}
+    /* ── Table ───────────────────────────────── */
+    .pay-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
 
-@keyframes modalSlideUp {
-    from { transform: translateY(30px) scale(0.95); opacity: 0; }
-    to { transform: translateY(0) scale(1); opacity: 1; }
-}
+    .pay-table thead tr { background: #fdfcfa; border-bottom: 1.5px solid var(--border); }
+    .pay-table thead th {
+        padding: 0.7rem 1rem; text-align: left;
+        font-size: 0.64rem; font-weight: 700; letter-spacing: 0.1em;
+        text-transform: uppercase; color: var(--ink-soft); white-space: nowrap;
+    }
+    .pay-table thead th.th-c { text-align: center; }
+    .pay-table thead th.th-r { text-align: right; }
 
-.modal-header-premium {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    padding: 24px 32px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
+    .pay-table tbody tr { border-bottom: 1px solid var(--border-lt); transition: background 0.13s; }
+    .pay-table tbody tr:last-child { border-bottom: none; }
+    .pay-table tbody tr:hover { background: #fdfcfa; }
 
-.modal-title-group h3 {
-    margin: 0;
-    font-size: 20px;
-    font-weight: 800;
-    color: #ffffff;
-    letter-spacing: -0.5px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
+    .pay-table td { padding: 0.8rem 1rem; vertical-align: middle; }
+    .pay-table td.td-c { text-align: center; }
+    .pay-table td.td-r { text-align: right; }
 
-.modal-title-group p {
-    margin: 6px 0 0 0;
-    font-size: 13px;
-    color: rgba(255, 255, 255, 0.9);
-    font-weight: 500;
-}
+    /* Avatar */
+    .av-sq {
+        width: 28px; height: 28px; border-radius: 7px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.7rem; font-weight: 700; color: white;
+        margin-right: 0.65rem; flex-shrink: 0;
+    }
+    .av-circ {
+        width: 28px; height: 28px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.7rem; font-weight: 700; color: white;
+        margin-right: 0.65rem; flex-shrink: 0;
+    }
 
-.modal-close-btn {
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    color: white;
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-.modal-close-btn:hover { background: rgba(255, 255, 255, 0.3); transform: rotate(90deg); }
+    /* Pill badges */
+    .pill {
+        display: inline-block; padding: 0.24rem 0.7rem;
+        border-radius: 20px; font-size: 0.7rem; font-weight: 700;
+        letter-spacing: 0.03em;
+    }
+    .pill.blue   { background: #eff6ff; color: #1e40af; }
+    .pill.green  { background: #ecfdf5; color: #065f46; }
+    .pill.orange { background: var(--accent-lt); color: var(--accent); }
+    .pill.gray   { background: #f0ece5; color: var(--ink-soft); }
 
-.modal-body-premium {
-    padding: 32px;
-    background: #ffffff;
-}
+    /* Empty state */
+    .empty-state {
+        padding: 4rem 1rem; text-align: center;
+    }
+    .empty-state i {
+        font-size: 2.5rem; color: #10b981;
+        margin-bottom: 0.75rem; display: block;
+    }
+    .empty-state h4 {
+        font-size: 1rem; font-weight: 700; color: var(--ink-soft);
+        margin: 0 0 0.35rem;
+    }
+    .empty-state p {
+        font-size: 0.82rem; color: var(--ink-mute); margin: 0;
+    }
 
-.form-section-title {
-    font-size: 11px;
-    font-weight: 800;
-    color: #94a3b8;
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-.form-section-title::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: #f1f5f9;
-}
+    /* ── Filter Section ──────────────────────── */
+    .filter-section {
+        padding: 1.25rem 1.5rem; border-bottom: 1.5px solid var(--border-lt);
+        background: #fdfcfa;
+    }
 
-/* Modern Inputs */
-.modern-input, .modern-select {
-    width: 100%;
-    padding: 12px 16px;
-    border: 2px solid #e2e8f0;
-    border-radius: 12px;
-    font-size: 14px;
-    color: #1e293b;
-    transition: all 0.2s;
-    outline: none;
-    background: #f8fafc;
-}
+    .filter-form { display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap; }
 
-.modern-input:focus, .modern-select:focus {
-    border-color: #10b981;
-    background: #ffffff;
-    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
-}
+    .f-input, .f-select {
+        height: 38px; padding: 0 0.75rem;
+        border: 1.5px solid var(--border); border-radius: 7px;
+        font-size: 0.82rem; color: var(--ink); background: white;
+        outline: none; transition: border-color 0.15s;
+    }
+    .f-input { flex: 0 0 160px; }
+    .f-select {
+        flex: 0 0 180px; -webkit-appearance: none; appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%236b6560' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+        background-repeat: no-repeat; background-position: right 0.6rem center;
+        padding-right: 2rem;
+    }
+    .f-input:focus, .f-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(181,98,42,0.1); }
 
-.input-label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 700;
-    color: #334155;
-    font-size: 13px;
-}
+    .btn-go, .btn-reset {
+        height: 38px; padding: 0 1.25rem; border: none; border-radius: 7px;
+        display: flex; align-items: center; gap: 0.4rem;
+        font-size: 0.8rem; font-weight: 600; cursor: pointer;
+        transition: all 0.18s; text-decoration: none;
+    }
+    .btn-go { background: var(--ink); color: white; }
+    .btn-go:hover { background: var(--accent); }
+    .btn-reset { background: #f0ece5; color: var(--ink-soft); }
+    .btn-reset:hover { background: var(--border); color: var(--ink); }
 
-.modal-footer-premium {
-    padding: 24px 32px;
-    background: #f8fafc;
-    border-top: 1px solid #f1f5f9;
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-}
+    /* ── Action Buttons ──────────────────────── */
+    .btn-collect {
+        display: inline-flex; align-items: center; gap: 0.4rem;
+        padding: 0.5rem 1rem; border: 1.5px solid var(--border);
+        background: var(--ink); color: white;
+        border-radius: 7px; font-size: 0.78rem; font-weight: 600;
+        cursor: pointer; transition: all 0.18s; text-decoration: none;
+    }
+    .btn-collect:hover { background: var(--accent); border-color: var(--accent); color: white; }
 
-.btn-save {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    color: white;
-    border: none;
-    padding: 12px 28px;
-    border-radius: 10px;
-    font-weight: 600;
-    font-size: 14px;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-    transition: all 0.2s;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-}
-.btn-save:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4); }
+    .act-btn {
+        width: 28px; height: 28px; border-radius: 6px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.72rem; text-decoration: none; cursor: pointer;
+        border: 1.5px solid var(--border); background: var(--surface);
+        color: var(--ink-soft); transition: all 0.16s;
+    }
+    .act-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
 
-.btn-ghost {
-    background: transparent;
-    color: #64748b;
-    border: 2px solid #e2e8f0;
-    padding: 12px 24px;
-    border-radius: 10px;
-    font-weight: 600;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-.btn-ghost:hover { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
+    /* ── Modals ──────────────────────────────── */
+    .pay-modal-backdrop {
+        display: none; position: fixed; inset: 0; z-index: 10000;
+        background: rgba(26,23,20,0.5); backdrop-filter: blur(3px);
+        align-items: center; justify-content: center; padding: 1rem;
+    }
+    .pay-modal-backdrop.open { display: flex; }
 
-.payment-summary-box {
-    background: #f0fdf4;
-    border: 1px solid #dcfce7;
-    border-radius: 16px;
-    padding: 20px;
-    margin-bottom: 24px;
-}
+    .pay-modal {
+        background: white; border-radius: 16px; overflow: hidden;
+        width: 100%; max-width: 580px;
+        box-shadow: 0 25px 50px rgba(26,23,20,0.2);
+        animation: modalIn 0.25s ease;
+        display: flex; flex-direction: column;
+        max-height: 90vh; /* Prevent overflow */
+    }
+    
+    .pay-modal form {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        overflow: hidden;
+    }
 
-.summary-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-}
-.summary-row:last-child { margin-bottom: 0; }
+    @keyframes modalIn { from { opacity:0; transform:translateY(-16px); } to { opacity:1; transform:translateY(0); } }
 
-.form-grid-premium {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-}
-.full-width { grid-column: 1 / -1; }
+    .modal-head {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 1.3rem 1.6rem; border-bottom: 1.5px solid var(--border-lt);
+        background: #fdfcfa;
+    }
+    .modal-head h3 {
+        font-family: 'Fraunces', serif; font-size: 1.1rem;
+        font-weight: 600; color: var(--ink); margin: 0;
+        display: flex; align-items: center; gap: 0.6rem;
+    }
+    .modal-head h3 i { color: var(--accent); }
+    .modal-head p { font-size: 0.75rem; color: var(--ink-mute); margin: 0.25rem 0 0; }
+    .modal-close {
+        width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+        border: none; background: var(--cream); font-size: 1.2rem;
+        color: var(--ink-mute); cursor: pointer; border-radius: 8px; transition: all 0.15s;
+    }
+    .modal-close:hover { background: var(--border); color: var(--ink); }
 
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .modal-body { padding: 1.75rem 1.6rem; overflow-y: auto; flex: 1; }
+
+    .modal-footer {
+        display: flex; justify-content: flex-end; gap: 0.65rem;
+        padding: 1.25rem 1.6rem; border-top: 1.5px solid var(--border-lt);
+        background: #fdfcfa;
+    }
+
+    /* Summary box */
+    .sum-box {
+        background: #ecfdf5; border: 1.5px solid #a7f3d0;
+        border-radius: 10px; padding: 1.15rem;
+        margin-bottom: 1.5rem;
+    }
+    .sum-row {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 0.4rem 0;
+    }
+    .sum-row .lbl { font-size: 0.8rem; font-weight: 600; color: #065f46; }
+    .sum-row .val { font-weight: 700; color: #065f46; font-size: 0.9rem; }
+
+    /* Form fields */
+    .field {
+        margin-bottom: 1.1rem;
+    }
+    .field label {
+        display: block; font-size: 0.75rem; font-weight: 700;
+        letter-spacing: 0.03em; text-transform: uppercase;
+        color: var(--ink-soft); margin-bottom: 0.4rem;
+    }
+    .field input, .field select, .field textarea {
+        width: 100%; padding: 0.65rem 0.85rem;
+        border: 1.5px solid var(--border); border-radius: 8px;
+        font-size: 0.875rem; color: var(--ink); background: #fdfcfa;
+        outline: none; transition: border-color 0.18s, box-shadow 0.18s;
+    }
+    .field select {
+        -webkit-appearance: none; appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%236b6560' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+        background-repeat: no-repeat; background-position: right 0.8rem center;
+        padding-right: 2.2rem;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus {
+        border-color: var(--accent); background: white;
+        box-shadow: 0 0 0 3px rgba(181,98,42,0.1);
+    }
+
+    .field-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+
+    .calc-box {
+        background: #fdfcfa; border: 1px solid var(--border-lt);
+        border-radius: 8px; padding: 0.85rem 1rem;
+        display: flex; justify-content: space-between; align-items: center;
+        margin-top: 1.25rem;
+    }
+    .calc-box .lbl { font-size: 0.8rem; font-weight: 600; color: var(--ink-soft); }
+    .calc-box .val { font-family: 'Fraunces', serif; font-size: 1.1rem; font-weight: 700; color: var(--ink); }
+
+    .warn-text {
+        color: #ef4444; font-size: 0.75rem; margin-top: 0.5rem;
+        display: none; text-align: right; font-weight: 600;
+    }
+    .warn-text.show { display: block; }
+
+    .btn {
+        padding: 0.7rem 1.4rem; border-radius: 8px;
+        font-size: 0.875rem; font-weight: 600; cursor: pointer;
+        transition: all 0.18s; display: inline-flex;
+        align-items: center; gap: 0.5rem; text-decoration: none;
+    }
+    .btn-secondary { background: white; color: var(--ink-soft); border: 1.5px solid var(--border); }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-primary {
+        background: var(--ink); color: white; border: 1.5px solid var(--ink);
+    }
+    .btn-primary:hover { background: var(--accent); border-color: var(--accent); box-shadow: 0 4px 14px rgba(181,98,42,0.3); }
+
+    /* Animations */
+    @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
 </style>
 
-<div class="row">
-    <div class="col-12">
-        <div class="chart-card-custom" style="height: auto;">
-            
-            <!-- Header -->
-            <div class="chart-header-custom">
-                <div class="chart-title-group">
-                    <h3>
-                        <div class="chart-icon-box emerald"><i class="fas fa-money-bill-wave"></i></div>
-                        Payment Management
-                    </h3>
-                    <div class="chart-subtitle">Track and record payments for customers, vendors, and labour</div>
-                </div>
-            </div>
+<div class="pay-wrap">
 
-            <div style="padding: 20px;">
-                <!-- Tabs -->
-                <div class="modern-tabs">
-                    <button class="modern-tab active" onclick="switchTab('customer')">
-                        <i class="fas fa-user-circle"></i> Customer Receipts
-                        <span class="tab-badge"><?= count($pending_bookings) ?></span>
-                    </button>
-                    <button class="modern-tab" onclick="switchTab('vendor')">
-                        <i class="fas fa-truck"></i> Vendor Bills
-                        <span class="tab-badge"><?= count($pending_vendor_bills) ?></span>
-                    </button>
-                    <button class="modern-tab" onclick="switchTab('labour')">
-                        <i class="fas fa-hard-hat"></i> Labour Payments
-                        <span class="tab-badge"><?= count($pending_labour_challans) ?></span>
-                    </button>
-                    <button class="modern-tab" onclick="switchTab('history')">
-                        <i class="fas fa-history"></i> Payment History
-                    </button>
-                </div>
+    <!-- Header -->
+    <div class="pay-header">
+        <div class="eyebrow">Transaction Management</div>
+        <h1>Payment <em>Management</em></h1>
+    </div>
 
-                <!-- Customer Receipts Tab -->
-                <div id="customer-tab" class="tab-content active">
-                    <?php if (empty($pending_bookings)): ?>
-                        <div style="text-align: center; padding: 60px 20px; color: #94a3b8;">
-                            <i class="fas fa-check-circle" style="font-size: 48px; color: #10b981; margin-bottom: 20px;"></i>
-                            <p style="font-size: 16px; font-weight: 500;">All customer payments are up to date! 🎉</p>
-                        </div>
-                    <?php else: ?>
-                        <div class="table-responsive">
-                            <table class="modern-table">
-                                <thead>
-                                    <tr>
-                                        <th>PROJECT</th>
-                                        <th>FLAT</th>
-                                        <th>CUSTOMER</th>
-                                        <th>BOOKING DATE</th>
-                                        <th>AGREEMENT VALUE</th>
-                                        <th>RECEIVED</th>
-                                        <th>PENDING</th>
-                                        <th>ACTION</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php 
-                                    foreach ($pending_bookings as $booking): 
-                                        $color = ColorHelper::getProjectColor($booking['project_id']);
-                                        $initial = ColorHelper::getInitial($booking['project_name']);
-                                        
-                                        $custColor = ColorHelper::getCustomerColor($booking['customer_id'] ?? 0);
-                                        $custInitial = ColorHelper::getInitial($booking['customer_name']);
-                                    ?>
-                                    <tr>
-                                        <td>
-                                            <div style="display:flex; align-items:center;">
-                                                <div class="avatar-square" style="background: <?= $color ?>"><?= $initial ?></div>
-                                                <span style="font-weight:700;"><?= htmlspecialchars($booking['project_name']) ?></span>
-                                            </div>
-                                        </td>
-                                        <td><span class="badge-pill blue"><?= htmlspecialchars($booking['flat_no']) ?></span></td>
-                                        <td>
-                                            <div style="display:flex; align-items:center;">
-                                                <div class="avatar-circle" style="background: <?= $custColor ?>; color: #fff;"><?= $custInitial ?></div>
-                                                <div style="display:flex; flex-direction:column;">
-                                                    <span style="font-weight:600; font-size:13px;"><?= htmlspecialchars($booking['customer_name']) ?></span>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td><?= formatDate($booking['booking_date']) ?></td>
-                                        <td><span class="badge-pill green"><?= formatCurrency($booking['agreement_value']) ?></span></td>
-                                        <td><span style="color: #10b981; font-weight: 600;"><?= formatCurrency($booking['total_received']) ?></span></td>
-                                        <td><span style="color: #f59e0b; font-weight: 600;"><?= formatCurrency($booking['total_pending']) ?></span></td>
-                                        <td>
-                                            <button class="modern-btn" onclick="showPaymentModal('customer_receipt', <?= $booking['id'] ?>, <?= $booking['party_id'] ?>, <?= $booking['total_pending'] ?>, '<?= htmlspecialchars(addslashes($booking['customer_name'])) ?>')" style="padding: 6px 12px; font-size: 11px;">
-                                                <i class="fas fa-plus"></i> Collect
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    <?php endif; ?>
-                </div>
+    <!-- Tabs -->
+    <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab('customer')">
+            <i class="fas fa-user-circle"></i> Customer Receipts
+            <span class="tab-badge"><?= count($pending_bookings) ?></span>
+        </button>
+        <button class="tab-btn" onclick="switchTab('vendor')">
+            <i class="fas fa-truck"></i> Vendor Bills
+            <span class="tab-badge"><?= count($pending_vendor_bills) ?></span>
+        </button>
+        <button class="tab-btn" onclick="switchTab('contractor')">
+            <i class="fas fa-hard-hat"></i> Contractor Bills
+            <span class="tab-badge"><?= count($pending_contractor_bills) ?></span>
+        </button>
+        <button class="tab-btn" onclick="switchTab('tax')">
+            <i class="fas fa-university"></i> Taxes & Refunds
+        </button>
+        <button class="tab-btn" onclick="switchTab('history')">
+            <i class="fas fa-history"></i> Payment History
+        </button>
+    </div>
 
-                <!-- Vendor Payments Tab -->
-                <div id="vendor-tab" class="tab-content" style="display: none;">
-                    <?php if (empty($pending_vendor_bills)): ?>
-                        <div style="text-align: center; padding: 60px 20px; color: #94a3b8;">
-                            <i class="fas fa-check-circle" style="font-size: 48px; color: #10b981; margin-bottom: 20px;"></i>
-                            <p style="font-size: 16px; font-weight: 500;">No pending vendor bills.</p>
-                        </div>
-                    <?php else: ?>
-                        <div class="table-responsive">
-                            <table class="modern-table">
-                                <thead>
-                                    <tr>
-                                        <th>VENDOR</th>
-                                        <th>BILL NO</th>
-                                        <th>DATE</th>
-                                        <th>CHALLAN NO</th>
-                                        <th>TOTAL</th>
-                                        <th>PAID</th>
-                                        <th>PENDING</th>
-                                        <th>ACTION</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php 
-                                    foreach ($pending_vendor_bills as $bill): 
-                                        $vendorColor = ColorHelper::getCustomerColor($bill['vendor_name']);
-                                        $vendorInitial = ColorHelper::getInitial($bill['vendor_name']);
-                                    ?>
-                                    <tr>
-                                        <td>
-                                            <div style="display:flex; align-items:center;">
-                                                <div class="avatar-circle" style="background: <?= $vendorColor ?>; color: #fff; width:28px; height:28px; font-size:11px; margin-right:8px;"><?= $vendorInitial ?></div>
-                                                <div style="font-weight: 600; color: #1e293b;"><?= htmlspecialchars($bill['vendor_name']) ?></div>
-                                            </div>
-                                        </td>
-                                        <td><strong><?= htmlspecialchars($bill['bill_no']) ?></strong></td>
-                                        <td><?= formatDate($bill['bill_date']) ?></td>
-                                        <td>
-                                            <?php if($bill['challan_no']): ?>
-                                                <span class="badge-pill blue"><?= htmlspecialchars($bill['challan_no']) ?></span>
-                                            <?php else: ?>
-                                                <span style="color:#cbd5e1">-</span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td><?= formatCurrency($bill['total_amount']) ?></td>
-                                        <td><span style="color: #10b981;"><?= formatCurrency($bill['paid_amount']) ?></span></td>
-                                        <td><span style="color: #f59e0b; font-weight: 600;"><?= formatCurrency($bill['pending_amount']) ?></span></td>
-                                        <td>
-                                            <!-- Payment Type changed to 'vendor_bill_payment' -->
-                                            <button class="modern-btn" onclick="showPaymentModal('vendor_bill_payment', <?= $bill['id'] ?>, <?= $bill['party_id'] ?>, <?= $bill['pending_amount'] ?>, '<?= htmlspecialchars(addslashes($bill['vendor_name'])) ?>')" style="padding: 6px 12px; font-size: 11px;">
-                                                <i class="fas fa-file-invoice-dollar"></i> Pay
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    <?php endif; ?>
+    <!-- Customer Receipts Tab -->
+    <div id="customer-tab" class="tab-content active">
+        <div class="pay-panel">
+            <?php if (empty($pending_bookings)): ?>
+                <div class="empty-state">
+                    <i class="fas fa-check-circle"></i>
+                    <h4>All customer payments are up to date!</h4>
+                    <p>No pending payments at this time. 🎉</p>
                 </div>
-
-                <!-- Labour Payments Tab -->
-                <div id="labour-tab" class="tab-content" style="display: none;">
-                    <?php if (empty($pending_labour_challans)): ?>
-                        <div style="text-align: center; padding: 60px 20px; color: #94a3b8;">
-                            <i class="fas fa-check-circle" style="font-size: 48px; color: #10b981; margin-bottom: 20px;"></i>
-                            <p style="font-size: 16px; font-weight: 500;">No pending labour payments.</p>
-                        </div>
-                    <?php else: ?>
-                        <div class="table-responsive">
-                            <table class="modern-table">
-                                <thead>
-                                    <tr>
-                                        <th>PROJECT</th>
-                                        <th>LABOUR/CONTRACTOR</th>
-                                        <th>PAY NO</th>
-                                        <th>DATE</th>
-                                        <th>TOTAL</th>
-                                        <th>PAID</th>
-                                        <th>PENDING</th>
-                                        <th>ACTION</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php 
-                                    foreach ($pending_labour_challans as $challan): 
-                                        $color = ColorHelper::getProjectColor($challan['project_id']);
-                                        $initial = ColorHelper::getInitial($challan['project_name']);
-                                        
-                                        $labourColor = ColorHelper::getCustomerColor($challan['party_id']);
-                                        $labourInitial = ColorHelper::getInitial($challan['labour_name']);
-                                    ?>
-                                    <tr>
-                                        <td>
-                                            <div style="display:flex; align-items:center;">
-                                                <div class="avatar-square" style="background: <?= $color ?>"><?= $initial ?></div>
-                                                <span style="font-weight:700;"><?= htmlspecialchars($challan['project_name']) ?></span>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div style="display:flex; align-items:center;">
-                                                <div class="avatar-circle" style="background: <?= $labourColor ?>; color: #fff; width:28px; height:28px; font-size:11px; margin-right:8px;"><?= $labourInitial ?></div>
-                                                <span style="font-weight:600;"><?= htmlspecialchars($challan['labour_name']) ?></span>
-                                            </div>
-                                        </td>
-                                        <td><strong><?= htmlspecialchars($challan['challan_no']) ?></strong></td>
-                                        <td><?= formatDate($challan['challan_date']) ?></td>
-                                        <td><?= formatCurrency($challan['total_amount']) ?></td>
-                                        <td><span style="color: #10b981;"><?= formatCurrency($challan['paid_amount']) ?></span></td>
-                                        <td><span style="color: #f59e0b; font-weight: 600;"><?= formatCurrency($challan['pending_amount']) ?></span></td>
-                                        <td>
-                                            <button class="modern-btn" onclick="showPaymentModal('labour_payment', <?= $challan['id'] ?>, <?= $challan['party_id'] ?>, <?= $challan['pending_amount'] ?>, '<?= htmlspecialchars(addslashes($challan['labour_name'])) ?>')" style="padding: 6px 12px; font-size: 11px;">
-                                                <i class="fas fa-hand-holding-usd"></i> Pay
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    <?php endif; ?>
+            <?php else: ?>
+                <div style="overflow-x:auto">
+                    <table class="pay-table">
+                        <thead>
+                            <tr>
+                                <th>Project</th>
+                                <th class="th-c">Flat</th>
+                                <th>Customer</th>
+                                <th class="th-c">Booking Date</th>
+                                <th class="th-r">Agreement</th>
+                                <th class="th-r">Received</th>
+                                <th class="th-r">Pending</th>
+                                <th class="th-r">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php 
+                            foreach ($pending_bookings as $booking): 
+                                $color = ColorHelper::getProjectColor($booking['project_id']);
+                                $initial = ColorHelper::getInitial($booking['project_name']);
+                                $custColor = ColorHelper::getCustomerColor($booking['customer_id'] ?? 0);
+                                $custInitial = ColorHelper::getInitial($booking['customer_name']);
+                            ?>
+                            <tr>
+                                <td>
+                                    <div style="display:flex;align-items:center">
+                                        <?= renderProjectBadge($booking['project_name'], $booking['project_id']) ?>
+                                    </div>
+                                </td>
+                                <td class="td-c"><span class="pill blue"><?= htmlspecialchars($booking['flat_no']) ?></span></td>
+                                <td>
+                                    <div style="display:flex;align-items:center">
+                                        <span style="font-weight:600;font-size:0.875rem"><?= htmlspecialchars($booking['customer_name']) ?></span>
+                                    </div>
+                                </td>
+                                <td class="td-c"><span style="font-weight:600;color:var(--ink-soft);font-size:0.82rem"><?= formatDate($booking['booking_date']) ?></span></td>
+                                <td class="td-r"><strong style="color:var(--ink)"><?= formatCurrencyShort($booking['agreement_value']) ?></strong></td>
+                                <td class="td-r"><span style="font-weight:600;color:#10b981"><?= formatCurrencyShort($booking['total_received']) ?></span></td>
+                                <td class="td-r"><span style="font-weight:600;color:#f59e0b"><?= formatCurrencyShort($booking['total_pending']) ?></span></td>
+                                <td class="td-r">
+                                    <button class="btn-collect" onclick="showPaymentModal('customer_receipt', <?= $booking['id'] ?>, <?= $booking['party_id'] ?>, <?= $booking['total_pending'] ?>, '<?= htmlspecialchars(addslashes($booking['customer_name'])) ?>')">
+                                        <i class="fas fa-plus"></i> Collect
+                                    </button>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
                 </div>
+            <?php endif; ?>
+        </div>
+    </div>
 
-                <!-- Payment History Tab -->
-                <div id="history-tab" class="tab-content" style="display: none;">
+    <!-- Vendor Bills Tab -->
+    <div id="vendor-tab" class="tab-content">
+        <div class="pay-panel">
+            <?php if (empty($pending_vendor_bills)): ?>
+                <div class="empty-state">
+                    <i class="fas fa-check-circle"></i>
+                    <h4>No pending vendor bills</h4>
+                    <p>All vendor payments are settled.</p>
+                </div>
+            <?php else: ?>
+                <div style="overflow-x:auto">
+                    <table class="pay-table">
+                        <thead>
+                            <tr>
+                                <th>Vendor</th>
+                                <th class="th-c">Bill No</th>
+                                <th class="th-c">Date</th>
+                                <th class="th-c">Challan No</th>
+                                <th class="th-r">Total</th>
+                                <th class="th-r">Paid</th>
+                                <th class="th-r">Pending</th>
+                                <th class="th-r">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php 
+                            foreach ($pending_vendor_bills as $bill): 
+                                $vendorColor = ColorHelper::getCustomerColor($bill['vendor_name']);
+                                $vendorInitial = ColorHelper::getInitial($bill['vendor_name']);
+                            ?>
+                            <tr>
+                                <td>
+                                    <div style="display:flex;align-items:center">
+                                        <span style="font-weight:600;font-size:0.875rem"><?= htmlspecialchars($bill['vendor_name']) ?></span>
+                                    </div>
+                                </td>
+                                <td class="td-c"><strong style="font-size:0.82rem"><?= htmlspecialchars($bill['bill_no']) ?></strong></td>
+                                <td class="td-c"><span style="font-weight:600;color:var(--ink-soft);font-size:0.82rem"><?= formatDate($bill['bill_date']) ?></span></td>
+                                <td class="td-c">
+                                    <?php if($bill['challan_no']): ?>
+                                        <span class="pill blue"><?= htmlspecialchars($bill['challan_no']) ?></span>
+                                    <?php else: ?>
+                                        <span style="color:var(--border)">—</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="td-r"><strong style="color:var(--ink)"><?= formatCurrencyShort($bill['total_amount']) ?></strong></td>
+                                <td class="td-r"><span style="font-weight:600;color:#10b981"><?= formatCurrencyShort($bill['paid_amount']) ?></span></td>
+                                <td class="td-r"><span style="font-weight:600;color:#f59e0b"><?= formatCurrencyShort($bill['pending_amount']) ?></span></td>
+                                <td class="td-r">
+                                    <button class="btn-collect" onclick="showPaymentModal('vendor_bill_payment', <?= $bill['id'] ?>, <?= $bill['party_id'] ?>, <?= $bill['pending_amount'] ?>, '<?= htmlspecialchars(addslashes($bill['vendor_name'])) ?>')">
+                                        <i class="fas fa-file-invoice-dollar"></i> Pay
+                                    </button>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <!-- Contractor Payments Tab -->
+    <div id="contractor-tab" class="tab-content">
+        <div class="pay-panel">
+            <?php if (empty($pending_contractor_bills)): ?>
+                <div class="empty-state">
+                    <i class="fas fa-check-circle"></i>
+                    <h4>No pending contractor bills</h4>
+                    <p>All contractor payments are settled.</p>
+                </div>
+            <?php else: ?>
+                <div style="overflow-x:auto">
+                    <table class="pay-table">
+                        <thead>
+                            <tr>
+                                <th>Project</th>
+                                <th>Contractor</th>
+                                <th class="th-c">Bill No</th>
+                                <th class="th-c">Date</th>
+                                <th class="th-r">Payable</th>
+                                <th class="th-r">Paid</th>
+                                <th class="th-r">Pending</th>
+                                <th class="th-r">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php 
+                            foreach ($pending_contractor_bills as $challan): 
+                                $color = ColorHelper::getProjectColor($challan['project_id']);
+                                $initial = ColorHelper::getInitial($challan['project_name']);
+                                $conColor = ColorHelper::getCustomerColor($challan['party_id']);
+                                $conInitial = ColorHelper::getInitial($challan['contractor_name']);
+                                
+                                $payable = $challan['final_payable_amount'] > 0 ? $challan['final_payable_amount'] : $challan['total_amount'];
+                            ?>
+                            <tr>
+                                <td>
+                                    <div style="display:flex;align-items:center">
+                                        <?= renderProjectBadge($challan['project_name'], $challan['project_id']) ?>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div style="display:flex;align-items:center">
+                                        <span style="font-weight:600;font-size:0.875rem"><?= htmlspecialchars($challan['contractor_name']) ?></span>
+                                    </div>
+                                </td>
+                                <td class="td-c"><strong style="font-size:0.82rem"><?= htmlspecialchars($challan['challan_no']) ?></strong></td>
+                                <td class="td-c"><span style="font-weight:600;color:var(--ink-soft);font-size:0.82rem"><?= formatDate($challan['challan_date']) ?></span></td>
+                                <td class="td-r"><strong style="color:var(--ink)"><?= formatCurrencyShort($payable) ?></strong></td>
+                                <td class="td-r"><span style="font-weight:600;color:#10b981"><?= formatCurrencyShort($challan['paid_amount']) ?></span></td>
+                                <td class="td-r"><span style="font-weight:600;color:#f59e0b"><?= formatCurrencyShort($challan['pending_amount']) ?></span></td>
+                                <td class="td-r">
+                                    <button class="btn-collect" onclick="showPaymentModal('contractor_payment', <?= $challan['id'] ?>, <?= $challan['party_id'] ?>, <?= $challan['pending_amount'] ?>, '<?= htmlspecialchars(addslashes($challan['contractor_name'])) ?>')">
+                                        <i class="fas fa-hand-holding-usd"></i> Pay
+                                    </button>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+    
+    <!-- Tax Payments Tab -->
+    <div id="tax-tab" class="tab-content">
+        <div class="pay-panel">
+            <div style="padding: 2rem; display: flex; flex-direction: column; gap: 20px; align-items: center; text-align: center;">
+                 <div style="max-width: 600px;">
+                    <h3>Tax Payments & Refunds</h3>
+                    <p style="color: var(--ink-soft); margin-bottom: 20px;">Record direct payments to government authorities (GST/TDS) or tax refunds received.</p>
                     
-                    <!-- Filters -->
-                    <form method="GET" class="filter-card mb-3">
-                        <input type="hidden" name="tab" value="history">
-                        <div class="filter-row">
-                            <select name="type" class="modern-select" style="flex:1;">
-                                <option value="">All Payment Types</option>
-                                <option value="customer_receipt" <?= $payment_type_filter === 'customer_receipt' ? 'selected' : '' ?>>Customer Receipt</option>
-                                <option value="customer_refund" <?= $payment_type_filter === 'customer_refund' ? 'selected' : '' ?>>Customer Refund</option>
-                                <option value="vendor_bill_payment" <?= $payment_type_filter === 'vendor_bill_payment' ? 'selected' : '' ?>>Vendor Bill</option>
-                                <option value="labour_payment" <?= $payment_type_filter === 'labour_payment' ? 'selected' : '' ?>>Labour Payment</option>
-                            </select>
-                            
-                            <div style="flex:1; display:flex; align-items:center; gap:5px;">
-                                <span style="font-size:12px; color:#64748b;">From:</span>
-                                <input type="date" name="date_from" class="modern-select" value="<?= htmlspecialchars($date_from) ?>">
-                            </div>
-                            
-                            <div style="flex:1; display:flex; align-items:center; gap:5px;">
-                                <span style="font-size:12px; color:#64748b;">To:</span>
-                                <input type="date" name="date_to" class="modern-select" value="<?= htmlspecialchars($date_to) ?>">
-                            </div>
-                            
-                            <button type="submit" class="modern-btn">Apply</button>
-                            <a href="<?= BASE_URL ?>modules/payments/index.php?tab=history" class="modern-btn" style="background:#94a3b8;">Reset</a>
-                        </div>
-                    </form>
-
-                    <div class="table-responsive">
-                        <table class="modern-table">
-                            <thead>
-                                <tr>
-                                    <th>DATE</th>
-                                    <th>TYPE</th>
-                                    <th>PARTY</th>
-                                    <th>AMOUNT</th>
-                                    <th>MODE</th>
-                                    <th>REF NO</th>
-                                    <th>REMARKS</th>
-                                    <th>BY</th>
-                                    <th>ACTION</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php if (empty($payments)): ?>
-                                    <tr><td colspan="9" class="text-center" style="padding:40px; color:#94a3b8;">No payment records found.</td></tr>
-                                <?php else: ?>
-                                    <?php foreach ($payments as $payment): 
-                                        $typeClass = 'gray';
-                                        $typeLabel = 'Other';
-                                        if($payment['payment_type'] === 'customer_receipt') { $typeClass = 'green'; $typeLabel = 'Receipt'; }
-                                        if($payment['payment_type'] === 'vendor_payment') { $typeClass = 'blue'; $typeLabel = 'Vendor Pay'; }
-                                        if($payment['payment_type'] === 'vendor_bill_payment') { $typeClass = 'blue'; $typeLabel = 'Bill Pay'; }
-                                        if($payment['payment_type'] === 'labour_payment') { $typeClass = 'orange'; $typeLabel = 'Labour Pay'; }
-                                    ?>
-                                    <tr>
-                                        <td><?= formatDate($payment['payment_date']) ?></td>
-                                        <td><span class="badge-pill <?= $typeClass ?>"><?= $typeLabel ?></span></td>
-                                        <td>
-                                            <div style="display:flex; align-items:center;">
-                                                <?php 
-                                                    // Match color logic with source modules:
-                                                    // Vendors module uses NAME for color.
-                                                    // Labour/Booking modules use ID for color.
-                                                    $isVendor = in_array($payment['payment_type'], ['vendor_payment', 'vendor_bill_payment']);
-                                                    
-                                                    $colorKey = $isVendor ? $payment['party_name'] : $payment['party_id'];
-                                                    $partyColor = ColorHelper::getCustomerColor($colorKey);
-                                                    
-                                                    $partyInitial = strtoupper(substr($payment['party_name'], 0, 1));
-                                                ?>
-                                                <div class="avatar-circle" style="background: <?= $partyColor ?>; color: #fff; width:32px; height:32px; font-size:12px; margin-right:10px;"><?= $partyInitial ?></div>
-                                                <span style="font-weight:600; color:#334155;"><?= htmlspecialchars($payment['party_name'] ?? 'Unknown Party') ?></span>
-                                            </div>
-                                        </td>
-                                        <td><span style="font-weight: 700; color: #10b981;"><?= formatCurrency($payment['amount'] ?? 0) ?></span></td>
-                                        <td>
-                                            <span style="font-size:12px; text-transform:capitalize; font-weight:600;"><?= htmlspecialchars($payment['payment_mode']) ?></span>
-                                            <?php if(!empty($payment['demand_stage'])): ?>
-                                                <div style="font-size: 10px; color: #6366f1; margin-top: 2px;">
-                                                    For: <?= htmlspecialchars($payment['demand_stage']) ?>
-                                                </div>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td><span style="font-size:12px; color:#64748b;"><?= htmlspecialchars($payment['reference_no'] ?: '-') ?></span></td>
-                                        <td><span style="font-size:12px; color:#64748b;"><?= htmlspecialchars(substr($payment['remarks'], 0, 30)) ?></span></td>
-                                        <td>
-                                            <?php 
-                                            // Fallback for creator name
-                                            $creatorName = !empty($payment['created_by_name']) ? $payment['created_by_name'] : 'System';
-                                            $creatorInitial = strtoupper(substr($creatorName, 0, 1));
-                                            ?>
-                                            <div class="avatar-circle av-gray" title="<?= htmlspecialchars($creatorName) ?>" style="width:24px; height:24px; font-size:10px; background: #e2e8f0; color: #64748b;"><?= $creatorInitial ?></div>
-                                        </td>
-                                        <td>
-                                            <?php if($payment['payment_type'] === 'customer_receipt'): ?>
-                                                <a href="<?= BASE_URL ?>modules/reports/download.php?action=payment_receipt&id=<?= $payment['id'] ?>" class="action-btn" target="_blank" title="Print Receipt">
-                                                    <i class="fas fa-print"></i>
-                                                </a>
-                                            <?php endif; ?>
-                                        </td>
-                                    </tr>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
-                            </tbody>
-                        </table>
+                    <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                        <button class="btn btn-primary" onclick="showTaxModal('gst_payment')">
+                            <i class="fas fa-file-invoice"></i> Record GST Payment
+                        </button>
+                        <button class="btn btn-primary" onclick="showTaxModal('tds_payment')">
+                            <i class="fas fa-percent"></i> Record TDS Payment
+                        </button>
+                        <button class="btn btn-secondary" onclick="showTaxModal('tax_refund')">
+                            <i class="fas fa-undo"></i> Record Tax Refund (Money In)
+                        </button>
                     </div>
                 </div>
-
             </div>
         </div>
     </div>
+
+    <!-- Payment History Tab -->
+    <div id="history-tab" class="tab-content">
+        <div class="pay-panel">
+            
+            <!-- Filters -->
+            <div class="filter-section">
+                <form method="GET" class="filter-form">
+                    <input type="hidden" name="tab" value="history">
+                    
+                    <select name="type" class="f-select">
+                        <option value="">All Payment Types</option>
+                        <option value="customer_receipt" <?= $payment_type_filter === 'customer_receipt' ? 'selected' : '' ?>>Customer Receipt</option>
+                        <option value="customer_refund" <?= $payment_type_filter === 'customer_refund' ? 'selected' : '' ?>>Customer Refund</option>
+                        <option value="vendor_bill_payment" <?= $payment_type_filter === 'vendor_bill_payment' ? 'selected' : '' ?>>Vendor Bill</option>
+                        <option value="vendor_bill_payment" <?= $payment_type_filter === 'vendor_bill_payment' ? 'selected' : '' ?>>Vendor Bill</option>
+                        <option value="contractor_payment" <?= $payment_type_filter === 'contractor_payment' ? 'selected' : '' ?>>Contractor Bill</option>
+                        <option value="gst_payment" <?= $payment_type_filter === 'gst_payment' ? 'selected' : '' ?>>GST Payment</option>
+                        <option value="tds_payment" <?= $payment_type_filter === 'tds_payment' ? 'selected' : '' ?>>TDS Payment</option>
+                        <option value="tax_refund" <?= $payment_type_filter === 'tax_refund' ? 'selected' : '' ?>>Tax Refund</option>
+                    </select>
+                    
+                    <input type="date" name="date_from" class="f-input" value="<?= htmlspecialchars($date_from) ?>" placeholder="From">
+                    <input type="date" name="date_to" class="f-input" value="<?= htmlspecialchars($date_to) ?>" placeholder="To">
+                    
+                    <button type="submit" class="btn-go"><i class="fas fa-search"></i> Apply</button>
+                    
+                    <?php if ($payment_type_filter || $date_from || $date_to): ?>
+                        <a href="<?= BASE_URL ?>modules/payments/index.php?tab=history" class="btn-reset"><i class="fas fa-times"></i> Clear</a>
+                    <?php endif; ?>
+                </form>
+            </div>
+
+            <div style="overflow-x:auto">
+                <table class="pay-table">
+                    <thead>
+                        <tr>
+                            <th class="th-c">Date</th>
+                            <th>Type</th>
+                            <th>Party</th>
+                            <th class="th-r">Amount</th>
+                            <th>Mode</th>
+                            <th>Ref No</th>
+                            <th>Remarks</th>
+                            <th class="th-c">By</th>
+                            <th class="th-c">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($payments)): ?>
+                            <tr>
+                                <td colspan="9">
+                                    <div class="empty-state">
+                                        <i class="fas fa-inbox" style="color:var(--border)"></i>
+                                        <h4>No payment records found</h4>
+                                        <p>Try adjusting your filters.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php else: ?>
+                            <?php foreach ($payments as $payment): 
+                                $typeClass = 'gray';
+                                $typeLabel = 'Other';
+                                if($payment['payment_type'] === 'customer_receipt') { $typeClass = 'green'; $typeLabel = 'Receipt'; }
+                                if($payment['payment_type'] === 'vendor_payment') { $typeClass = 'blue'; $typeLabel = 'Vendor'; }
+                                if($payment['payment_type'] === 'vendor_bill_payment') { $typeClass = 'blue'; $typeLabel = 'Vendor'; }
+                                if($payment['payment_type'] === 'contractor_payment') { $typeClass = 'orange'; $typeLabel = 'Contractor'; }
+                                if($payment['payment_type'] === 'gst_payment') { $typeClass = 'gray'; $typeLabel = 'GST'; }
+                                if($payment['payment_type'] === 'tds_payment') { $typeClass = 'gray'; $typeLabel = 'TDS'; }
+                                if($payment['payment_type'] === 'tax_refund') { $typeClass = 'green'; $typeLabel = 'Refund'; }
+
+                                $isVendor = in_array($payment['payment_type'], ['vendor_payment', 'vendor_bill_payment']);
+                                $colorKey = $isVendor ? $payment['party_name'] : $payment['party_id'];
+                                $partyColor = ColorHelper::getCustomerColor($colorKey);
+                                $partyInitial = strtoupper(substr($payment['party_name'] ?? 'U', 0, 1));
+                                
+                                $creatorName = !empty($payment['created_by_name']) ? $payment['created_by_name'] : 'System';
+                                $creatorInitial = strtoupper(substr($creatorName, 0, 1));
+                            ?>
+                            <tr>
+                                <td class="td-c"><span style="font-weight:600;color:var(--ink-soft);font-size:0.82rem"><?= formatDate($payment['payment_date']) ?></span></td>
+                                <td><span class="pill <?= $typeClass ?>"><?= $typeLabel ?></span></td>
+                                <td>
+                                    <div style="display:flex;align-items:center">
+                                        <span style="font-weight:600;font-size:0.875rem"><?= htmlspecialchars($payment['party_name'] ?? 'Unknown') ?></span>
+                                    </div>
+                                </td>
+                                <td class="td-r"><strong style="font-weight:700;color:#10b981"><?= formatCurrency($payment['amount'] ?? 0) ?></strong></td>
+                                <td>
+                                    <div>
+                                        <span style="font-size:0.82rem;text-transform:capitalize;font-weight:600"><?= htmlspecialchars($payment['payment_mode']) ?></span>
+                                        <?php if(!empty($payment['demand_stage'])): ?>
+                                            <div style="font-size:0.7rem;color:#6366f1;margin-top:0.15rem">
+                                                For: <?= htmlspecialchars($payment['demand_stage']) ?>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                </td>
+                                <td><span style="font-size:0.78rem;color:var(--ink-mute)"><?= htmlspecialchars($payment['reference_no'] ?: '—') ?></span></td>
+                                <td><span style="font-size:0.78rem;color:var(--ink-mute)"><?= htmlspecialchars(substr($payment['remarks'], 0, 30)) ?></span></td>
+                                <td class="td-c">
+                                    <span style="font-size:0.82rem;color:var(--ink-soft);font-weight:500"><?= htmlspecialchars($creatorName) ?></span>
+                                </td>
+                                <td class="td-c">
+                                    <?php if($payment['payment_type'] === 'customer_receipt'): ?>
+                                        <a href="<?= BASE_URL ?>modules/reports/download.php?action=payment_receipt&id=<?= $payment['id'] ?>" class="act-btn" target="_blank" title="Print Receipt">
+                                            <i class="fas fa-print"></i>
+                                        </a>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
 </div>
 
-<!-- Premium Payment Modal -->
-<div id="paymentModal" class="custom-modal">
-    <div class="custom-modal-content">
-        <div class="modal-header-premium">
-            <div class="modal-title-group">
-                <h3><i class="fas fa-cash-register"></i> Record Payment</h3>
-                <p>Process a new transaction</p>
-            </div>
-            <button class="modal-close-btn" onclick="closeLocalModal('paymentModal')">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        
+<!-- Payment Modal -->
+<div class="pay-modal-backdrop" id="paymentModal">
+    <div class="pay-modal">
         <form method="POST">
             <?= csrf_field() ?>
-            <div class="modal-body-premium">
-                <input type="hidden" name="action" value="make_payment">
-                <input type="hidden" name="payment_type" id="payment_type">
-                <input type="hidden" name="reference_id" id="reference_id">
-                <input type="hidden" name="party_id" id="party_id">
-                <input type="hidden" id="max_pending_amount" value="0">
+            <input type="hidden" name="action" value="make_payment">
+            <input type="hidden" name="payment_type" id="payment_type">
+            <input type="hidden" name="reference_id" id="reference_id">
+            <input type="hidden" name="party_id" id="party_id">
+            <input type="hidden" id="max_pending_amount" value="0">
+
+            <div class="modal-head">
+                <div>
+                    <h3><i class="fas fa-cash-register"></i> Record Payment</h3>
+                    <p>Process a new transaction</p>
+                </div>
+                <button type="button" class="modal-close" onclick="closeModal()">×</button>
+            </div>
+
+            <div class="modal-body">
                 
-                <div class="payment-summary-box">
-                    <div class="summary-row">
-                        <span style="color: #64748b; font-weight: 600;">Party Name</span>
-                        <strong id="party_name_display" style="color: #1e293b; font-size: 15px;">-</strong>
+                <div class="sum-box">
+                    <div class="sum-row">
+                        <span class="lbl">Party Name</span>
+                        <strong class="val" id="party_name_display">—</strong>
                     </div>
-                    <div class="summary-row">
-                        <span style="color: #64748b; font-weight: 600;">Total Pending</span>
-                        <strong id="pending_amount_display" style="color: #f59e0b; font-size: 15px;">₹ 0.00</strong>
+                    <div class="sum-row">
+                        <span class="lbl">Total Pending</span>
+                        <strong class="val" id="pending_amount_display">₹ 0.00</strong>
                     </div>
                 </div>
 
-                <!-- Demand Selection for Customer Receipts -->
-                <div id="demand_selection_group" style="display:none; margin-bottom: 24px;">
-                    <label class="input-label">Payment For (Optional)</label>
-                    <select name="demand_id" id="demand_dropdown" class="modern-select">
+                <!-- Demand Selection -->
+                <div id="demand_selection_group" style="display:none" class="field">
+                    <label>Payment For (Optional)</label>
+                    <select name="demand_id" id="demand_dropdown">
                         <option value="">General / Oldest Unpaid (Default)</option>
                     </select>
                 </div>
 
-                <div class="form-section-title"><i class="fas fa-file-invoice"></i> Transaction Details</div>
-
-                <div class="form-grid-premium">
-                    <div>
-                        <label class="input-label">Date *</label>
-                        <input type="date" name="payment_date" class="modern-input" required value="<?= date('Y-m-d') ?>">
+                <div class="field-row">
+                    <div class="field">
+                        <label>Date *</label>
+                        <input type="date" name="payment_date" required value="<?= date('Y-m-d') ?>">
                     </div>
-                    <div>
-                        <label class="input-label">Amount (₹) *</label>
-                        <input type="text" id="payment_amount" name="payment_amount_final" class="modern-input" required inputmode="decimal" placeholder="0.00" autocomplete="off" style="font-weight: 700; color: #10b981;" oninput="sanitizeAmount(this); calculateBalance();"/>
+                    <div class="field">
+                        <label>Amount (₹) *</label>
+                        <input type="text" id="payment_amount" name="payment_amount_final" required 
+                               inputmode="decimal" placeholder="0.00" autocomplete="off" 
+                               style="font-weight:700;color:#10b981" 
+                               oninput="sanitizeAmount(this);calculateBalance()">
                     </div>
                 </div>
                 
-                <div class="form-grid-premium" style="margin-top: 20px;">
-                    <div>
-                        <label class="input-label">Payment Mode *</label>
-                        <select name="payment_mode" class="modern-select" required>
+                <div class="field-row">
+                    <div class="field">
+                        <label>Payment Mode *</label>
+                        <select name="payment_mode" required>
                             <option value="cash">Cash</option>
                             <option value="bank">Bank Transfer</option>
                             <option value="upi">UPI</option>
                             <option value="cheque">Cheque</option>
                         </select>
                     </div>
-                    <div>
-                        <label class="input-label">Reference / UTR No</label>
-                        <input type="text" name="reference_no" class="modern-input" placeholder="Transaction ID">
+                    <div class="field">
+                        <label>Reference / UTR No</label>
+                        <input type="text" name="reference_no" placeholder="Transaction ID">
                     </div>
                 </div>
                 
-                <div style="margin-top: 20px;">
-                    <label class="input-label">Remarks</label>
-                    <textarea name="remarks" class="modern-input" rows="2" placeholder="Add optional notes..."></textarea>
+                <div class="field">
+                    <label>Remarks</label>
+                    <textarea name="remarks" rows="2" placeholder="Add optional notes..."></textarea>
                 </div>
 
-                <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 12px 16px; border-radius: 12px; margin-top: 24px; border: 1px solid #e2e8f0;">
-                    <span style="font-size: 13px; color: #64748b; font-weight: 600;">Remaining Balance</span>
-                    <strong id="remaining_calc" style="font-size: 16px; color: #1e293b;">₹ 0.00</strong>
+                <div class="calc-box">
+                    <span class="lbl">Remaining Balance</span>
+                    <strong class="val" id="remaining_calc">₹ 0.00</strong>
                 </div>
-                <div id="amount_warning" style="color: #ef4444; font-size: 12px; margin-top: 8px; display: none; text-align: right; font-weight: 600;">
+                <div id="amount_warning" class="warn-text">
                     <i class="fas fa-exclamation-circle"></i> Requires admin approval for overpayment
                 </div>
 
             </div>
-            <div class="modal-footer-premium">
-                <button type="button" class="btn-ghost" onclick="closeLocalModal('paymentModal')">Cancel</button>
-                <button type="submit" id="payment_submit_btn" class="btn-save">
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">
                     <i class="fas fa-check"></i> Record Payment
                 </button>
             </div>
@@ -1004,73 +1076,46 @@ include __DIR__ . '/../../includes/header.php';
 
 <script>
 function switchTab(tab) {
-    document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
-    document.querySelectorAll('.modern-tab').forEach(el => el.classList.remove('active'));
-    
-    document.getElementById(tab + '-tab').style.display = 'block';
-    
-    // Find the button that called this
-    const tabs = document.querySelectorAll('.modern-tab');
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(tab + '-tab').classList.add('active');
+    const tabs = document.querySelectorAll('.tab-btn');
     if(tab === 'customer') tabs[0].classList.add('active');
     if(tab === 'vendor') tabs[1].classList.add('active');
-    if(tab === 'labour') tabs[2].classList.add('active');
-    if(tab === 'history') tabs[3].classList.add('active');
+    if(tab === 'contractor') tabs[2].classList.add('active');
+    if(tab === 'tax') tabs[3].classList.add('active');
+    if(tab === 'history') tabs[4].classList.add('active');
 }
 
-// Modal helper using the new CSS system
-function openLocalModal(id) {
-    document.getElementById(id).classList.add('active');
-    document.body.style.overflow = 'hidden';
-}
+function openModal() { document.getElementById('paymentModal').classList.add('open'); }
+function closeModal() { document.getElementById('paymentModal').classList.remove('open'); }
 
-function closeLocalModal(id) {
-    document.getElementById(id).classList.remove('active');
-    document.body.style.overflow = 'auto';
-}
+document.getElementById('paymentModal').addEventListener('click', e => {
+    if (e.target.id === 'paymentModal') closeModal();
+});
 
-// Close modal when clicking outside
-window.onclick = function(event) {
-    if (event.target.classList.contains('custom-modal')) {
-        event.target.classList.remove('active');
-        document.body.style.overflow = 'auto';
-    }
-}
+function round2(num) { return Math.round((num + Number.EPSILON) * 100) / 100; }
 
-function round2(num) {
-    return Math.round((num + Number.EPSILON) * 100) / 100;
-}
-
-// function showPaymentModal - Updated
 function showPaymentModal(type, refId, partyId, pendingAmount, partyName) {
     document.getElementById('payment_type').value = type;
     document.getElementById('reference_id').value = refId;
     document.getElementById('party_id').value = partyId;
-
-    // Reset amount field
     document.getElementById('payment_amount').value = '';
-
-    document.getElementById('max_pending_amount').value = round2(pendingAmount); // Ensure format
-
+    document.getElementById('max_pending_amount').value = round2(pendingAmount);
     document.getElementById('party_name_display').textContent = partyName;
     
-    // Using simple pending amount formatting
     const formattedPending = round2(pendingAmount).toFixed(2);
     document.getElementById('pending_amount_display').textContent = '₹ ' + formattedPending;
     document.getElementById('remaining_calc').textContent = '₹ ' + formattedPending;
-    document.getElementById('remaining_calc').style.color = '#1e293b';
+    document.getElementById('remaining_calc').style.color = 'var(--ink)';
+    document.getElementById('amount_warning').classList.remove('show');
 
-    document.getElementById('amount_warning').style.display = 'none';
-
-    // Handle Demand Selection for Customer Receipts
     const demandGroup = document.getElementById('demand_selection_group');
     const demandDropdown = document.getElementById('demand_dropdown');
-    
-    // Reset Dropdown
     demandDropdown.innerHTML = '<option value="">General / Oldest Unpaid (Default)</option>';
     demandGroup.style.display = 'none';
 
     if (type === 'customer_receipt') {
-        // Fetch Demands
         fetch(`<?= BASE_URL ?>modules/api/get_booking_demands.php?booking_id=${refId}`)
             .then(response => response.json())
             .then(data => {
@@ -1087,36 +1132,41 @@ function showPaymentModal(type, refId, partyId, pendingAmount, partyName) {
             .catch(err => console.error('Error fetching demands:', err));
     }
 
-    openLocalModal('paymentModal');
+    openModal();
+}
+
+function showTaxModal(type) {
+    document.getElementById('payment_type').value = type;
+    document.getElementById('reference_id').value = '0';
+    document.getElementById('party_id').value = '0'; // No party for now, or could select Authority
+    document.getElementById('payment_amount').value = '';
+    document.getElementById('max_pending_amount').value = '9999999999'; // No limit
+    
+    let title = 'Record Tax Payment';
+    if(type === 'gst_payment') title = 'GST Payment to Govt';
+    if(type === 'tds_payment') title = 'TDS Payment to Govt';
+    if(type === 'tax_refund') title = 'Tax Refund Received';
+    
+    document.getElementById('party_name_display').textContent = 'Government / Authority';
+    document.getElementById('pending_amount_display').textContent = 'N/A';
+    document.getElementById('remaining_calc').textContent = 'N/A';
+    
+    document.getElementById('paymentModal').querySelector('h3').innerHTML = '<i class="fas fa-university"></i> ' + title;
+    
+    openModal();
 }
 
 function sanitizeAmount(input) {
-    // Allow only numbers and one decimal point
     let value = input.value.replace(/[^0-9.]/g, '');
-
-    // Prevent multiple decimals
     const parts = value.split('.');
-    if (parts.length > 2) {
-        value = parts[0] + '.' + parts.slice(1).join('');
-    }
-
-    // Limit to 2 decimal places
-    if (parts[1]?.length > 2) {
-        value = parts[0] + '.' + parts[1].slice(0, 2);
-    }
-
+    if (parts.length > 2) value = parts[0] + '.' + parts.slice(1).join('');
+    if (parts[1]?.length > 2) value = parts[0] + '.' + parts[1].slice(0, 2);
     input.value = value;
 }
 
 function calculateBalance() {
-    const pendingAmount = round2(
-        parseFloat(document.getElementById('max_pending_amount').value) || 0
-    );
-
-    const paymentAmount = round2(
-        parseFloat(document.getElementById('payment_amount').value) || 0
-    );
-
+    const pendingAmount = round2(parseFloat(document.getElementById('max_pending_amount').value) || 0);
+    const paymentAmount = round2(parseFloat(document.getElementById('payment_amount').value) || 0);
     const remaining = round2(pendingAmount - paymentAmount);
 
     const displayEl = document.getElementById('remaining_calc');
@@ -1124,24 +1174,20 @@ function calculateBalance() {
 
     if (remaining >= 0) {
         displayEl.textContent = '₹ ' + remaining.toFixed(2);
-        displayEl.style.color = remaining === 0 ? '#10b981' : '#1e293b';
-        warningEl.style.display = 'none';
+        displayEl.style.color = remaining === 0 ? '#10b981' : 'var(--ink)';
+        warningEl.classList.remove('show');
     } else {
         displayEl.textContent = '₹ ' + Math.abs(remaining).toFixed(2) + ' (Excess)';
         displayEl.style.color = '#ef4444';
-        warningEl.style.display = 'block';
+        warningEl.classList.add('show');
     }
 }
 
-// Auto-switch tab based on URL parameter
 document.addEventListener('DOMContentLoaded', function () {
     const url = new URL(window.location.href);
     const tab = url.searchParams.get('tab');
-
     if (tab) {
         switchTab(tab);
-
-        // 🔥 remove tab so refresh resets
         url.searchParams.delete('tab');
         window.history.replaceState({}, document.title, url.pathname + url.search);
     } else {

@@ -19,8 +19,9 @@ if (file_exists($envPath)) {
 // Application Configuration
 define('APP_NAME', getenv('APP_NAME') ?: 'BuilderZ');
 define('APP_VERSION', '1.0.0');
-define('BASE_URL', getenv('APP_URL') ?: 'http://localhost:8000/');
+define('BASE_URL', getenv('APP_URL') ?: 'http://localhost:8001/');
 define('APP_ENV', getenv('APP_ENV') ?: 'production');
+define('CURRENCY_SYMBOL', '₹');
 
 // Database Configuration
 define('DB_HOST', getenv('DB_HOST') ?: 'localhost');

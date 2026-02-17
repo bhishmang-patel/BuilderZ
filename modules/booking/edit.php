@@ -45,7 +45,6 @@ if ($booking['status'] === 'cancelled') {
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // CSRF Check
     if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
         setFlashMessage('error', 'Security token expired. Please try again.');
         redirect('modules/booking/edit.php?id=' . $booking_id);
@@ -64,7 +63,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $parking_charge = floatval($_POST['parking_charge']);
         $society_charge = floatval($_POST['society_charge']);
 
-        // Validation
         if ($agreement_value <= 0) {
             throw new Exception("Agreement value must be greater than 0");
         }
@@ -73,7 +71,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new Exception("Customer is required");
         }
 
-        // Update Booking
         $update_data = [
             'customer_id' => $customer_id,
             'agreement_value' => $agreement_value,
@@ -91,7 +88,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $db->update('bookings', $update_data, 'id = ?', ['id' => $booking_id]);
 
-        // Audit Log
         logAudit('update', 'bookings', $booking_id, $booking, $update_data);
 
         setFlashMessage('success', 'Booking updated successfully');
@@ -102,345 +98,416 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Get all customers for autocomplete
 $customers = $db->query("SELECT id, name, mobile, email, address FROM parties WHERE party_type = 'customer' ORDER BY name")->fetchAll();
-
-// Get active Stage of Work Templates
 $stage_of_works = $db->query("SELECT * FROM stage_of_work ORDER BY name ASC")->fetchAll();
 
 include __DIR__ . '/../../includes/header.php';
 ?>
 
-<link rel="stylesheet" href="<?= BASE_URL ?>assets/css/booking.css">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
 <style>
-    /* Premium Page Styles */
-    .edit-booking-container {
-        padding: 40px;
-        max-width: 1600px;
-        margin: 0 auto;
-        background: #f8fafc;
-        min-height: 100vh;
-        align-items: center;
-        justify-content: center;
+    :root {
+        --ink:       #1a1714;
+        --ink-soft:  #6b6560;
+        --ink-mute:  #9e9690;
+        --cream:     #f5f3ef;
+        --surface:   #ffffff;
+        --border:    #e8e3db;
+        --border-lt: #f0ece5;
+        --accent:    #2a58b5ff;
+        --accent-bg: #fdf8f3;
+        --accent-lt: #fef3ea;
     }
 
-    .page-header-premium {
-        margin-bottom: 30px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+    /* ── Page Wrapper ────────────────────────── */
+    .be-wrap { max-width: 1100px; margin: 2.5rem auto; padding: 0 1.5rem 4rem; }
+
+    /* ── Header ──────────────────────────────── */
+    .be-header {
+        margin-bottom: 2rem; padding-bottom: 1.5rem;
+        border-bottom: 1.5px solid var(--border);
+        display: flex; align-items: center; justify-content: space-between;
+        flex-wrap: wrap; gap: 1rem;
     }
 
-    .page-title h1 {
-        font-size: 24px;
-        font-weight: 800;
-        color: #1e293b;
-        margin: 0;
-        letter-spacing: -0.5px;
+    .header-left { display: flex; align-items: center; gap: 0.75rem; }
+    .back-btn {
+        width: 38px; height: 38px; border-radius: 9px;
+        background: var(--surface); border: 1.5px solid var(--border);
+        display: flex; align-items: center; justify-content: center;
+        color: var(--ink-soft); text-decoration: none;
+        transition: all 0.18s; flex-shrink: 0;
+    }
+    .back-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+
+    .be-header .eyebrow {
+        font-size: 0.68rem; font-weight: 700; letter-spacing: 0.15em;
+        text-transform: uppercase; color: var(--accent); margin-bottom: 0.3rem;
+    }
+    .be-header h1 {
+        font-family: 'Fraunces', serif; font-size: 1.7rem; font-weight: 700;
+        line-height: 1.1; color: var(--ink); margin: 0;
     }
 
-    .page-title p {
-        margin: 4px 0 0;
-        color: #64748b;
-        font-size: 14px;
+    /* ── Layout ──────────────────────────────── */
+    .be-grid { display: grid; grid-template-columns: 1fr 360px; gap: 2rem; }
+    @media (max-width: 1024px) { .be-grid { grid-template-columns: 1fr; } }
+
+    /* ── Cards ───────────────────────────────── */
+    .be-card {
+        background: var(--surface); border: 1.5px solid var(--border);
+        border-radius: 14px; overflow: hidden;
+        animation: fadeUp 0.4s ease both;
     }
 
-    .content-wrapper {
-        background: #fff;
-        border-radius: 20px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        border: 1px solid #e2e8f0;
-        overflow: hidden;
+    .card-header {
+        padding: 1.15rem 1.5rem; border-bottom: 1.5px solid var(--border-lt);
+        background: #fdfcfa;
+    }
+    .card-header h3 {
+        font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 600;
+        color: var(--ink); margin: 0; display: flex; align-items: center; gap: 0.6rem;
+    }
+    .card-header h3 i { font-size: 0.85rem; color: var(--accent); }
+
+    .card-body { padding: 1.5rem; }
+
+    /* ── Form Sections ───────────────────────── */
+    .sec-title {
+        font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em;
+        text-transform: uppercase; color: var(--ink-mute);
+        margin-bottom: 1rem; padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border-lt);
+        display: flex; align-items: center; gap: 0.5rem;
+    }
+    .sec-title i { font-size: 0.75rem; color: var(--accent); }
+
+    /* ── Form Fields ─────────────────────────── */
+    .field { margin-bottom: 1.1rem; }
+    .field label {
+        display: block; font-size: 0.75rem; font-weight: 700;
+        letter-spacing: 0.03em; text-transform: uppercase;
+        color: var(--ink-soft); margin-bottom: 0.4rem;
+    }
+    .field input, .field select {
+        width: 100%; padding: 0.65rem 0.85rem;
+        border: 1.5px solid var(--border); border-radius: 8px;
+        font-size: 0.875rem; color: var(--ink); background: #fdfcfa;
+        outline: none; transition: border-color 0.18s, box-shadow 0.18s;
+    }
+    .field select {
+        -webkit-appearance: none; appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%236b6560' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+        background-repeat: no-repeat; background-position: right 0.8rem center;
+        padding-right: 2.2rem;
+    }
+    .field input:focus, .field select:focus {
+        border-color: var(--accent); background: white;
+        box-shadow: 0 0 0 3px rgba(181,98,42,0.1);
+    }
+    .field input[readonly] { background: #f0ece5; color: var(--ink-mute); cursor: not-allowed; }
+
+    .field-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+    @media (max-width: 640px) { .field-row { grid-template-columns: 1fr; } }
+
+    /* Autocomplete */
+    .ac-wrap { position: relative; }
+    .ac-list {
+        position: absolute; z-index: 100; top: 100%; left: 0; right: 0;
+        background: white; border: 1.5px solid var(--border);
+        border-radius: 8px; margin-top: 0.25rem;
+        max-height: 240px; overflow-y: auto;
+        box-shadow: 0 10px 25px rgba(26,23,20,0.1);
+        display: none;
+    }
+    .ac-list.show { display: block; }
+    .ac-item {
+        padding: 0.65rem 0.85rem; cursor: pointer;
+        transition: background 0.12s;
+        border-bottom: 1px solid var(--border-lt);
+    }
+    .ac-item:last-child { border-bottom: none; }
+    .ac-item:hover, .ac-item.active { background: var(--accent-bg); }
+    .ac-item strong { color: var(--ink); }
+
+    /* ── Summary Card ────────────────────────── */
+    .sum-card {
+        background: var(--surface); border: 1.5px solid var(--border);
+        border-radius: 14px; overflow: hidden;
+        animation: fadeUp 0.5s 0.1s ease both;
+    }
+    .sum-head {
+        padding: 1.5rem; background: linear-gradient(135deg, var(--ink) 0%, #3e3936 100%);
+        color: white; text-align: center;
+    }
+    .sum-head .sp { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.7; margin-bottom: 0.3rem; }
+    .sum-head .sn { font-family: 'Fraunces', serif; font-size: 1.8rem; font-weight: 700; }
+
+    .sum-body { padding: 1.5rem; }
+    .sum-row {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 0.6rem 0; border-bottom: 1px solid var(--border-lt);
+    }
+    .sum-row:last-child { border-bottom: none; }
+    .sum-label { font-size: 0.75rem; font-weight: 600; color: var(--ink-soft); }
+    .sum-val { font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+    .sum-row input[type="number"] {
+        width: 100px; padding: 0.35rem 0.6rem; border: 1.5px solid var(--border);
+        border-radius: 6px; text-align: right; font-size: 0.8rem;
+        background: white; outline: none; transition: border-color 0.15s;
+    }
+    .sum-row input[type="number"]:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(181,98,42,0.1); }
+
+    .sum-total {
+        background: #ecfdf5; border: 1.5px dashed #10b981;
+        border-radius: 10px; padding: 1rem;
+        text-align: center; margin-top: 1rem;
+    }
+    .sum-total .st-lbl {
+        font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em;
+        text-transform: uppercase; color: #065f46; margin-bottom: 0.3rem;
+    }
+    .sum-total .st-val { font-family: 'Fraunces', serif; font-size: 1.4rem; font-weight: 700; color: #065f46; }
+
+    /* ── Buttons ─────────────────────────────── */
+    .btn-row {
+        display: flex; justify-content: flex-end; gap: 0.75rem;
+        margin-top: 1.5rem; padding-top: 1.5rem;
+        border-top: 1.5px solid var(--border-lt);
     }
 
-    /* Form Styles */
-    .form-section-title {
-        font-size: 12px;
-        font-weight: 800;
-        color: #94a3b8;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin-bottom: 20px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
+    .btn {
+        padding: 0.7rem 1.4rem; border-radius: 8px;
+        font-size: 0.875rem; font-weight: 600; cursor: pointer;
+        transition: all 0.18s; display: inline-flex;
+        align-items: center; gap: 0.5rem; text-decoration: none;
     }
-    .form-section-title::after {
-        content: '';
-        flex: 1;
-        height: 1px;
-        background: #f1f5f9;
-        margin-top: 2px;
+    .btn-secondary { background: white; color: var(--ink-soft); border: 1.5px solid var(--border); }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-primary {
+        background: var(--ink); color: white; border: 1.5px solid var(--ink);
     }
+    .btn-primary:hover { background: var(--accent); border-color: var(--accent); box-shadow: 0 4px 14px rgba(181,98,42,0.3); }
 
-    .input-group-modern {
-        margin-bottom: 24px;
+    .btn-submit {
+        width: 100%; margin-top: 1.25rem; padding: 0.85rem;
+        background: var(--ink); color: white; border: none;
+        border-radius: 8px; font-size: 0.875rem; font-weight: 700;
+        cursor: pointer; transition: all 0.18s;
+        display: flex; align-items: center; justify-content: center; gap: 0.5rem;
     }
+    .btn-submit:hover { background: var(--accent); box-shadow: 0 4px 14px rgba(181,98,42,0.3); transform: translateY(-1px); }
 
-    .input-label {
-        display: block;
-        font-size: 13px;
-        font-weight: 600;
-        color: #475569;
-        margin-bottom: 8px;
-    }
-
-    .modern-input {
-        width: 100%;
-        padding: 12px 16px;
-        border: 2px solid #e2e8f0;
-        border-radius: 12px;
-        font-size: 14px;
-        color: #1e293b;
-        font-weight: 500;
-        transition: all 0.2s ease;
-        background: #f8fafc;
-        outline: none;
-    }
-
-    .modern-input:focus {
-        border-color: #3b82f6;
-        background: #ffffff;
-        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
-    }
-    
-    .modern-input[readonly] {
-        background: #f1f5f9;
-        color: #64748b;
-        cursor: not-allowed;
-        border-color: #cbd5e1;
-    }
-
-    .form-grid-premium {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 24px;
-    }
-
-    /* Summary Card */
-    .summary-card-premium {
-        background: #fff;
-        border-radius: 16px;
-        border: 1px solid #e2e8f0;
-        overflow: hidden;
-        position: sticky;
-        top: 20px;
-    }
-
-    .summary-header-premium {
-        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-        padding: 30px;
-        color: white;
-        text-align: center;
-    }
-
-    .summary-details-premium {
-        padding: 30px;
-    }
-    
-    .summary-row {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 16px;
-        align-items: center;
-        font-size: 14px;
-    }
-    
-    .summary-label { color: #64748b; font-weight: 500; }
-    .summary-val { color: #1e293b; font-weight: 700; }
-    
-    .modern-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        padding: 12px 24px;
-        border-radius: 10px;
-        font-weight: 600;
-        font-size: 14px;
-        cursor: pointer;
-        transition: all 0.2s;
-        text-decoration: none;
-        border: none;
-    }
-    .btn-primary-glow {
-        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-        color: white;
-        box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
-        width: 100%;
-        margin-top: 20px;
-        height: 48px;
-    }
-    .btn-primary-glow:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
-    }
-    
-    .btn-secondary-flat {
-        background: transparent;
-        color: #64748b;
-        border: 1px solid #e2e8f0;
-        width: 100%;
-        margin-top: 12px;
-        height: 48px;
-    }
-    .btn-secondary-flat:hover {
-        background: #f8fafc;
-        color: #334155;
-        border-color: #cbd5e1;
-    }
+    /* Animations */
+    @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
 </style>
 
-<div class="edit-booking-container">
-    <div class="page-header-premium">
-        <div class="page-title">
-            <h1>Edit Booking Details</h1>
-            <p>Update customer info, financials, and charges for Flat <?= htmlspecialchars($booking['flat_no']) ?></p>
+<div class="be-wrap">
+
+    <!-- Header -->
+    <div class="be-header">
+        <div class="header-left">
+            <a href="view.php?id=<?= $booking_id ?>" class="back-btn" title="Back to Booking">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <div>
+                <div class="eyebrow">Booking #<?= $booking_id ?></div>
+                <h1>Edit Booking Details</h1>
+            </div>
         </div>
-        <a href="index.php" class="modern-btn btn-secondary-flat" style="width: auto; height: 40px; margin: 0; background: #fff;">
-            <i class="fas fa-arrow-left"></i> Back to List
-        </a>
     </div>
 
     <form method="POST" id="bookingForm">
         <?= csrf_field() ?>
-        
-        <div class="row">
-            <!-- LEFT COLUMN: Forms -->
-            <div class="col-lg-6" style="padding-right: 40px; border-right: 1px solid #f1f5f9;">
-                <div class="content-wrapper" style="padding: 40px;">
-                    
-                    <!-- Customer Section -->
-                    <div class="form-section-title"><i class="fas fa-user-circle"></i> Customer Information</div>
-                    <div class="form-grid-premium">
-                        <div class="input-group-modern">
-                            <label class="input-label">Customer Name</label>
-                            <div class="autocomplete-wrapper">
-                                <input type="text" id="customer_name" class="modern-input" placeholder="Search customer" autocomplete="off" required value="<?= htmlspecialchars($booking['customer_name']) ?>">
-                                <ul id="customer_suggestions" class="autocomplete-list"></ul>
+
+        <div class="be-grid">
+
+            <!-- Main Form -->
+            <div>
+
+                <!-- Customer Card -->
+                <div class="be-card" style="margin-bottom:1.5rem">
+                    <div class="card-header">
+                        <h3><i class="fas fa-user-circle"></i> Customer Information</h3>
+                    </div>
+                    <div class="card-body">
+
+                        <div class="field-row">
+                            <div class="field">
+                                <label>Customer Name *</label>
+                                <div class="ac-wrap">
+                                    <input type="text" id="customer_name" placeholder="Search customer" 
+                                           autocomplete="off" required value="<?= htmlspecialchars($booking['customer_name']) ?>">
+                                    <ul id="customer_suggestions" class="ac-list"></ul>
+                                </div>
+                                <input type="hidden" name="customer_id" id="customer_id" value="<?= $booking['current_customer_id'] ?>">
                             </div>
-                            <input type="hidden" name="customer_id" id="customer_id" value="<?= $booking['current_customer_id'] ?>">
+                            <div class="field">
+                                <label>Referred By</label>
+                                <input type="text" name="referred_by" placeholder="Referrer Name" 
+                                       value="<?= htmlspecialchars($booking['referred_by'] ?? '') ?>">
+                            </div>
                         </div>
-                        <div class="input-group-modern">
-                            <label class="input-label">Referred By</label>
-                            <input type="text" name="referred_by" class="modern-input" placeholder="Referrer Name" value="<?= htmlspecialchars($booking['referred_by'] ?? '') ?>">
-                        </div>
-                    </div>
-                    
-                    <div class="form-grid-premium">
-                        <div class="input-group-modern">
-                            <label class="input-label">Mobile Number</label>
-                            <input type="text" id="cust_mobile" class="modern-input" readonly value="<?= htmlspecialchars($booking['customer_mobile']) ?>">
-                        </div>
-                        <div class="input-group-modern">
-                            <label class="input-label">Email Address</label>
-                            <input type="text" id="cust_email" class="modern-input" readonly value="<?= htmlspecialchars($booking['customer_email']) ?>">
-                        </div>
-                    </div>
 
-                    <!-- Booking Section -->
-                    <div class="form-section-title" style="margin-top: 40px;"><i class="fas fa-building"></i> Property Details</div>
-                    <div class="form-grid-premium">
-                        <div class="input-group-modern">
-                            <label class="input-label">Project</label>
-                            <input type="text" class="modern-input" value="<?= htmlspecialchars($booking['project_name']) ?>" readonly>
+                        <div class="field-row">
+                            <div class="field">
+                                <label>Mobile Number</label>
+                                <input type="text" id="cust_mobile" readonly value="<?= htmlspecialchars($booking['customer_mobile']) ?>">
+                            </div>
+                            <div class="field">
+                                <label>Email Address</label>
+                                <input type="text" id="cust_email" readonly value="<?= htmlspecialchars($booking['customer_email']) ?>">
+                            </div>
                         </div>
-                        <div class="input-group-modern">
-                            <label class="input-label">Flat No</label>
-                            <input type="text" class="modern-input" value="<?= htmlspecialchars($booking['flat_no']) ?>" readonly>
-                        </div>
-                    </div>
-                    
-                    <div class="input-group-modern">
-                        <label class="input-label" style="color: #4f46e5; font-weight: 700;">Payment Plan (Stage of Work)</label>
-                        <select name="stage_of_work_id" class="modern-select" style="border-color: #4f46e5; background: #eef2ff;">
-                            <option value="">-- No Plan Selected --</option>
-                            <?php foreach ($stage_of_works as $plan): ?>
-                                <option value="<?= $plan['id'] ?>" <?= $booking['stage_of_work_id'] == $plan['id'] ? 'selected' : '' ?>>
-                                    <?= htmlspecialchars($plan['name']) ?> (<?= $plan['total_stages'] ?> Stages)
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div class="form-grid-premium">
-                        <div class="input-group-modern">
-                            <label class="input-label">Booking Date</label>
-                            <input type="date" name="booking_date" class="modern-input" required value="<?= $booking['booking_date'] ?>">
-                        </div>
-                        <div class="input-group-modern">
-                            <label class="input-label">Agreement Value (₹)</label>
-                            <input type="number" name="agreement_value" id="agreement_value" class="modern-input" style="font-weight: 700;" step="0.01" required value="<?= $booking['agreement_value'] ?>" oninput="calculateFinancials()">
-                        </div>
-                    </div>
 
-                    <!-- Deductions -->
-                    <div class="form-section-title" style="margin-top: 40px;"><i class="fas fa-minus-circle"></i> Additional Charges</div>
-                    <div class="form-grid-premium">
-                        <div class="input-group-modern">
-                            <label class="input-label">Development Charge</label>
-                            <input type="number" name="development_charge" id="development_charge" class="modern-input" placeholder="0.00" step="0.01" value="<?= $booking['development_charge'] ?? '' ?>" oninput="calculateFinancials()">
-                        </div>
-                        <div class="input-group-modern">
-                            <label class="input-label">Parking Charge</label>
-                            <input type="number" name="parking_charge" id="parking_charge" class="modern-input" placeholder="0.00" step="0.01" value="<?= $booking['parking_charge'] ?? '' ?>" oninput="calculateFinancials()">
-                        </div>
                     </div>
-                    <div class="input-group-modern" style="max-width: 48%;">
-                        <label class="input-label">Society Charge</label>
-                        <input type="number" name="society_charge" id="society_charge" class="modern-input" placeholder="0.00" step="0.01" value="<?= $booking['society_charge'] ?? '' ?>" oninput="calculateFinancials()">
-                    </div>
-
                 </div>
+
+                <!-- Property Card -->
+                <div class="be-card" style="margin-bottom:1.5rem">
+                    <div class="card-header">
+                        <h3><i class="fas fa-building"></i> Property & Booking Details</h3>
+                    </div>
+                    <div class="card-body">
+
+                        <div class="field-row">
+                            <div class="field">
+                                <label>Project</label>
+                                <input type="text" value="<?= htmlspecialchars($booking['project_name']) ?>" readonly>
+                            </div>
+                            <div class="field">
+                                <label>Flat No</label>
+                                <input type="text" value="<?= htmlspecialchars($booking['flat_no']) ?>" readonly>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label>Payment Plan (Stage of Work)</label>
+                            <select name="stage_of_work_id">
+                                <option value="">— No Plan Selected —</option>
+                                <?php foreach ($stage_of_works as $plan): ?>
+                                    <option value="<?= $plan['id'] ?>" <?= $booking['stage_of_work_id'] == $plan['id'] ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($plan['name']) ?> (<?= $plan['total_stages'] ?> Stages)
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
+                        <div class="field-row">
+                            <div class="field">
+                                <label>Booking Date *</label>
+                                <input type="date" name="booking_date" required value="<?= $booking['booking_date'] ?>">
+                            </div>
+                            <div class="field">
+                                <label>Agreement Value (₹) *</label>
+                                <input type="number" name="agreement_value" id="agreement_value" 
+                                       step="0.01" required value="<?= $booking['agreement_value'] ?>" 
+                                       oninput="calculateFinancials()">
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Charges Card -->
+                <div class="be-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-minus-circle"></i> Additional Charges</h3>
+                    </div>
+                    <div class="card-body">
+
+                        <div class="field-row">
+                            <div class="field">
+                                <label>Development Charge</label>
+                                <input type="number" name="development_charge" id="development_charge" 
+                                       placeholder="0.00" step="0.01" value="<?= $booking['development_charge'] ?? '' ?>" 
+                                       oninput="calculateFinancials()">
+                            </div>
+                            <div class="field">
+                                <label>Parking Charge</label>
+                                <input type="number" name="parking_charge" id="parking_charge" 
+                                       placeholder="0.00" step="0.01" value="<?= $booking['parking_charge'] ?? '' ?>" 
+                                       oninput="calculateFinancials()">
+                            </div>
+                        </div>
+
+                        <div class="field-row">
+                            <div class="field">
+                                <label>Society Charge</label>
+                                <input type="number" name="society_charge" id="society_charge" 
+                                       placeholder="0.00" step="0.01" value="<?= $booking['society_charge'] ?? '' ?>" 
+                                       oninput="calculateFinancials()">
+                            </div>
+                            <div class="field"></div>
+                        </div>
+
+                        <div class="btn-row">
+                            <a href="view.php?id=<?= $booking_id ?>" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-check"></i> Save Changes
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+
             </div>
 
-            <!-- RIGHT COLUMN: Summary -->
-            <div class="col-lg-8">
-                <div class="summary-card-premium" style="min-width: 500px;">
-                    <div class="summary-header-premium">
-                        <div style="font-size: 11px; text-transform: uppercase; opacity: 0.7; letter-spacing: 1px; font-weight: 700;"><?= htmlspecialchars($booking['project_name']) ?></div>
-                        <div style="font-size: 32px; font-weight: 800; margin-top: 5px; line-height: 1;"><?= htmlspecialchars($booking['flat_no']) ?></div>
+            <!-- Summary Sidebar -->
+            <div>
+                <div class="sum-card">
+                    <div class="sum-head">
+                        <div class="sp"><?= htmlspecialchars($booking['project_name']) ?></div>
+                        <div class="sn"><?= htmlspecialchars($booking['flat_no']) ?></div>
                     </div>
-                    <div class="summary-details-premium">
-                        <div class="summary-row">
-                            <span class="summary-label">Area (sqft)</span>
-                            <span class="summary-val" id="display_area" data-area="<?= $booking['area_sqft'] ?>"><?= number_format($booking['area_sqft'], 2) ?></span>
+                    <div class="sum-body">
+                        <div class="sum-row">
+                            <span class="sum-label">Area</span>
+                            <span class="sum-val" id="display_area" data-area="<?= $booking['area_sqft'] ?>">
+                                <?= number_format($booking['area_sqft'], 2) ?> sqft
+                            </span>
                         </div>
-                        <div class="summary-row">
-                            <span class="summary-label">Rate (₹/sqft)</span>
-                            <input type="number" name="rate" id="booking_rate" class="modern-input" style="width: 100px; padding: 6px 10px; font-size: 13px; text-align: right;" readonly value="<?= $booking['rate'] ?? '' ?>">
+                        <div class="sum-row">
+                            <span class="sum-label">Rate (₹/sqft)</span>
+                            <input type="number" name="rate" id="booking_rate" readonly value="<?= $booking['rate'] ?? '' ?>">
                         </div>
-                        <div style="height: 1px; background: #f1f5f9; margin: 16px 0;"></div>
-                        
-                        <div class="summary-row">
-                            <span class="summary-label">Agreement Value</span>
-                            <span class="summary-val" id="display_agreement_value">₹ 0.00</span>
+                        <div class="sum-row">
+                            <span class="sum-label">Agreement Value</span>
+                            <span class="sum-val" id="display_agreement_value">₹ 0.00</span>
                         </div>
-                        <div class="summary-row">
-                            <span class="summary-label">Stamp Duty (6%)</span>
-                            <input type="number" name="stamp_duty_registration" id="stamp_duty_registration" class="modern-input" style="width: 100px; padding: 6px 10px; font-size: 13px; text-align: right;" readonly value="<?= $booking['stamp_duty_registration'] ?? '' ?>">
+                        <div class="sum-row">
+                            <span class="sum-label">Stamp Duty (6%)</span>
+                            <input type="number" name="stamp_duty_registration" id="stamp_duty_registration" readonly value="<?= $booking['stamp_duty_registration'] ?? '' ?>">
                         </div>
-                        <div class="summary-row">
-                            <span class="summary-label">Registration (1%)</span>
-                            <input type="number" name="registration_amount" id="registration_amount" class="modern-input" style="width: 100px; padding: 6px 10px; font-size: 13px; text-align: right;" readonly value="<?= $booking['registration_amount'] ?? '' ?>">
+                        <div class="sum-row">
+                            <span class="sum-label">Registration (1%)</span>
+                            <input type="number" name="registration_amount" id="registration_amount" readonly value="<?= $booking['registration_amount'] ?? '' ?>">
                         </div>
-                        <div class="summary-row">
-                            <span class="summary-label">GST (1%)</span>
-                            <input type="number" name="gst_amount" id="gst_amount" class="modern-input" style="width: 100px; padding: 6px 10px; font-size: 13px; text-align: right;" readonly value="<?= $booking['gst_amount'] ?? '' ?>">
-                        </div>
-
-                        <div style="background: #f0fdf4; border: 1px dashed #22c55e; border-radius: 12px; padding: 16px; text-align: center; margin-top: 20px;">
-                            <div style="font-size: 11px; color: #15803d; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 4px;">Est. Total Cost</div>
-                            <div id="display_total_cost" style="font-size: 20px; font-weight: 800; color: #166534;">₹ 0.00</div>
+                        <div class="sum-row">
+                            <span class="sum-label">GST (1%)</span>
+                            <input type="number" name="gst_amount" id="gst_amount" readonly value="<?= $booking['gst_amount'] ?? '' ?>">
                         </div>
 
-                        <button type="submit" class="modern-btn btn-primary-glow">
+                        <div class="sum-total">
+                            <div class="st-lbl">Est. Total Cost</div>
+                            <div class="st-val" id="display_total_cost">₹ 0.00</div>
+                        </div>
+
+                        <button type="submit" class="btn-submit">
                             <i class="fas fa-check-circle"></i> Save Changes
                         </button>
                     </div>
                 </div>
             </div>
+
         </div>
+
     </form>
+
 </div>
 
 <script>
@@ -450,6 +517,7 @@ function setupAutocomplete(inputId, listId, data, onSelect) {
     const input = document.getElementById(inputId);
     const list = document.getElementById(listId);
     let currentFocus = -1;
+    
     function closeAllLists(elmnt) { if (elmnt !== input) list.classList.remove('show'); }
     function addActive(items) {
         if (!items || items.length === 0) return false;
@@ -465,7 +533,7 @@ function setupAutocomplete(inputId, listId, data, onSelect) {
         if (matches.length === 0) { list.classList.remove('show'); return; }
         matches.forEach(item => {
             const li = document.createElement('li');
-            li.className = 'autocomplete-item';
+            li.className = 'ac-item';
             li.innerHTML = `<strong>${item.name}</strong>`;
             li.onclick = function() { onSelect(item); list.classList.remove('show'); };
             list.appendChild(li);
@@ -479,14 +547,19 @@ function setupAutocomplete(inputId, listId, data, onSelect) {
         renderList(matches);
         currentFocus = -1;
     }
+    
     input.addEventListener('input', function() { filterAndShow(this.value); });
     input.addEventListener('focus', function() { filterAndShow(this.value); });
     input.addEventListener('keydown', function(e) {
-        let items = list.getElementsByClassName('autocomplete-item');
+        let items = list.getElementsByClassName('ac-item');
         if (!list.classList.contains('show')) return;
         if (e.keyCode == 40) { currentFocus++; addActive(items); e.preventDefault(); }
         else if (e.keyCode == 38) { currentFocus--; addActive(items); e.preventDefault(); }
-        else if (e.keyCode == 13) { e.preventDefault(); if (currentFocus > -1 && items[currentFocus]) items[currentFocus].click(); else if (items.length === 1) items[0].click(); }
+        else if (e.keyCode == 13) { 
+            e.preventDefault(); 
+            if (currentFocus > -1 && items[currentFocus]) items[currentFocus].click(); 
+            else if (items.length === 1) items[0].click(); 
+        }
     });
     document.addEventListener('click', function(e) { if (e.target !== input) closeAllLists(e.target); });
 }
@@ -506,36 +579,26 @@ function calculateFinancials() {
     const agreementValue = parseFloat(document.getElementById('agreement_value').value) || 0;
     const area = parseFloat(document.getElementById('display_area').getAttribute('data-area')) || 0;
     
-    // Update Agreement Value Display
     document.getElementById('display_agreement_value').textContent = '₹ ' + agreementValue.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
     
-    // Calculate Stamp Duty (6%) - Rounded
     const stampDuty = Math.round(agreementValue * 0.06);
     document.getElementById('stamp_duty_registration').value = stampDuty.toFixed(2);
     
-    // Calculate Registration (1% with Cap) - Rounded
     let registration = Math.round(agreementValue * 0.01);
-    if (agreementValue >= 3000000) {
-        registration = 30000;
-    }
+    if (agreementValue >= 3000000) registration = 30000;
     document.getElementById('registration_amount').value = registration.toFixed(2);
 
-    // Calculate GST (1%) - Rounded
     const gst = Math.round(agreementValue * 0.01);
     document.getElementById('gst_amount').value = gst.toFixed(2);
     
-    // Get Charges
     const devCharge = parseFloat(document.getElementById('development_charge').value) || 0;
     const parkingCharge = parseFloat(document.getElementById('parking_charge').value) || 0;
     const societyCharge = parseFloat(document.getElementById('society_charge').value) || 0;
     const totalCharges = devCharge + parkingCharge + societyCharge;
 
-    // Calculate Total Cost (Net)
-    // Total Cost = Agreement Value - Charges - Stamp - Reg - GST (Using formula from index.php)
     const totalCost = agreementValue - totalCharges - stampDuty - registration - gst;
     document.getElementById('display_total_cost').textContent = '₹ ' + totalCost.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
-    // Calculate Rate = Total Cost / Area
     if (area > 0) {
         const rate = totalCost / area;
         document.getElementById('booking_rate').value = rate.toFixed(2);
@@ -544,7 +607,6 @@ function calculateFinancials() {
     }
 }
 
-// Initialize on load
 document.addEventListener('DOMContentLoaded', function() {
     calculateFinancials();
 });

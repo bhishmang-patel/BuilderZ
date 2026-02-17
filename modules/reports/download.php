@@ -145,7 +145,10 @@ if ($action === 'download_report') {
             $sql = "SELECT p.project_name as 'Project', p.location as 'Location',
                            (SELECT COALESCE(SUM(b.agreement_value), 0) FROM bookings b JOIN flats f ON b.flat_id = f.id WHERE f.project_id = p.id AND b.status = 'active') as 'Total Sales',
                            (SELECT COALESCE(SUM(b.total_received), 0) FROM bookings b JOIN flats f ON b.flat_id = f.id WHERE f.project_id = p.id) as 'Received',
-                           (SELECT COALESCE(SUM(total_amount), 0) FROM challans WHERE project_id = p.id) as 'Total Expense'
+                           (
+                               (SELECT COALESCE(SUM(total_amount), 0) FROM challans WHERE project_id = p.id AND challan_type != 'contractor') + 
+                               (SELECT COALESCE(SUM(total_payable), 0) FROM contractor_bills WHERE project_id = p.id)
+                           ) as 'Total Expense'
                     FROM projects p
                     ORDER BY p.project_name";
             $stmt = $db->query($sql);
@@ -161,7 +164,7 @@ if ($action === 'download_report') {
 
             $sql = "SELECT payment_date as 'Date', 
                            SUM(CASE WHEN payment_type = 'customer_receipt' THEN amount ELSE 0 END) as 'Inflow',
-                           SUM(CASE WHEN payment_type IN ('vendor_payment', 'labour_payment') THEN amount ELSE 0 END) as 'Outflow'
+                           SUM(CASE WHEN payment_type IN ('vendor_payment', 'vendor_bill_payment', 'labour_payment', 'contractor_payment') THEN amount ELSE 0 END) as 'Outflow'
                     FROM payments 
                     WHERE payment_date BETWEEN ? AND ?
                     GROUP BY payment_date ORDER BY payment_date";

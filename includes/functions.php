@@ -317,18 +317,18 @@ function updateChallanPaidAmount($challan_id) {
     
     $pending_amount = max(0, round($challan['total_amount'] - $paid_amount, 2));
 
-    $status = 'pending';
+    $payment_status = 'pending';
     if ($paid_amount >= $challan['total_amount']) {
-        $status = 'paid';
+        $payment_status = 'paid';
     } elseif ($paid_amount > 0) {
-        $status = 'partial';
+        $payment_status = 'partial';
     }
     
     $db->update('challans', 
         [
             'paid_amount' => $paid_amount, 
             'pending_amount' => $pending_amount,
-            'status' => $status
+            'payment_status' => $payment_status
         ], 
         'id = ?', 
         ['id' => $challan_id]
@@ -431,17 +431,145 @@ function updateBillPaidAmount($bill_id) {
     $stmt = $db->select('bills', 'id = ?', [$bill_id], 'amount');
     $bill = $stmt->fetch();
     
-    $status = 'pending';
+    $payment_status = 'pending';
     if ($paid_amount >= $bill['amount']) {
-        $status = 'paid';
+        $payment_status = 'paid';
     } elseif ($paid_amount > 0) {
-        $status = 'partial';
+        $payment_status = 'partial';
     }
     
+
     $db->update('bills', 
-        ['paid_amount' => $paid_amount, 'status' => $status], 
+        ['paid_amount' => $paid_amount, 'payment_status' => $payment_status], 
         'id = ?', 
         ['id' => $bill_id]
     );
 }
 
+function updateContractorBillPaidAmount($bill_id) {
+    $db = Database::getInstance();
+    
+    $sql = "SELECT COALESCE(SUM(amount), 0) as paid_amount 
+            FROM payments 
+            WHERE reference_type = 'contractor_bill' AND reference_id = ?";
+    $stmt = $db->query($sql, [$bill_id]);
+    $result = $stmt->fetch();
+    
+    $paid_amount = round($result['paid_amount'], 2);
+    
+    $stmt = $db->select('contractor_bills', 'id = ?', [$bill_id], 'total_payable');
+    $bill = $stmt->fetch();
+    
+    $pending_amount = max(0, round($bill['total_payable'] - $paid_amount, 2));
+
+    $payment_status = 'pending';
+    if ($paid_amount >= $bill['total_payable']) {
+        $payment_status = 'paid';
+    } elseif ($paid_amount > 0) {
+        $payment_status = 'partial';
+    }
+    
+    $db->update('contractor_bills', 
+        [
+            'paid_amount' => $paid_amount, 
+            'pending_amount' => $pending_amount,
+            'payment_status' => $payment_status
+        ], 
+        'id = ?', 
+        ['id' => $bill_id]
+    );
+}
+
+
+/**
+ * Get Project Badge Color Style
+ * Returns an array with background, text, and border colors based on Project ID
+ */
+function getProjectBadgeStyle($projectId) {
+    // Professional, soft pastel palette with strong text contrast
+    $palette = [
+        ['bg' => '#eff6ff', 'text' => '#1d4ed8', 'border' => '#dbeafe'], // Blue
+        ['bg' => '#f0fdf4', 'text' => '#15803d', 'border' => '#dcfce7'], // Green
+        ['bg' => '#fef2f2', 'text' => '#b91c1c', 'border' => '#fee2e2'], // Red
+        ['bg' => '#fff7ed', 'text' => '#c2410c', 'border' => '#ffedd5'], // Orange
+        ['bg' => '#faf5ff', 'text' => '#7e22ce', 'border' => '#f3e8ff'], // Purple
+        ['bg' => '#ecfeff', 'text' => '#0e7490', 'border' => '#cffafe'], // Cyan
+        ['bg' => '#fdf4ff', 'text' => '#a21caf', 'border' => '#fce7f3'], // Pink
+        ['bg' => '#fffbeb', 'text' => '#b45309', 'border' => '#fef3c7'], // Amber
+        ['bg' => '#f8fafc', 'text' => '#334155', 'border' => '#e2e8f0'], // Slate
+        ['bg' => '#f0f9ff', 'text' => '#0369a1', 'border' => '#e0f2fe'], // Sky
+    ];
+    
+    // Ensure positive integer
+    $index = abs(intval($projectId)) % count($palette);
+    return $palette[$index];
+}
+
+/**
+ * Render Project Badge HTML
+ */
+function renderProjectBadge($projectName, $projectId) {
+    $style = getProjectBadgeStyle($projectId);
+    
+    return sprintf(
+        '<span class="project-badge" style="display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:700; background-color:%s; color:%s; border:1px solid %s; white-space:nowrap; letter-spacing:0.02em; text-transform:uppercase;">
+            <i class="fas fa-building" style="font-size:10px; opacity:0.7;"></i> %s
+        </span>',
+        $style['bg'],
+        $style['text'],
+        $style['border'],
+        htmlspecialchars($projectName)
+    );
+}
+
+function convertNumberToWords($number) {
+    if ($number == 0) return 'Zero';
+    
+    $no = floor($number);
+    $point = round($number - $no, 2) * 100;
+    $hundred = null;
+    $digits_1 = strlen($no);
+    $i = 0;
+    $str = array();
+    $words = array('0' => '', '1' => 'One', '2' => 'Two',
+        '3' => 'Three', '4' => 'Four', '5' => 'Five', '6' => 'Six',
+        '7' => 'Seven', '8' => 'Eight', '9' => 'Nine',
+        '10' => 'Ten', '11' => 'Eleven', '12' => 'Twelve',
+        '13' => 'Thirteen', '14' => 'Fourteen',
+        '15' => 'Fifteen', '16' => 'Sixteen', '17' => 'Seventeen',
+        '18' => 'Eighteen', '19' => 'Nineteen', '20' => 'Twenty',
+        '30' => 'Thirty', '40' => 'Forty', '50' => 'Fifty',
+        '60' => 'Sixty', '70' => 'Seventy',
+        '80' => 'Eighty', '90' => 'Ninety');
+    $digits = array('', 'Hundred', 'Thousand', 'Lakh', 'Crore');
+    
+    while ($i < $digits_1) {
+        $divider = ($i == 2) ? 10 : 100;
+        $number = floor($no % $divider);
+        $no = floor($no / $divider);
+        $i += ($divider == 10) ? 1 : 2;
+        if ($number) {
+            $plural = (($counter = count($str)) && $number > 9) ? 's' : null;
+            $hundred = ($counter == 1 && $str[0]) ? ' and ' : null;
+            $str [] = ($number < 21) ? $words[$number] .
+                " " . $digits[$counter] . $plural . " " . $hundred :
+                $words[floor($number / 10) * 10] . " " . $words[$number % 10] .
+                " " . $digits[$counter] . $plural . " " . $hundred;
+        } else $str[] = null;
+    }
+    
+    $str = array_reverse($str);
+    $result = implode('', $str);
+    
+    if ($point > 0) {
+        $points = '';
+        if($point < 20) {
+            $points = $words[$point];
+        } else {
+            $points = $words[floor($point / 10) * 10] . " " . $words[$point % 10];
+        }
+        $result .= " and " . $points . " Paise";
+    }
+    
+    return $result;
+}

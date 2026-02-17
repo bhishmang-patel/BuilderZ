@@ -45,12 +45,17 @@ $categories = $db->query("SELECT * FROM expense_categories ORDER BY name")->fetc
 include __DIR__ . '/../../includes/header.php';
 ?>
 
-
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 
 <style>
+  body {
+    background: var(--c-bg);
+  }
+
 /* ── Variables ───────────────────────────────────────────── */
-.cat-wrap {
-  --c-bg:        #f5f0e8;
+:root {
+  --c-bg:        #f5f3ef;
   --c-surface:   #faf7f2;
   --c-surface2:  #ffffff;
   --c-border:    #e2d9cc;
@@ -74,10 +79,12 @@ include __DIR__ . '/../../includes/header.php';
 
 /* ── Page shell ──────────────────────────────────────────── */
 .cat-wrap {
-  font-family: inherit;
+  font-family: 'DM Sans', sans-serif;
   font-size: 14px;
   color: var(--c-ink);
-  padding: 0 0 40px;
+  background: var(--c-bg);
+  min-height: 100vh;
+  padding: 40px 28px 80px;
   animation: catFadeIn .5s cubic-bezier(.22,1,.36,1) both;
 }
 @keyframes catFadeIn {
@@ -106,7 +113,8 @@ include __DIR__ . '/../../includes/header.php';
   margin-bottom: 5px;
 }
 .cat-page-title {
-  font-size: 1.75rem;
+  font-family: 'Fraunces', serif;
+  font-size: 2rem;
   font-weight: 600;
   letter-spacing: -.025em;
   color: var(--c-ink);
@@ -172,6 +180,7 @@ include __DIR__ . '/../../includes/header.php';
 .cat-icon-slate      { background: #eef2f7; color: #3b5bdb; }
 
 .cat-card-title {
+  font-family: 'Fraunces', serif;
   font-size: 1rem;
   font-weight: 600;
   color: var(--c-ink);
@@ -218,7 +227,7 @@ include __DIR__ . '/../../includes/header.php';
 
 .cat-input,
 .cat-textarea {
-  font-family: inherit;
+  font-family: 'DM Sans', sans-serif;
   font-size: 13.5px;
   color: var(--c-ink);
   background: var(--c-surface);
@@ -243,7 +252,7 @@ include __DIR__ . '/../../includes/header.php';
 .cat-submit {
   width: 100%;
   margin-top: 20px;
-  font-family: inherit;
+  font-family: 'DM Sans', sans-serif;
   font-size: 13px;
   font-weight: 600;
   letter-spacing: .06em;
@@ -274,6 +283,7 @@ include __DIR__ . '/../../includes/header.php';
   display: flex;
   align-items: center;
   gap: 8px;
+  font-family: 'Fraunces', serif;
   font-size: 13px;
   font-weight: 600;
   color: var(--c-amber);
@@ -329,6 +339,7 @@ table.cat-table {
   width: 40px; height: 40px;
   border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
+  font-family: 'Fraunces', serif;
   font-size: 1rem;
   font-weight: 600;
   flex-shrink: 0;
@@ -377,6 +388,7 @@ table.cat-table {
   color: var(--c-ink3);
 }
 .cat-empty h5 {
+  font-family: 'Fraunces', serif;
   font-size: 1.05rem;
   font-weight: 600;
   color: var(--c-ink2);
@@ -405,7 +417,7 @@ table.cat-table {
   font-size: 16px;
 }
 .cat-summary-label { font-size: 11px; color: var(--c-ink3); }
-.cat-summary-val   { font-family: inherit; font-size: 1.4rem; font-weight: 600; color: var(--c-ink); line-height: 1; }
+.cat-summary-val   { font-family: 'Fraunces', serif; font-size: 1.4rem; font-weight: 600; color: var(--c-ink); line-height: 1; }
 
 .cat-link-btn {
   display: inline-flex; align-items: center; gap: 7px;

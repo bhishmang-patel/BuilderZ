@@ -32,7 +32,7 @@ try {
             WHERE c.party_id = ? 
               AND c.challan_type = 'material'
               AND c.status = 'approved'
-              AND c.id NOT IN (SELECT challan_id FROM bills WHERE challan_id IS NOT NULL)
+              AND (c.bill_id IS NULL OR c.bill_id = 0)
             ORDER BY c.created_at DESC";
 
     $stmt = $db->query($sql, [$vendor_id]);

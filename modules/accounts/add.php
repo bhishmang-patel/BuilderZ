@@ -11,32 +11,40 @@ requireAuth();
 checkPermission(['admin', 'accountant', 'project_manager']);
 
 $db = Database::getInstance();
+$id = $_GET['id'] ?? null;
+$edit_mode = false;
+$expense = null;
 $page_title = 'Record New Expense';
+$current_page = 'accounts';
+
+if ($id) {
+    $stmt = $db->query("SELECT * FROM expenses WHERE id = ?", [$id]);
+    $expense = $stmt->fetch();
+
+    if ($expense) {
+        $edit_mode = true;
+        $page_title = 'Edit Expense';
+        
+        // Pre-fill $_POST for the view if not a POST request (Sticky Form pattern)
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $_POST['date']           = $expense['date'];
+            $_POST['category_id']    = $expense['category_id'];
+            $_POST['amount']         = $expense['amount'];
+            $_POST['description']    = $expense['description'];
+            $_POST['payment_method'] = $expense['payment_method'];
+            $_POST['gst_amount']     = $expense['gst_amount'];
+            $_POST['reference_no']   = $expense['reference_no'];
+            if ($expense['gst_included']) {
+                $_POST['gst_included'] = 1;
+            }
+        }
+    }
+}
 
 // Get categories
 $categories = $db->query("SELECT * FROM expense_categories ORDER BY name")->fetchAll();
 
-// Get projects
-$projects = $db->query("SELECT id, project_name FROM projects WHERE status = 'active' ORDER BY project_name")->fetchAll();
-
-$edit_id = $_GET['id'] ?? null;
-$expense = null;
-$page_title = 'Record New Expense';
-
-if ($edit_id) {
-    $stmt = $db->query("SELECT * FROM expenses WHERE id = ?", [$edit_id]);
-    $expense = $stmt->fetch();
-    
-    if ($expense) {
-        $page_title = 'Edit Expense';
-    } else {
-        $error = "Expense not found.";
-    }
-}
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $edit_id_post   = $_POST['edit_id'] ?? null;
-    $project_id     = !empty($_POST['project_id']) ? $_POST['project_id'] : null;
     $category_id    = $_POST['category_id']    ?? '';
     $date           = $_POST['date']           ?? date('Y-m-d');
     $amount         = $_POST['amount']         ?? 0;
@@ -45,13 +53,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $gst_included   = isset($_POST['gst_included']) ? 1 : 0;
     $gst_amount     = $_POST['gst_amount']     ?? 0;
     $reference_no   = $_POST['reference_no']   ?? '';
-    $created_by     = $_SESSION['user_id'];
+    // Keep original creator if editing, else current user
+    $created_by     = $edit_mode ? $expense['created_by'] : $_SESSION['user_id'];
 
     if (empty($category_id) || empty($amount) || empty($date)) {
         $error = "Please fill all required fields.";
     } else {
         $data = [
-            'project_id'     => $project_id,
             'category_id'    => $category_id,
             'date'           => $date,
             'amount'         => $amount,
@@ -60,34 +68,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'gst_included'   => $gst_included,
             'gst_amount'     => $gst_amount,
             'reference_no'   => $reference_no,
+            'created_by'     => $created_by
         ];
 
         try {
-            if ($edit_id_post) {
-                // UPDATE
-                 $fields = [];
-                 $params = [];
-                 foreach ($data as $key => $value) {
-                     $fields[] = "$key = ?";
-                     $params[] = $value;
-                 }
-                 $params[] = $edit_id_post;
-                 
-                 $sql = "UPDATE expenses SET " . implode(', ', $fields) . " WHERE id = ?";
-                 $db->query($sql, $params);
-                 
-                 $_SESSION['success'] = "Expense updated successfully!";
+            if ($edit_mode) {
+                $db->update('expenses', $data, 'id = :id', ['id' => $id]);
+                $_SESSION['success'] = "Expense updated successfully!";
             } else {
-                // INSERT
-                $data['created_by'] = $created_by;
                 $db->insert('expenses', $data);
                 $_SESSION['success'] = "Expense recorded successfully!";
             }
-            
-            header("Location: list.php"); // Redirect to list view after edit/add
+            header("Location: index.php");
             exit;
         } catch (Exception $e) {
-            $error = "Error saving expense: " . $e->getMessage();
+            $error = "Error recording expense: " . $e->getMessage();
         }
     }
 }
@@ -96,37 +91,42 @@ include __DIR__ . '/../../includes/header.php';
 ?>
 
 <style>
+  body {
+    background: var(--exp-bg);
+  }
+
   /* ── Reset & Variables ────────────────────────────────── */
   .exp-wrap *, .exp-wrap *::before, .exp-wrap *::after { box-sizing: border-box; }
 
-  :root {
-    --exp-bg:         #f8f9fc;
-    --exp-surface:    #ffffff;
-    --exp-surface2:   #f8f9fc;
-    --exp-surface3:   #f1f3f8;
-    --exp-line:       #e3e6f0;
-    --exp-line2:      #d1d3e2;
-    --exp-text:       #1e293b;
-    --exp-text2:      #64748b;
-    --exp-text3:      #858796;
-    --exp-accent:     #4e73df;
-    --exp-accent2:    #3a5bbf;
-    --exp-accent-bg:  rgba(78,115,223,0.07);
-    --exp-accent-glow:rgba(78,115,223,0.20);
-    --exp-red:        #e74a3b;
-    --exp-red-bg:     rgba(231,74,59,0.08);
-    --exp-amber:      #f6c23e;
-    --exp-blue:       #4e73df;
-    --exp-teal:       #1cc88a;
-    --exp-violet:     #8b5cf6;
-  }
+:root {
+  --exp-bg:        #f5f3ef;  
+  --exp-surface:   #ffffff;  
+  --exp-surface2:  #fdfcfa;  
+  --exp-surface3:  #f5f3ef;  
+  --exp-line:      #e8e3db;  
+  --exp-line2:     #dcd5cb;  
+  --exp-text:      #1a1714;  
+  --exp-text2:     #6b6560;  
+  --exp-text3:     #9e9690;  
+  --exp-accent:     #b5622a; 
+  --exp-accent2:    #9e521f; 
+  --exp-accent-bg:  #fdf8f3; 
+  --exp-accent-glow: rgba(181,98,42,0.15);
+  --exp-red:        #c0392b;
+  --exp-red-bg:     #fdf2f1;
+  --exp-amber:      #b45309;
+  --exp-blue:       #3b5bdb;
+}
+
 
   /* ── Page wrapper ─────────────────────────────────────── */
   .exp-wrap {
-    font-family: inherit;
-    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
     color: var(--exp-text);
-    padding: 0 0 40px;
+    background: var(--exp-bg);
+    min-height: 100vh;
+    padding: 36px 24px 80px;
     animation: expPageIn 0.45s cubic-bezier(0.22,1,0.36,1) both;
   }
   @keyframes expPageIn {
@@ -143,27 +143,43 @@ include __DIR__ . '/../../includes/header.php';
     justify-content: space-between;
     margin-bottom: 40px;
     padding-bottom: 18px;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--exp-line);
     flex-wrap: wrap;
     gap: 14px;
   }
   .exp-topbar-left { display: flex; align-items: center; gap: 16px; }
 
+  .exp-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--exp-text3);
+    text-decoration: none;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 8px 14px;
+    border: 1px solid var(--exp-line2);
+    border-radius: 3px;
+    transition: color .15s, border-color .15s;
+  }
+  .exp-back:hover { color: var(--exp-text); border-color: var(--exp-text3); }
+
   .exp-breadcrumb {
     font-size: 10px;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: #64748b;
+    color: var(--exp-text3);
     margin-bottom: 3px;
   }
   .exp-breadcrumb span { color: var(--exp-accent); }
 
   .exp-page-title {
-    font-family: 'Syne', 'Segoe UI', sans-serif;
+    font-family: 'Fraunces', serif;
     font-size: 1.7rem;
     font-weight: 800;
     letter-spacing: -0.02em;
-    color: #1e293b;
+    color: var(--exp-text);
     line-height: 1.1;
   }
 
@@ -174,15 +190,15 @@ include __DIR__ . '/../../includes/header.php';
     font-size: 10px;
     letter-spacing: 0.16em;
     text-transform: uppercase;
-    color: var(--exp-violet);
+    color: var(--exp-accent);
     padding: 6px 12px;
-    border: 1px solid rgba(139,92,246,0.4);
+    border: 1px solid var(--exp-accent2);
     border-radius: 2px;
-    background: rgba(139,92,246,0.07);
+    background: var(--exp-accent-bg);
   }
   .exp-dot {
     width: 6px; height: 6px;
-    background: var(--exp-violet);
+    background: var(--exp-accent);
     border-radius: 50%;
     animation: expPulse 1.8s ease-in-out infinite;
   }
@@ -222,12 +238,11 @@ include __DIR__ . '/../../includes/header.php';
   .exp-panel {
     background: var(--exp-surface);
     border: 1px solid var(--exp-line);
-    border-radius: 16px;
+    border-radius: 4px;
     overflow: hidden;
     transition: border-color .2s;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
   }
-  .exp-panel:focus-within { border-color: var(--exp-accent); }
+  .exp-panel:focus-within { border-color: var(--exp-line2); }
 
   .exp-panel-head {
     display: flex;
@@ -244,12 +259,12 @@ include __DIR__ . '/../../includes/header.php';
     font-size: 15px;
     flex-shrink: 0;
   }
-  .exp-icon-blue  { background: rgba(78,115,223,0.12); color: var(--exp-blue); }
-  .exp-icon-teal  { background: rgba(28,200,138,0.10);  color: var(--exp-teal); }
-  .exp-icon-amber { background: rgba(246,194,62,0.10); color: var(--exp-amber); }
+  .exp-icon-blue  { background: rgba(59,130,246,0.12); color: var(--exp-blue); }
+  .exp-icon-teal  { background: rgba(0,212,170,0.10);  color: var(--exp-accent); }
+  .exp-icon-amber { background: rgba(245,158,11,0.10); color: var(--exp-amber); }
 
   .exp-panel-title {
-    font-family: 'Syne', 'Segoe UI', sans-serif;
+    font-family: 'Fraunces', serif;
     font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.08em;
@@ -306,8 +321,8 @@ include __DIR__ . '/../../includes/header.php';
   .exp-req { color: var(--exp-red); font-size: 13px; line-height: 1; }
 
   .exp-control {
-    font-family: inherit;
-    font-size: 13px;
+    font-family: 'JetBrains Mono', 'Fira Mono', 'Courier New', monospace;
+    font-size: 12.5px;
     color: var(--exp-text);
     background: var(--exp-surface3);
     border: 1px solid var(--exp-line2);
@@ -319,14 +334,14 @@ include __DIR__ . '/../../includes/header.php';
     -webkit-appearance: none;
     appearance: none;
   }
-  .exp-control::placeholder { color: #b0b5c0; }
+  .exp-control::placeholder { color: var(--exp-text3); }
   .exp-control:focus {
     border-color: var(--exp-accent);
     box-shadow: 0 0 0 3px var(--exp-accent-glow);
-    background: #fff;
+    background: var(--exp-surface2);
   }
   .exp-control[type="date"] { cursor: pointer; }
-  .exp-control[type="date"]::-webkit-calendar-picker-indicator { filter: none; cursor: pointer; }
+  .exp-control[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.45); cursor: pointer; }
 
   textarea.exp-control { resize: vertical; min-height: 78px; line-height: 1.6; }
 
@@ -336,7 +351,7 @@ include __DIR__ . '/../../includes/header.php';
     position: absolute;
     right: 12px; top: 50%;
     transform: translateY(-50%);
-    color: #858796;
+    color: var(--exp-text3);
     font-size: 11px;
     pointer-events: none;
   }
@@ -349,12 +364,12 @@ include __DIR__ . '/../../includes/header.php';
     left: 0; top: 0; bottom: 0;
     display: flex; align-items: center;
     padding: 0 13px;
-    font-family: inherit;
+    font-family: 'Fraunces', serif;
     font-size: 14px;
     font-weight: 700;
     color: var(--exp-accent);
-    border-right: 1px solid var(--exp-line);
-    background: rgba(78,115,223,0.06);
+    border-right: 1px solid var(--exp-line2);
+    background: rgba(0,212,170,0.06);
     border-radius: 3px 0 0 3px;
     user-select: none;
     transition: border-color .18s, background .18s;
@@ -362,10 +377,10 @@ include __DIR__ . '/../../includes/header.php';
   .exp-prefix-wrap .exp-control { padding-left: 44px; }
   .exp-prefix-wrap:focus-within .exp-prefix {
     border-color: var(--exp-accent);
-    background: rgba(78,115,223,0.10);
+    background: rgba(0,212,170,0.10);
   }
 
-  .exp-help { font-size: 10px; color: #858796; margin-top: 3px; letter-spacing: .03em; }
+  .exp-help { font-size: 10px; color: var(--exp-text3); margin-top: 3px; letter-spacing: .03em; }
 
   /* ── GST checkbox row ─────────────────────────────────── */
   .exp-check-row {
@@ -374,43 +389,43 @@ include __DIR__ . '/../../includes/header.php';
     gap: 10px;
     cursor: pointer;
     padding: 10px 13px;
-    border: 1px solid var(--exp-line);
-    border-radius: 8px;
-    background: var(--exp-surface2);
+    border: 1px solid var(--exp-line2);
+    border-radius: 3px;
+    background: var(--exp-surface3);
     transition: border-color .18s, background .18s;
     user-select: none;
     margin-bottom: 0;
   }
-  .exp-check-row:hover { background: #eef0f8; }
+  .exp-check-row:hover { background: var(--exp-surface2); }
   .exp-check-row input[type="checkbox"] { position: absolute; opacity: 0; pointer-events: none; }
 
   .exp-check-box {
     width: 16px; height: 16px;
-    border: 1.5px solid var(--exp-line);
+    border: 1.5px solid var(--exp-line2);
     border-radius: 2px;
     flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
     transition: all .15s;
-    background: #fff;
+    background: var(--exp-surface);
     font-size: 9px;
     color: transparent;
     font-weight: 700;
   }
   .exp-check-row.is-checked {
-    border-color: var(--exp-teal);
-    background: rgba(28,200,138,0.07);
+    border-color: var(--exp-accent2);
+    background: var(--exp-accent-bg);
   }
   .exp-check-row.is-checked .exp-check-box {
-    background: var(--exp-teal);
-    border-color: var(--exp-teal);
-    color: #fff;
+    background: var(--exp-accent);
+    border-color: var(--exp-accent);
+    color: #000;
   }
   .exp-check-label {
     font-size: 11.5px;
-    color: var(--exp-text);
+    color: var(--exp-text2);
     letter-spacing: .02em;
   }
-  .exp-check-row.is-checked .exp-check-label { color: var(--exp-teal); }
+  .exp-check-row.is-checked .exp-check-label { color: var(--exp-accent); }
 
   /* ── GST reveal ───────────────────────────────────────── */
   .exp-gst-reveal {
@@ -424,11 +439,10 @@ include __DIR__ . '/../../includes/header.php';
 
   /* ── Tips panel ───────────────────────────────────────── */
   .exp-tips {
-    background: #fff;
+    background: var(--exp-surface2);
     border: 1px solid var(--exp-line);
-    border-radius: 16px;
+    border-radius: 4px;
     overflow: hidden;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
   }
   .exp-tips-head {
     display: flex; align-items: center; gap: 10px;
@@ -437,19 +451,18 @@ include __DIR__ . '/../../includes/header.php';
   }
   .exp-tips-icon {
     width: 32px; height: 32px;
-    background: rgba(246,194,62,0.12);
+    background: rgba(245,158,11,0.12);
     border-radius: 3px;
     display: flex; align-items: center; justify-content: center;
     font-size: 15px;
   }
   .exp-tips-title {
-    font-family: inherit;
+    font-family: 'Fraunces', serif;
     font-size: 11px;
     font-weight: 700;
     letter-spacing: .1em;
     text-transform: uppercase;
     color: var(--exp-text);
-
   }
   .exp-tips-body { padding: 4px 18px 6px; }
   .exp-tip-item {
@@ -460,7 +473,7 @@ include __DIR__ . '/../../includes/header.php';
   }
   .exp-tip-item:last-child { border-bottom: none; }
   .exp-tip-num { font-size: 9px; letter-spacing: .12em; color: var(--exp-accent); min-width: 18px; padding-top: 1px; }
-  .exp-tip-text { font-size: 11px; color: #64748b; line-height: 1.65; }
+  .exp-tip-text { font-size: 11px; color: var(--exp-text2); line-height: 1.65; }
 
   /* ── Right col ────────────────────────────────────────── */
   .exp-right { display: flex; flex-direction: column; gap: 20px; }
@@ -472,15 +485,15 @@ include __DIR__ . '/../../includes/header.php';
     align-items: center;
     justify-content: space-between;
     gap: 14px;
-    background: #f8fafc;
-    border: 1px dashed #cbd5e1;
+    background: var(--exp-surface);
+    border: 1px solid var(--exp-line);
     border-radius: 4px;
     padding: 15px 22px;
     flex-wrap: wrap;
   }
   .exp-action-hint {
     font-size: 10.5px;
-    color: #64748b;
+    color: var(--exp-text3);
     display: flex; align-items: center; gap: 6px;
     letter-spacing: .03em;
   }
@@ -489,8 +502,8 @@ include __DIR__ . '/../../includes/header.php';
 
   /* ── Buttons ──────────────────────────────────────────── */
   .exp-btn {
-    font-family: inherit;
-    font-size: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
     letter-spacing: .16em;
     text-transform: uppercase;
     font-weight: 500;
@@ -504,11 +517,11 @@ include __DIR__ . '/../../includes/header.php';
     white-space: nowrap;
   }
   .exp-btn-ghost {
-    background: #fff;
-    color: #64748b;
-    border-color: #e2e8f0;
+    background: var(--exp-surface2);
+    color: var(--exp-text2);
+    border-color: var(--exp-line2);
   }
-  .exp-btn-ghost:hover { color: #1e293b; border-color: #94a3b8; background: #f1f5f9; }
+  .exp-btn-ghost:hover { color: var(--exp-text); border-color: var(--exp-text3); background: var(--exp-surface3); }
 
   .exp-btn-primary {
     background: var(--exp-accent);
@@ -520,7 +533,8 @@ include __DIR__ . '/../../includes/header.php';
   .exp-btn-primary:active { transform: translateY(1px); }
 </style>
 
-
+<!-- Syne font (pairs with monospace for headings) -->
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 
 <div class="exp-wrap">
   <div class="exp-inner">
@@ -528,14 +542,15 @@ include __DIR__ . '/../../includes/header.php';
     <!-- Topbar -->
     <div class="exp-topbar">
       <div class="exp-topbar-left">
+        <a href="<?= BASE_URL ?>modules/accounts/index.php" class="exp-back">← Back</a>
         <div>
           <div class="exp-breadcrumb">Accounts / <span>Expenses</span></div>
-          <div class="exp-page-title"><?= $page_title ?></div>
+          <div class="exp-page-title"><?= $edit_mode ? 'Edit Expense' : 'Record Expense' ?></div>
         </div>
       </div>
       <div class="exp-badge">
         <div class="exp-dot"></div>
-        <?= $edit_id ? 'Edit Transaction' : 'New Transaction' ?>
+        <?= $edit_mode ? 'Edit Transaction' : 'New Transaction' ?>
       </div>
     </div>
 
@@ -550,9 +565,6 @@ include __DIR__ . '/../../includes/header.php';
     <?php endif; ?>
 
     <form method="POST">
-      <?php if ($edit_id): ?>
-        <input type="hidden" name="edit_id" value="<?= $edit_id ?>">
-      <?php endif; ?>
 
       <div class="exp-grid">
 
@@ -576,39 +588,20 @@ include __DIR__ . '/../../includes/header.php';
 
             <div class="exp-row">
               <div class="exp-field">
-                <label class="exp-label">Project / Site</label>
-                <div class="exp-select-wrap">
-                  <select name="project_id" class="exp-control">
-                    <option value="">General / Head Office</option>
-                    <?php foreach ($projects as $proj): ?>
-                      <option value="<?= $proj['id'] ?>"
-                        <?= ($expense && $expense['project_id'] == $proj['id']) ? 'selected' : 
-                           ((isset($_POST['project_id']) && $_POST['project_id'] == $proj['id']) ? 'selected' : '') ?>>
-                        <?= htmlspecialchars($proj['project_name']) ?>
-                      </option>
-                    <?php endforeach; ?>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div class="exp-row">
-              <div class="exp-field">
                 <label class="exp-label">Date <span class="exp-req">*</span></label>
                 <input type="date" name="date"
                        class="exp-control"
-                       value="<?= htmlspecialchars($expense ? ($expense['date'] ?? '') : ($_POST['date'] ?? date('Y-m-d'))) ?>"
+                       value="<?= htmlspecialchars($_POST['date'] ?? date('Y-m-d')) ?>"
                        required>
               </div>
               <div class="exp-field">
                 <label class="exp-label">Category <span class="exp-req">*</span></label>
                 <div class="exp-select-wrap">
                   <select name="category_id" class="exp-control" required>
-                    <option value="" disabled <?= empty($expense) && empty($_POST['category_id']) ? 'selected' : '' ?>>Select…</option>
+                    <option value="" disabled <?= empty($_POST['category_id']) ? 'selected' : '' ?>>Select…</option>
                     <?php foreach ($categories as $cat): ?>
                       <option value="<?= $cat['id'] ?>"
-                        <?= ($expense && $expense['category_id'] == $cat['id']) ? 'selected' :
-                           ((isset($_POST['category_id']) && $_POST['category_id'] == $cat['id']) ? 'selected' : '') ?>>
+                        <?= (isset($_POST['category_id']) && $_POST['category_id'] == $cat['id']) ? 'selected' : '' ?>>
                         <?= htmlspecialchars($cat['name']) ?>
                       </option>
                     <?php endforeach; ?>
@@ -620,7 +613,7 @@ include __DIR__ . '/../../includes/header.php';
             <div class="exp-field">
               <label class="exp-label">Description / Particulars</label>
               <textarea name="description" class="exp-control"
-                placeholder="e.g. Office electricity bill for January 2026…"><?= htmlspecialchars($expense ? ($expense['description'] ?? '') : ($_POST['description'] ?? '')) ?></textarea>
+                placeholder="e.g. Office electricity bill for January 2026…"><?= htmlspecialchars($_POST['description'] ?? '') ?></textarea>
               <div class="exp-help">Provide a clear description for future audit reference</div>
             </div>
 
@@ -633,7 +626,7 @@ include __DIR__ . '/../../includes/header.php';
                   <span class="exp-prefix">₹</span>
                   <input type="number" step="0.01" name="amount"
                          class="exp-control"
-                         value="<?= htmlspecialchars($expense ? ($expense['amount'] ?? '') : ($_POST['amount'] ?? '')) ?>"
+                         value="<?= htmlspecialchars($_POST['amount'] ?? '') ?>"
                          placeholder="0.00" required>
                 </div>
               </div>
@@ -649,7 +642,7 @@ include __DIR__ . '/../../includes/header.php';
                         'cheque'        => 'Cheque',
                         'card'          => 'Card',
                       ];
-                      $selected_method = $expense ? $expense['payment_method'] : ($_POST['payment_method'] ?? 'cash');
+                      $selected_method = $_POST['payment_method'] ?? 'cash';
                       foreach ($methods as $val => $label):
                     ?>
                       <option value="<?= $val ?>" <?= $selected_method === $val ? 'selected' : '' ?>>
@@ -665,7 +658,7 @@ include __DIR__ . '/../../includes/header.php';
               <label class="exp-label">Reference No. / Transaction ID</label>
               <input type="text" name="reference_no"
                      class="exp-control"
-                     value="<?= htmlspecialchars($expense ? ($expense['reference_no'] ?? '') : ($_POST['reference_no'] ?? '')) ?>"
+                     value="<?= htmlspecialchars($_POST['reference_no'] ?? '') ?>"
                      placeholder="Optional — e.g. TXN8834920">
               <div class="exp-help">Bank ref, cheque number, or UPI transaction ID</div>
             </div>
@@ -693,9 +686,7 @@ include __DIR__ . '/../../includes/header.php';
 
             <div class="exp-panel-body">
 
-              <?php 
-                $gst_checked = $expense ? $expense['gst_included'] : isset($_POST['gst_included']); 
-              ?>
+              <?php $gst_checked = isset($_POST['gst_included']); ?>
               <div class="exp-field">
                 <label class="exp-check-row <?= $gst_checked ? 'is-checked' : '' ?>"
                        id="expGstRow" onclick="expToggleGST()">
@@ -714,7 +705,7 @@ include __DIR__ . '/../../includes/header.php';
                       <span class="exp-prefix">₹</span>
                       <input type="number" step="0.01" name="gst_amount"
                              class="exp-control"
-                             value="<?= htmlspecialchars($expense ? ($expense['gst_amount'] ?? '') : ($_POST['gst_amount'] ?? '')) ?>"
+                             value="<?= htmlspecialchars($_POST['gst_amount'] ?? '') ?>"
                              placeholder="0.00">
                     </div>
                     <div class="exp-help">Enter the tax portion included in the total</div>
@@ -756,14 +747,15 @@ include __DIR__ . '/../../includes/header.php';
             Required fields must be filled before saving
           </div>
           <div class="exp-action-btns">
-            <a href="index.php" class="exp-btn exp-btn-ghost">Cancel</a>
+            <a href="<?= BASE_URL ?>modules/accounts/index.php" class="exp-btn exp-btn-ghost">
+              Cancel
+            </a>
             <button type="submit" class="exp-btn exp-btn-primary">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-                <polyline points="17 21 17 13 7 13 7 21"/>
-                <polyline points="7 3 7 8 15 8"/>
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M13 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1z"/>
+                <path d="M10 2v5H6V2"/><path d="M4 14v-5h8v5"/>
               </svg>
-              <?= $edit_id ? 'Update Expense' : 'Save Expense' ?>
+              <?= $edit_mode ? 'Update Transaction' : 'Save Transaction' ?>
             </button>
           </div>
         </div>
