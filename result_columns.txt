@@ -1,3 +1,0 @@
-Added approved_by column.
-Added approved_at column.
-Migration completed.
