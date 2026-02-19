@@ -504,11 +504,11 @@ include __DIR__ . '/../../includes/header.php';
                     <thead>
                         <tr>
                             <th>Date</th>
-                            <th>Day</th>
+                            <th>Description / Party</th>
+                            <th>Project</th>
                             <th class="th-r">Inflow</th>
                             <th class="th-r">Outflow</th>
-                            <th class="th-r">Net Flow</th>
-                            <th class="th-r">Closing Balance</th>
+                            <th class="th-r">Balance</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -519,32 +519,36 @@ include __DIR__ . '/../../includes/header.php';
                                 </td>
                             </tr>
                         <?php else: ?>
-                            <?php foreach ($daily_cashflow as $date => $flow): ?>
+                            <?php foreach ($daily_cashflow as $txn): ?>
                             <tr>
-                                <td style="font-weight:600;color:var(--ink)"><?= formatDate($date) ?></td>
-                                <td style="color:var(--ink-soft)"><?= date('l', strtotime($date)) ?></td>
+                                <td style="font-weight:600;color:var(--ink);white-space:nowrap;">
+                                    <?= formatDate($txn['date']) ?>
+                                    <span style="display:block;font-size:0.75rem;font-weight:400;color:var(--ink-mute)"><?= date('D', strtotime($txn['date'])) ?></span>
+                                </td>
+                                <td>
+                                    <span style="font-weight:600;color:var(--ink)"><?= htmlspecialchars($txn['party_name']) ?></span>
+                                    <span style="display:block;font-size:0.75rem;color:var(--ink-mute)"><?= htmlspecialchars($txn['category']) ?></span>
+                                </td>
+                                <td>
+                                    <?= renderProjectBadge($txn['project_name'], $txn['project_id']) ?>
+                                </td>
                                 <td class="td-r">
-                                    <?php if ($flow['inflow'] > 0): ?>
-                                        <span style="color:#10b981;font-weight:700">+ <?= formatCurrency($flow['inflow']) ?></span>
+                                    <?php if ($txn['type'] === 'inflow'): ?>
+                                        <span style="color:#10b981;font-weight:700">+ <?= formatCurrency($txn['amount']) ?></span>
                                     <?php else: ?>
                                         <span style="color:var(--border)">—</span>
                                     <?php endif; ?>
                                 </td>
                                 <td class="td-r">
-                                    <?php if ($flow['outflow'] > 0): ?>
-                                        <span style="color:#ef4444;font-weight:700">- <?= formatCurrency($flow['outflow']) ?></span>
+                                    <?php if ($txn['type'] === 'outflow'): ?>
+                                        <span style="color:#ef4444;font-weight:700">- <?= formatCurrency($txn['amount']) ?></span>
                                     <?php else: ?>
                                         <span style="color:var(--border)">—</span>
                                     <?php endif; ?>
-                                </td>
-                                <td class="td-r">
-                                    <span style="font-weight:700;color:<?= $flow['net'] >= 0 ? '#10b981' : '#ef4444' ?>">
-                                        <?= formatCurrency($flow['net']) ?>
-                                    </span>
                                 </td>
                                 <td class="td-r">
                                     <span style="font-family:monospace;font-size:0.875rem;font-weight:700;color:var(--ink)">
-                                        <?= formatCurrency($flow['balance']) ?>
+                                        <?= formatCurrency($txn['balance']) ?>
                                     </span>
                                 </td>
                             </tr>

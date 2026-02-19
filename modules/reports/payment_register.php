@@ -379,6 +379,7 @@ include __DIR__ . '/../../includes/header.php';
                         <th>Date</th>
                         <th>Type</th>
                         <th>Party Name</th>
+                        <th>Project</th>
                         <th>Mode</th>
                         <th>Ref No</th>
                         <th class="th-r">Inflow</th>
@@ -389,7 +390,7 @@ include __DIR__ . '/../../includes/header.php';
                 <tbody>
                     <?php if (empty($payments)): ?>
                         <tr>
-                            <td colspan="8">
+                            <td colspan="9">
                                 <div class="empty-state">
                                     <i class="fas fa-search"></i>
                                     <h4>No payment records found</h4>
@@ -426,6 +427,9 @@ include __DIR__ . '/../../includes/header.php';
                                 <span style="font-weight:600"><?= htmlspecialchars($payment['party_name']) ?></span>
                             </div>
                         </td>
+                        <td>
+                            <?= renderProjectBadge($payment['project_name'], $payment['project_id']) ?>
+                        </td>
                         <td><span style="font-size:0.82rem;text-transform:capitalize;color:var(--ink-soft)"><?= htmlspecialchars($payment['payment_mode']) ?></span></td>
                         <td><span style="font-family:monospace;color:var(--ink-mute);font-size:0.82rem"><?= htmlspecialchars($payment['reference_no'] ?: '—') ?></span></td>
                         <td class="td-r">
@@ -449,7 +453,7 @@ include __DIR__ . '/../../includes/header.php';
                 <?php if (!empty($payments)): ?>
                 <tfoot>
                     <tr>
-                        <td colspan="5" style="text-align:right;color:var(--ink-soft)">TOTALS</td>
+                        <td colspan="6" style="text-align:right;color:var(--ink-soft)">TOTALS</td>
                         <td style="color:#10b981;text-align:right"><?= formatCurrency($total_receipts) ?></td>
                         <td style="color:#ef4444;text-align:right"><?= formatCurrency($total_payments + $total_refunds) ?></td>
                         <td></td>

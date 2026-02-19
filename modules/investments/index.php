@@ -123,6 +123,7 @@ include __DIR__ . '/../../includes/header.php';
     }
 
     .header-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+    .inv-header h1 em { color: var(--accent); font-style: italic; }
     .btn-new {
         display: inline-flex; align-items: center; gap: 0.5rem;
         padding: 0.68rem 1.4rem; background: var(--ink); color: white;
@@ -427,6 +428,141 @@ include __DIR__ . '/../../includes/header.php';
 
     /* Animations */
     @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+    /* ── Analytics Styles ── */
+
+    /* KPI Strip */
+    .kpi-strip {
+        display:grid; grid-template-columns:repeat(4,1fr);
+        gap:1px; background:var(--border);
+        border:1.5px solid var(--border); border-radius:14px;
+        overflow:hidden; margin-bottom:1.5rem;
+    }
+    .kpi-cell {
+        background:var(--surface); padding:1.25rem 1.4rem;
+        position:relative; transition:background 0.2s;
+    }
+    .kpi-cell:hover { background:#fdfcfa; }
+    .kpi-cell::after {
+        content:''; position:absolute; bottom:0; left:0; right:0; height:2.5px;
+    }
+    .kpi-cell:nth-child(1)::after { background:var(--accent); }
+    .kpi-cell:nth-child(2)::after { background:#10b981; }
+    .kpi-cell:nth-child(3)::after { background:#8b5cf6; }
+    .kpi-cell:nth-child(4)::after { background:#f59e0b; }
+    .kpi-lbl {
+        font-size:0.62rem; font-weight:700; letter-spacing:0.1em;
+        text-transform:uppercase; color:var(--ink-mute); margin-bottom:0.55rem;
+    }
+    .kpi-val {
+        font-family:'Fraunces',serif; font-size:1.65rem; font-weight:400;
+        color:var(--ink); letter-spacing:-0.02em; line-height:1;
+    }
+    .kpi-delta { margin-top:0.45rem; font-size:0.7rem; font-weight:600; }
+    .kpi-delta.up   { color:#10b981; }
+    .kpi-delta.down { color:#ef4444; }
+    .kpi-delta.neu  { color:var(--ink-mute); }
+
+    /* Charts Grid */
+    .an-grid {
+        display:grid; grid-template-columns:1.6fr 1fr;
+        gap:1rem; margin-bottom:2rem;
+    }
+    .an-card {
+        background:var(--surface); border:1.5px solid var(--border);
+        border-radius:14px; overflow:hidden;
+        animation:fadeUp 0.45s ease both; position:relative;
+        transition:border-color 0.22s, box-shadow 0.22s;
+    }
+    .an-card:hover {
+        border-color:#d4ccc0;
+        box-shadow:0 8px 32px rgba(26,23,20,0.08);
+    }
+    .an-card::before {
+        content:''; position:absolute; top:0; left:0; right:0; height:1px;
+        background:linear-gradient(90deg,transparent,rgba(26,23,20,0.08),transparent);
+    }
+    .an-card.span-full { grid-column:1 / -1; animation-delay:0.05s; }
+    .an-card:nth-child(2) { animation-delay:0.12s; }
+    .an-card:nth-child(3) { animation-delay:0.2s; }
+
+    /* Card Header */
+    .ac-head {
+        display:flex; align-items:flex-start; justify-content:space-between;
+        padding:1.25rem 1.5rem 0;
+    }
+    .ac-title {
+        font-family:'Fraunces',serif; font-size:0.95rem; font-weight:600;
+        color:var(--ink); letter-spacing:-0.01em; line-height:1.25;
+    }
+    .ac-title em { font-style:italic; color:#b0763a; }
+    .ac-sub {
+        font-size:0.67rem; color:var(--ink-mute); margin-top:0.2rem;
+        letter-spacing:0.02em;
+    }
+    .ac-badge {
+        font-size:0.58rem; font-weight:700; padding:0.28rem 0.65rem;
+        border-radius:6px; letter-spacing:0.1em; text-transform:uppercase;
+        flex-shrink:0;
+    }
+    .badge-amber { background:#fef3c7; color:#92400e; border:1px solid #fde68a; }
+    .badge-green { background:#d1fae5; color:#065f46; border:1px solid #a7f3d0; }
+    .badge-purple{ background:#ede9fe; color:#5b21b6; border:1px solid #ddd6fe; }
+
+    /* Card Body */
+    .ac-body { padding:1rem 1.5rem 1.5rem; }
+
+    /* Stat footer row */
+    .ac-footer {
+        display:flex; gap:1.5rem; flex-wrap:wrap;
+        padding:0.9rem 1.5rem; border-top:1px solid var(--border-lt);
+        background:#fdfcfa;
+    }
+    .af-item .af-lbl {
+        font-size:0.58rem; font-weight:700; letter-spacing:0.1em;
+        text-transform:uppercase; color:var(--ink-mute); margin-bottom:0.2rem;
+    }
+    .af-item .af-val {
+        font-family:'Fraunces',serif; font-size:0.98rem;
+        color:var(--ink); font-weight:600; letter-spacing:-0.01em;
+    }
+
+    /* Donut layout */
+    .donut-layout { display:flex; align-items:center; gap:0.5rem; min-height:210px; }
+    .donut-canvas-wrap { position:relative; flex:0 0 180px; height:180px; display:flex; align-items:center; justify-content:center; }
+    .donut-center-text { position:absolute; text-align:center; pointer-events:none; }
+    .dct-val { font-family:'Fraunces',serif; font-size:1.3rem; font-weight:700; color:var(--ink); line-height:1; }
+    .dct-lbl { font-size:0.58rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--ink-mute); margin-top:0.25rem; }
+
+    /* Custom legend */
+    .c-legend { flex:1; display:flex; flex-direction:column; gap:0.65rem; padding-left:0.75rem; }
+    .cl-item { display:flex; align-items:center; gap:0.65rem; cursor:default; }
+    .cl-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .cl-name { font-size:0.8rem; color:var(--ink-soft); flex:1; }
+    .cl-pct { font-size:0.7rem; color:var(--ink-mute); font-weight:600; }
+
+    /* Horizontal Bars */
+    .hbar-list { display:flex; flex-direction:column; gap:1.1rem; }
+    .hbar-meta { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:0.45rem; }
+    .hbar-name { font-size:0.8rem; font-weight:500; color:var(--ink-soft); }
+    .hbar-amount { font-size:0.72rem; font-weight:700; color:var(--ink-mute); }
+    .hbar-track { height:5px; background:var(--border-lt); border-radius:99px; overflow:hidden; }
+    .hbar-fill {
+        height:100%; border-radius:99px;
+        transition:width 1s cubic-bezier(0.16,1,0.3,1);
+        position:relative;
+    }
+    .hbar-fill::after {
+        content:''; position:absolute; inset:0;
+        background:linear-gradient(90deg,transparent 60%,rgba(255,255,255,0.5));
+        border-radius:99px;
+    }
+
+    @media(max-width:900px){
+        .an-grid { grid-template-columns:1fr; }
+        .an-card.span-full { grid-column:1; }
+        .kpi-strip { grid-template-columns:repeat(2,1fr); }
+    }
 </style>
 
 <div class="inv-wrap">
@@ -435,7 +571,7 @@ include __DIR__ . '/../../includes/header.php';
     <div class="inv-header">
         <div>
             <div class="eyebrow">Capital Tracking</div>
-            <h1>Investments</h1>
+            <h1>Investment <em>Analytics</em></h1>
         </div>
         <div class="header-actions">
             <button class="btn-new" onclick="openModal('addModal')">
@@ -444,17 +580,316 @@ include __DIR__ . '/../../includes/header.php';
         </div>
     </div>
 
-    <!-- Stats Card -->
-    <div class="stat-card">
-        <div class="s-icon"><i class="fas fa-hand-holding-usd"></i></div>
-        <div class="stat-content">
-            <div class="stat-label">Total Invested</div>
-            <div class="stat-value">
-                <span class="short-val"><?= formatCurrencyShort($total_invested) ?></span>
-                <span class="full-val"><?= formatCurrency($total_invested) ?></span>
+    <!-- ── Analytics Section ────────────────── -->
+
+<?php if (!empty($investments)): 
+    /* ── Prepare Data ── */
+    $byType    = [];
+    $byProject = [];
+    $monthly   = [];
+
+    $total_returned_all = 0;
+    $balance_all        = 0;
+
+    foreach ($investments as $inv) {
+        $t = ucfirst($inv['investment_type']);
+        $byType[$t] = ($byType[$t] ?? 0) + $inv['amount'];
+
+        $p = $inv['project_name'];
+        $byProject[$p] = ($byProject[$p] ?? 0) + $inv['amount'];
+
+        $sortKey = date('Y-m', strtotime($inv['investment_date']));
+        if (!isset($monthly[$sortKey])) {
+            $monthly[$sortKey] = ['label' => date('M', strtotime($inv['investment_date'])), 'amount' => 0];
+        }
+        $monthly[$sortKey]['amount'] += $inv['amount'];
+
+        $total_returned_all += ($inv['total_returned'] ?? 0);
+        $balance_all        += ($inv['balance'] ?? 0);
+    }
+    ksort($monthly);
+    $monthly = array_slice($monthly, -12);
+
+    /* Sort projects descending by amount, cap at 5 */
+    arsort($byProject);
+    $byProject = array_slice($byProject, 0, 5, true);
+
+    /* KPI helpers */
+    $avg_investment = count($investments) > 0 ? $total_invested / count($investments) : 0;
+    $peak_month     = '';
+    $peak_amount    = 0;
+    foreach ($monthly as $m) {
+        if ($m['amount'] > $peak_amount) {
+            $peak_amount = $m['amount'];
+            $peak_month  = $m['label'];
+        }
+    }
+    $active_months = count(array_filter($monthly, fn($m) => $m['amount'] > 0));
+
+    /* JSON for JS */
+    $jsonTypeLabels  = json_encode(array_keys($byType));
+    $jsonTypeValues  = json_encode(array_values($byType));
+    $jsonProjLabels  = json_encode(array_keys($byProject));
+    $jsonProjValues  = json_encode(array_values($byProject));
+    $jsonMonthLabels = json_encode(array_column($monthly, 'label'));
+    $jsonMonthValues = json_encode(array_column($monthly, 'amount'));
+?>
+
+
+<!-- ── KPI Strip ── -->
+<div class="kpi-strip">
+    <div class="kpi-cell">
+        <div class="kpi-lbl">Total Invested</div>
+        <div class="kpi-val"><?= formatCurrencyShort($total_invested) ?></div>
+        <div class="kpi-delta neu"><?= count($investments) ?> records total</div>
+    </div>
+    <div class="kpi-cell">
+        <div class="kpi-lbl">Total Returned</div>
+        <div class="kpi-val"><?= formatCurrencyShort($total_returned_all) ?></div>
+        <div class="kpi-delta up">
+            ↑ <?= $total_invested > 0 ? number_format($total_returned_all/$total_invested*100,1) : 0 ?>% return rate
+        </div>
+    </div>
+    <div class="kpi-cell">
+        <div class="kpi-lbl">Balance Outstanding</div>
+        <div class="kpi-val"><?= formatCurrencyShort($balance_all) ?></div>
+        <div class="kpi-delta <?= $balance_all > 0 ? 'down' : 'up' ?>">
+            <?= $balance_all > 0 ? '↓ Pending recovery' : '✓ Fully recovered' ?>
+        </div>
+    </div>
+    <div class="kpi-cell">
+        <div class="kpi-lbl">Avg. Investment</div>
+        <div class="kpi-val"><?= formatCurrencyShort($avg_investment) ?></div>
+        <div class="kpi-delta neu"><?= count($byProject) ?> projects tracked</div>
+    </div>
+</div>
+
+<!-- ── Charts Grid ── -->
+<div class="an-grid">
+
+    <!-- Trend Chart — full width -->
+    <div class="an-card span-full">
+        <div class="ac-head">
+            <div>
+                <div class="ac-title">Monthly <em>Flow</em></div>
+                <div class="ac-sub">Investment volume over time · Last 12 months</div>
+            </div>
+            <div class="ac-badge badge-green">TREND</div>
+        </div>
+        <div class="ac-body" style="height:160px">
+            <canvas id="anTrendChart"></canvas>
+        </div>
+        <div class="ac-footer">
+            <div class="af-item">
+                <div class="af-lbl">Peak Month</div>
+                <div class="af-val"><?= $peak_month ?: '—' ?></div>
+            </div>
+            <div class="af-item">
+                <div class="af-lbl">Largest Inflow</div>
+                <div class="af-val"><?= formatCurrencyShort($peak_amount) ?></div>
+            </div>
+            <div class="af-item">
+                <div class="af-lbl">Active Months</div>
+                <div class="af-val"><?= $active_months ?> of <?= count($monthly) ?></div>
+            </div>
+            <div class="af-item">
+                <div class="af-lbl">Avg. / Month</div>
+                <div class="af-val"><?= $active_months > 0 ? formatCurrencyShort($total_invested / $active_months) : '—' ?></div>
             </div>
         </div>
     </div>
+
+    <!-- Distribution Donut -->
+    <div class="an-card">
+        <div class="ac-head">
+            <div>
+                <div class="ac-title">Capital <em>Distribution</em></div>
+                <div class="ac-sub">By investment type</div>
+            </div>
+            <div class="ac-badge badge-amber">SPLIT</div>
+        </div>
+        <div class="ac-body">
+            <div class="donut-layout">
+                <div class="donut-canvas-wrap">
+                    <canvas id="anTypeChart" width="180" height="180"></canvas>
+                    <div class="donut-center-text">
+                        <div class="dct-val"><?= count($byType) ?></div>
+                        <div class="dct-lbl">Types</div>
+                    </div>
+                </div>
+                <div class="c-legend" id="anTypeLegend"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Project Bars -->
+    <div class="an-card">
+        <div class="ac-head">
+            <div>
+                <div class="ac-title">Project <em>Breakdown</em></div>
+                <div class="ac-sub">Capital allocated per project</div>
+            </div>
+            <div class="ac-badge badge-purple">PROJECTS</div>
+        </div>
+        <div class="ac-body">
+            <div class="hbar-list" id="anProjBars"></div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    // ── Common chart defaults ──
+    Chart.defaults.font.family = "'DM Sans', sans-serif";
+    Chart.defaults.color = '#9e9690';
+
+    const palette   = ['#b5622a', '#10b981', '#8b5cf6', '#f59e0b', '#3b82f6'];
+    const typeLabels  = <?= $jsonTypeLabels ?>;
+    const typeValues  = <?= $jsonTypeValues ?>;
+    const projLabels  = <?= $jsonProjLabels ?>;
+    const projValues  = <?= $jsonProjValues ?>;
+    const monthLabels = <?= $jsonMonthLabels ?>;
+    const monthValues = <?= $jsonMonthValues ?>;
+
+    // ── 1. Trend Chart ──
+    const tCtx = document.getElementById('anTrendChart').getContext('2d');
+    const tGrad = tCtx.createLinearGradient(0, 0, 0, 160);
+    tGrad.addColorStop(0,   'rgba(16,185,129,0.18)');
+    tGrad.addColorStop(0.65,'rgba(16,185,129,0.03)');
+    tGrad.addColorStop(1,   'rgba(16,185,129,0)');
+
+    new Chart(tCtx, {
+        type: 'line',
+        data: {
+            labels: monthLabels,
+            datasets: [{
+                data: monthValues,
+                borderColor: '#10b981',
+                borderWidth: 2,
+                pointBackgroundColor: '#10b981',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: monthValues.map(v => v > 0 ? 4 : 0),
+                pointHoverRadius: 6,
+                backgroundColor: tGrad,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#1a1714',
+                    titleColor: '#9e9690',
+                    bodyColor: '#e8e3db',
+                    borderColor: 'rgba(232,227,219,0.12)',
+                    borderWidth: 1,
+                    padding: 10,
+                    callbacks: { label: ctx => '  ' + new Intl.NumberFormat('en-IN', { style:'currency', currency:'INR', maximumFractionDigits:0 }).format(ctx.raw) }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { color: 'rgba(26,23,20,0.05)', drawBorder: false },
+                    ticks: { color: '#9e9690', font: { size: 11 } }
+                },
+                y: {
+                    grid: { color: 'rgba(26,23,20,0.05)', drawBorder: false },
+                    ticks: {
+                        color: '#9e9690', font: { size: 11 },
+                        callback: v => v > 0 ? '₹' + (v >= 10000000 ? (v/10000000).toFixed(1)+'Cr' : v >= 100000 ? (v/100000).toFixed(1)+'L' : v) : ''
+                    },
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // ── 2. Donut Chart ──
+    const dCtx = document.getElementById('anTypeChart').getContext('2d');
+    const totalAmt = typeValues.reduce((a,b)=>a+b,0);
+
+    new Chart(dCtx, {
+        type: 'doughnut',
+        data: {
+            labels: typeLabels,
+            datasets: [{
+                data: typeValues,
+                backgroundColor: palette,
+                borderColor: '#ffffff',
+                borderWidth: 3,
+                hoverOffset: 5
+            }]
+        },
+        options: {
+            responsive: false, cutout: '70%',
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#1a1714',
+                    titleColor: '#9e9690',
+                    bodyColor: '#e8e3db',
+                    borderColor: 'rgba(232,227,219,0.12)',
+                    borderWidth: 1,
+                    padding: 10,
+                    callbacks: {
+                        label: ctx => '  ' + new Intl.NumberFormat('en-IN', { style:'currency', currency:'INR', maximumFractionDigits:0 }).format(ctx.raw) +
+                                      '  (' + Math.round(ctx.raw/totalAmt*100) + '%)'
+                    }
+                }
+            }
+        }
+    });
+
+    // Legend
+    const legEl = document.getElementById('anTypeLegend');
+    typeLabels.forEach((label, i) => {
+        const pct = totalAmt > 0 ? Math.round(typeValues[i] / totalAmt * 100) : 0;
+        legEl.innerHTML += `<div class="cl-item">
+            <div class="cl-dot" style="background:${palette[i]}"></div>
+            <span class="cl-name">${label}</span>
+            <span class="cl-pct">${pct}%</span>
+        </div>`;
+    });
+
+    // ── 3. Project Bars ──
+    const maxProj = Math.max(...projValues);
+    const gradArr = [
+        'linear-gradient(90deg,#b5622a,#d48a60)',
+        'linear-gradient(90deg,#8b5cf6,#a78cf8)',
+        'linear-gradient(90deg,#10b981,#5dd4aa)',
+        'linear-gradient(90deg,#f59e0b,#f8c55c)',
+        'linear-gradient(90deg,#3b82f6,#7ab3fa)',
+    ];
+    const barEl = document.getElementById('anProjBars');
+
+    projLabels.forEach((label, i) => {
+        const pct = maxProj > 0 ? Math.round(projValues[i] / maxProj * 100) : 0;
+        const fmt = new Intl.NumberFormat('en-IN', { style:'currency', currency:'INR', maximumFractionDigits:0 }).format(projValues[i]);
+        barEl.innerHTML += `<div class="hbar-item">
+            <div class="hbar-meta">
+                <span class="hbar-name">${label}</span>
+                <span class="hbar-amount">${fmt}</span>
+            </div>
+            <div class="hbar-track">
+                <div class="hbar-fill" style="width:0%;background:${gradArr[i % gradArr.length]}" data-target="${pct}"></div>
+            </div>
+        </div>`;
+    });
+
+    // Animate bars
+    requestAnimationFrame(() => setTimeout(() => {
+        document.querySelectorAll('#anProjBars .hbar-fill').forEach(b => { b.style.width = b.dataset.target + '%'; });
+    }, 350));
+
+});
+</script>
+
+<?php endif; ?>
 
     <!-- Main Panel -->
     <div class="inv-panel">
@@ -520,6 +955,8 @@ include __DIR__ . '/../../includes/header.php';
                         <th class="th-c">Investor</th>
                         <th class="th-c">Type</th>
                         <th class="th-r">Amount</th>
+                        <th class="th-r">Returned</th>
+                        <th class="th-r">Balance</th>
                         <th class="th-r">Actions</th>
                     </tr>
                 </thead>
@@ -545,10 +982,26 @@ include __DIR__ . '/../../includes/header.php';
                             <?= renderProjectBadge($inv['project_name'], $inv['project_id']) ?>
                         </td>
                         <td class="td-c"><span style="font-weight:600;color:var(--ink)"><?= htmlspecialchars($inv['investor_name']) ?></span></td>
-                        <td class="td-c"><span class="pill <?= $inv['investment_type'] ?>"><?= ucfirst($inv['investment_type']) ?></span></td>
-                        <td class="td-r"><strong style="font-weight:700;color:#10b981"><?= formatCurrency($inv['amount']) ?></strong></td>
+                        <td class="td-c">
+                            <span class="pill <?= $inv['investment_type'] ?>"><?= ucfirst($inv['investment_type']) ?></span>
+                            <?php if ($inv['is_equity']): ?>
+                                <div style="font-size:0.7rem; color:var(--ink-mute); margin-top:0.2rem; font-weight:600;">
+                                    <?= number_format($inv['share_percentage'], 1) ?>% Ownership
+                                </div>
+                            <?php else: ?>
+                                <div style="font-size:0.7rem; color:var(--ink-mute); margin-top:0.2rem;">
+                                    <?= number_format($inv['capital_mix_percentage'], 1) ?>% of Cap
+                                </div>
+                            <?php endif; ?>
+                        </td>
+                        <td class="td-r"><strong style="font-weight:700;color:var(--ink)"><?= formatCurrency($inv['amount']) ?></strong></td>
+                        <td class="td-r"><span style="color:#059669"><?= formatCurrency($inv['total_returned']) ?></span></td>
+                        <td class="td-r"><strong style="font-weight:700;color:<?= $inv['balance'] > 0 ? '#dc2626' : '#059669' ?>"><?= formatCurrency($inv['balance']) ?></strong></td>
                         <td class="td-r">
                             <div class="act-group">
+                                <a href="returns.php?id=<?= $inv['id'] ?>" class="act-btn" title="Manage Returns" style="color:var(--accent);">
+                                    <i class="fas fa-hand-holding-usd"></i>
+                                </a>
                                 <button class="act-btn" onclick="viewInvestment(<?= htmlspecialchars(json_encode($inv)) ?>)" title="View">
                                     <i class="fas fa-eye"></i>
                                 </button>

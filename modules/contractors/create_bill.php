@@ -82,12 +82,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $notifMsg   = "Bill #{$challan_no} for Contractor ID {$contractor_id} has been created.";
         $notifLink  = BASE_URL . "modules/contractors/view_bill.php?id=" . $bill_id;
         
-        // Notify current user (or Admin user ID 1)
-        // ideally notify admins. For now, notifying current user as confirmation + User 1 if different.
-        $ns->create($_SESSION['user_id'], $notifTitle, $notifMsg, 'success', $notifLink);
-        if ($_SESSION['user_id'] != 1) {
-             $ns->create(1, $notifTitle, $notifMsg . " (Created by " . $_SESSION['username'] . ")", 'info', $notifLink);
-        }
+        // Notify Admins + Contractor Managers
+        $ns->notifyUsersWithPermission('contractors', $notifTitle, $notifMsg . " (Created by " . $_SESSION['username'] . ")", 'info', $notifLink);
 
         $db->commit();
 

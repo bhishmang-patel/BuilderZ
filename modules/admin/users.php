@@ -24,39 +24,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     
     if ($action === 'create') {
-        $data = [
-            'username' => sanitize($_POST['username']),
-            'password' => password_hash($_POST['password'], PASSWORD_DEFAULT),
-            'full_name' => sanitize($_POST['full_name']),
-            'email' => sanitize($_POST['email']),
-            'role' => $_POST['role'],
-            'status' => 'active'
-        ];
-        
-        $id = $db->insert('users', $data);
-        logAudit('create', 'users', $id, null, ['username' => $data['username']]);
-        setFlashMessage('success', 'User created successfully');
+        try {
+            $data = [
+                'username' => sanitize($_POST['username']),
+                'password' => password_hash($_POST['password'], PASSWORD_DEFAULT),
+                'full_name' => sanitize($_POST['full_name']),
+                'email' => sanitize($_POST['email']),
+                'role' => $_POST['role'],
+                'permissions' => isset($_POST['permissions']) ? json_encode($_POST['permissions']) : '[]',
+                'status' => 'active'
+            ];
+            
+            $id = $db->insert('users', $data);
+            logAudit('create', 'users', $id, null, ['username' => $data['username']]);
+            setFlashMessage('success', 'User created successfully');
+        } catch (Exception $e) {
+            setFlashMessage('error', 'Error creating user: ' . $e->getMessage());
+        }
         redirect('modules/admin/users.php');
         
     } elseif ($action === 'update') {
-        $id = intval($_POST['id']);
-        $data = [
-            'full_name' => sanitize($_POST['full_name']),
-            'email' => sanitize($_POST['email']),
-            'role' => $_POST['role'],
-            'status' => $_POST['status']
-        ];
-        
-        if (!empty($_POST['password'])) {
-            $data['password'] = password_hash($_POST['password'], PASSWORD_DEFAULT);
+        try {
+            $id = intval($_POST['id']);
+            $data = [
+                'full_name' => sanitize($_POST['full_name']),
+                'email' => sanitize($_POST['email']),
+                'role' => $_POST['role'],
+                'permissions' => isset($_POST['permissions']) ? json_encode($_POST['permissions']) : '[]',
+                'status' => $_POST['status']
+            ];
+            
+            if (!empty($_POST['password'])) {
+                $data['password'] = password_hash($_POST['password'], PASSWORD_DEFAULT);
+            }
+            
+            $db->update('users', $data, 'id = ?', ['id' => $id]);
+            logAudit('update', 'users', $id, null, $data);
+            setFlashMessage('success', 'User updated successfully');
+        } catch (Exception $e) {
+            setFlashMessage('error', 'Error updating user: ' . $e->getMessage());
         }
-        
-        $db->update('users', $data, 'id = ?', ['id' => $id]);
-        logAudit('update', 'users', $id, null, $data);
-        setFlashMessage('success', 'User updated successfully');
         redirect('modules/admin/users.php');
         
     } elseif ($action === 'delete') {
+
         $id = intval($_POST['id']);
         
         if ($id == $_SESSION['user_id']) {
@@ -217,18 +228,6 @@ include __DIR__ . '/../../includes/header.php';
     .user-table td { padding: 0.8rem 1rem; vertical-align: middle; }
     .user-table td.td-r { text-align: right; }
 
-    /* Avatar */
-    .av-circ {
-        width: 38px; height: 38px; border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 0.75rem; font-weight: 700; color: white;
-        margin-right: 0.65rem; flex-shrink: 0;
-    }
-    .av-blue { background: var(--accent); }
-    .av-green { background: #10b981; }
-    .av-purple { background: #a855f7; }
-    .av-orange { background: #f59e0b; }
-
     /* Pill badges */
     .pill {
         display: inline-block; padding: 0.24rem 0.7rem;
@@ -333,8 +332,9 @@ include __DIR__ . '/../../includes/header.php';
     }
 
     .field-icon {
-        position: absolute; left: 0.85rem; top: 2.15rem;
-        color: var(--ink-mute); font-size: 0.8rem;
+        position: absolute; left: 0.85rem; bottom: 0.8rem;
+        color: var(--ink-mute); font-size: 0.8rem; pointer-events: none;
+        height: 1rem; display: flex; align-items: center;
     }
 
     .field-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
@@ -374,8 +374,55 @@ include __DIR__ . '/../../includes/header.php';
     }
 
     /* Animations */
+    /* ── Permissions Grid ────────────────────── */
+    .perm-grid {
+        display: grid; grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem; max-height: 220px; overflow-y: auto;
+        padding: 0.65rem; border: 1.5px solid var(--border);
+        border-radius: 8px; background: #fdfcfa;
+        margin-top: 0.4rem;
+        scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+    }
+    .perm-grid::-webkit-scrollbar { width: 4px; }
+    .perm-grid::-webkit-scrollbar-track { background: transparent; }
+    .perm-grid::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    .perm-item {
+        display: flex; align-items: center; gap: 0.5rem;
+        background: white; padding: 0.5rem 0.65rem;
+        border-radius: 6px; border: 1.5px solid var(--border-lt);
+        cursor: pointer; transition: border-color 0.15s, background 0.15s;
+    }
+    .perm-item:hover { border-color: var(--accent-lt); background: var(--accent-bg); }
+    .perm-item:has(input:checked) { border-color: var(--accent); background: var(--accent-bg); }
+
+    .perm-item input[type="checkbox"] {
+        width: 14px; height: 14px; accent-color: var(--accent);
+        cursor: pointer; flex-shrink: 0; margin: 0;
+    }
+    .perm-item label {
+        margin: 0; font-size: 0.78rem; font-weight: 500;
+        cursor: pointer; text-transform: none;
+        color: var(--ink); letter-spacing: 0;
+    }
+    
     @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
 </style>
+
+<?php
+// Define available permissions (Sections)
+$available_permissions = [
+    'dashboard' => 'Dashboard',
+    'projects' => 'Projects',
+    'sales' => 'Sales (Leads, Bookings)',
+    'finance' => 'Finance (Accounts, Payments)',
+    'purchasing' => 'Purchasing (Vendors, POs)',
+    'contractors' => 'Contractor Management',
+    'inventory' => 'Inventory',
+    'reports' => 'Reports',
+    'masters' => 'Administration (Masters)'
+];
+?>
 
 <div class="user-wrap">
 
@@ -436,41 +483,29 @@ include __DIR__ . '/../../includes/header.php';
             <table class="user-table">
                 <thead>
                     <tr>
-                        <th>User Profile</th>
+                        <th>UserName</th>
                         <th>Full Name</th>
                         <th>Email</th>
                         <th>Role</th>
                         <th>Status</th>
                         <th>Last Login</th>
-                        <th class="th-r">Actions</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php 
-                    $colors = ['av-blue', 'av-green', 'av-purple', 'av-orange'];
-                    $idx = 0;
                     foreach ($users as $user): 
-                        $initials = strtoupper(substr($user['username'], 0, 1));
-                        if (!empty($user['full_name'])) {
-                            $parts = explode(' ', $user['full_name']);
-                            if (count($parts) > 1) {
-                                $initials = strtoupper(substr($parts[0], 0, 1) . substr($parts[1], 0, 1));
-                            }
-                        }
-                        $color = $colors[$idx % 4];
-                        $idx++;
-
                         $role_class = match($user['role']) {
                             'admin' => 'red',
                             'project_manager' => 'blue',
                             'accountant' => 'purple',
+                            'crm_executive' => 'green',
                             default => 'gray'
                         };
                     ?>
                     <tr>
                         <td>
                             <div style="display:flex;align-items:center">
-                                <div class="av-circ <?= $color ?>"><?= $initials ?></div>
                                 <span style="font-weight:600"><?= htmlspecialchars($user['username']) ?></span>
                             </div>
                         </td>
@@ -491,8 +526,8 @@ include __DIR__ . '/../../includes/header.php';
                                 <?= isset($user['last_login']) && $user['last_login'] ? date('M d, h:i A', strtotime($user['last_login'])) : 'Never' ?>
                             </span>
                         </td>
-                        <td class="td-r">
-                            <div class="act-group" style="justify-content:flex-end">
+                        <td>
+                            <div class="act-group">
                                 <button class="act-btn" onclick='editUser(<?= htmlspecialchars(json_encode($user)) ?>)' title="Edit">
                                     <i class="fas fa-pencil-alt"></i>
                                 </button>
@@ -513,22 +548,36 @@ include __DIR__ . '/../../includes/header.php';
 
 </div>
 
-<!-- Add User Modal -->
+<!-- ═══════ ADD USER MODAL ═══════ -->
 <div class="user-modal-backdrop" id="addModal">
     <div class="user-modal md">
         <form method="POST">
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="create">
 
+            <!-- Head -->
             <div class="modal-head">
-                <div>
-                    <h3><i class="fas fa-user-plus"></i> Add New User</h3>
-                    <p>Create functionality access for team members</p>
+                <div style="display:flex;align-items:center;gap:0.75rem">
+                    <div style="width:36px;height:36px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;color:white;font-size:0.85rem;flex-shrink:0">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <div>
+                        <h3 style="font-family:'Fraunces',serif;font-size:1.1rem;font-weight:600;color:var(--ink);margin:0">Add New User</h3>
+                        <p style="font-size:0.75rem;color:var(--ink-mute);margin:0.2rem 0 0">Create functionality access for team members</p>
+                    </div>
                 </div>
                 <button type="button" class="modal-close" onclick="closeModal('addModal')">×</button>
             </div>
 
-            <div class="modal-body">
+            <!-- Body -->
+            <div class="modal-body" style="max-height:70vh;overflow-y:auto">
+
+                <!-- Section: Identity -->
+                <div style="font-size:0.65rem;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-mute);display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem">
+                    Identity
+                    <span style="flex:1;height:1px;background:var(--border-lt)"></span>
+                </div>
+
                 <div class="field-row">
                     <div class="field">
                         <label>Username *</label>
@@ -548,30 +597,53 @@ include __DIR__ . '/../../includes/header.php';
                     <input type="email" name="email" class="with-icon" placeholder="john.doe@company.com">
                 </div>
 
+                <!-- Section: Access -->
+                <div style="font-size:0.65rem;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-mute);display:flex;align-items:center;gap:0.5rem;margin:1.5rem 0 1rem">
+                    Access
+                    <span style="flex:1;height:1px;background:var(--border-lt)"></span>
+                </div>
+
                 <div class="field-row">
                     <div class="field">
                         <label>Role Assignment *</label>
                         <i class="fas fa-user-shield field-icon"></i>
-                        <select name="role" class="with-icon" required>
+                        <select name="role" class="with-icon" required onchange="togglePerms(this.value,'add')">
                             <option value="">Select Role</option>
                             <option value="project_manager">Project Manager</option>
                             <option value="accountant">Accountant</option>
+                            <option value="crm_executive">CRM Executive</option>
                             <option value="admin">Administrator</option>
                         </select>
                     </div>
                     <div class="field">
                         <label>Password *</label>
                         <i class="fas fa-lock field-icon"></i>
-                        <input type="password" name="password" class="with-icon" required minlength="6" placeholder="******">
+                        <input type="password" name="password" class="with-icon" required minlength="6" placeholder="Min. 6 characters">
                     </div>
                 </div>
 
+                <!-- Permissions (shown conditionally) -->
+                <div class="field" id="permField_add" style="display:none">
+                    <label>Page Access Permissions</label>
+                    <div class="perm-grid">
+                        <?php foreach ($available_permissions as $key => $label): ?>
+                        <div class="perm-item">
+                            <input type="checkbox" name="permissions[]" value="<?= $key ?>" id="perm_add_<?= $key ?>">
+                            <label for="perm_add_<?= $key ?>"><?= $label ?></label>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+
+                <!-- Info box -->
                 <div class="info-box">
                     <i class="fas fa-info-circle"></i>
                     <p style="margin:0">New users will receive their login credentials via email if configured. Default status is <strong>Active</strong>.</p>
                 </div>
+
             </div>
 
+            <!-- Footer -->
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeModal('addModal')">Cancel</button>
                 <button type="submit" class="btn btn-primary">
@@ -582,7 +654,8 @@ include __DIR__ . '/../../includes/header.php';
     </div>
 </div>
 
-<!-- Edit User Modal -->
+
+<!-- ═══════ EDIT USER MODAL ═══════ -->
 <div class="user-modal-backdrop" id="editModal">
     <div class="user-modal md">
         <form method="POST">
@@ -590,35 +663,59 @@ include __DIR__ . '/../../includes/header.php';
             <input type="hidden" name="action" value="update">
             <input type="hidden" name="id" id="editId">
 
+            <!-- Head -->
             <div class="modal-head">
-                <div>
-                    <h3><i class="fas fa-user-edit"></i> Edit User</h3>
+                <div style="display:flex;align-items:center;gap:0.75rem">
+                    <div style="width:36px;height:36px;background:var(--ink-soft);border-radius:8px;display:flex;align-items:center;justify-content:center;color:white;font-size:0.85rem;flex-shrink:0">
+                        <i class="fas fa-user-edit"></i>
+                    </div>
+                    <div>
+                        <h3 style="font-family:'Fraunces',serif;font-size:1.1rem;font-weight:600;color:var(--ink);margin:0">Edit User</h3>
+                        <p style="font-size:0.75rem;color:var(--ink-mute);margin:0.2rem 0 0">Update account details and permissions</p>
+                    </div>
                 </div>
                 <button type="button" class="modal-close" onclick="closeModal('editModal')">×</button>
             </div>
 
-            <div class="modal-body">
+            <!-- Body -->
+            <div class="modal-body" style="max-height:70vh;overflow-y:auto">
+
+                <!-- Section: Identity -->
+                <div style="font-size:0.65rem;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-mute);display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem">
+                    Identity
+                    <span style="flex:1;height:1px;background:var(--border-lt)"></span>
+                </div>
+
                 <div class="field">
                     <label>Username</label>
-                    <input type="text" id="editUsername" disabled>
+                    <input type="text" id="editUsername" disabled
+                           style="background:var(--cream);color:var(--ink-mute);cursor:not-allowed">
                 </div>
 
-                <div class="field">
-                    <label>Full Name *</label>
-                    <input type="text" name="full_name" id="editFullName" required>
+                <div class="field-row">
+                    <div class="field">
+                        <label>Full Name *</label>
+                        <input type="text" name="full_name" id="editFullName" required placeholder="Full name">
+                    </div>
+                    <div class="field">
+                        <label>Email</label>
+                        <input type="email" name="email" id="editEmail" placeholder="Email address">
+                    </div>
                 </div>
 
-                <div class="field">
-                    <label>Email</label>
-                    <input type="email" name="email" id="editEmail">
+                <!-- Section: Access -->
+                <div style="font-size:0.65rem;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-mute);display:flex;align-items:center;gap:0.5rem;margin:1.5rem 0 1rem">
+                    Access
+                    <span style="flex:1;height:1px;background:var(--border-lt)"></span>
                 </div>
 
                 <div class="field-row">
                     <div class="field">
                         <label>Role *</label>
-                        <select name="role" id="editRole" required>
+                        <select name="role" id="editRole" required onchange="togglePerms(this.value,'edit')">
                             <option value="project_manager">Project Manager</option>
                             <option value="accountant">Accountant</option>
+                            <option value="crm_executive">CRM Executive</option>
                             <option value="admin">Administrator</option>
                         </select>
                     </div>
@@ -631,12 +728,35 @@ include __DIR__ . '/../../includes/header.php';
                     </div>
                 </div>
 
-                <div class="field" style="padding-top:1rem;border-top:1.5px solid var(--border-lt)">
-                    <label>Change Password (Optional)</label>
-                    <input type="password" name="password" minlength="6" placeholder="Leave blank to keep current">
+                <!-- Permissions (shown conditionally) -->
+                <div class="field" id="permField_edit" style="display:none">
+                    <label>Page Access Permissions</label>
+                    <div class="perm-grid">
+                        <?php foreach ($available_permissions as $key => $label): ?>
+                        <div class="perm-item">
+                            <input type="checkbox" name="permissions[]" value="<?= $key ?>" id="perm_edit_<?= $key ?>">
+                            <label for="perm_edit_<?= $key ?>"><?= $label ?></label>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
                 </div>
+
+                <!-- Section: Security -->
+                <div style="font-size:0.65rem;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-mute);display:flex;align-items:center;gap:0.5rem;margin:1.5rem 0 1rem;padding-top:1.5rem;border-top:1.5px solid var(--border-lt)">
+                    Security
+                    <span style="flex:1;height:1px;background:var(--border-lt)"></span>
+                </div>
+
+                <div class="field" style="margin-bottom:0">
+                    <label>Change Password <span style="font-weight:400;text-transform:none;font-size:0.72rem;color:var(--ink-mute)">(optional)</span></label>
+                    <i class="fas fa-lock field-icon"></i>
+                    <input type="password" name="password" class="with-icon" minlength="6"
+                           placeholder="Leave blank to keep current password">
+                </div>
+
             </div>
 
+            <!-- Footer -->
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeModal('editModal')">Cancel</button>
                 <button type="submit" class="btn btn-primary">Update User</button>
@@ -682,7 +802,40 @@ function editUser(user) {
     document.getElementById('editEmail').value = user.email;
     document.getElementById('editRole').value = user.role;
     document.getElementById('editStatus').value = user.status;
+    
+    // Handle permissions
+    const perms = user.permissions ? JSON.parse(user.permissions) : [];
+    document.querySelectorAll('[id^="perm_edit_"]').forEach(cb => {
+        cb.checked = perms.includes(cb.value);
+    });
+    
+    togglePerms(user.role, 'edit');
     document.getElementById('editModal').classList.add('open');
+}
+
+function togglePerms(role, mode) {
+    const field = document.getElementById('permField_' + mode);
+    
+    // Default permissions based on role
+    const defaults = {
+        'admin': ['dashboard', 'projects', 'sales', 'finance', 'purchasing', 'contractors', 'inventory', 'reports', 'masters'],
+        'project_manager': ['dashboard', 'projects', 'purchasing', 'contractors', 'inventory', 'reports'],
+        'crm_executive': ['dashboard', 'sales'],
+        'accountant': ['dashboard', 'finance', 'purchasing', 'contractors', 'reports']
+    };
+
+    if (role === 'admin') {
+        field.style.display = 'none'; // Admin has all access
+    } else {
+        field.style.display = 'block';
+        
+        // Auto-check defaults if in 'add' mode
+        if (mode === 'add' && defaults[role]) {
+            document.querySelectorAll('[id^="perm_add_"]').forEach(cb => {
+                cb.checked = defaults[role].includes(cb.value);
+            });
+        }
+    }
 }
 
 function openDel(id) {

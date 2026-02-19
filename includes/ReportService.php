@@ -26,7 +26,8 @@ class ReportService {
             p.payment_date as transaction_date,
             p.amount,
             pt.name as party_name,
-            pr.project_name
+            pr.project_name,
+            pr.id as project_id
         FROM payments p
         JOIN parties pt ON p.party_id = pt.id
         LEFT JOIN bookings b ON p.reference_type = 'booking' AND p.reference_id = b.id
@@ -43,7 +44,8 @@ class ReportService {
             ft.transaction_date,
             ft.amount,
             '-' as party_name,
-            pr.project_name
+            pr.project_name,
+            pr.id as project_id
         FROM financial_transactions ft
         LEFT JOIN projects pr ON ft.project_id = pr.id
         WHERE ft.transaction_type = 'income'
@@ -72,10 +74,19 @@ class ReportService {
             END as category,
             p.payment_date as transaction_date,
             p.amount,
-            pt.name as party_name,
-            '-' as project_name
+            CONVERT(pt.name USING utf8mb4) as party_name,
+            CONVERT(COALESCE(pr.project_name, ch_proj.project_name, cb_proj.project_name, '-') USING utf8mb4) as project_name,
+            COALESCE(pr.id, ch_proj.id, cb_proj.id) as project_id
         FROM payments p
         JOIN parties pt ON p.party_id = pt.id
+        LEFT JOIN bills vb ON p.payment_type = 'vendor_bill_payment' AND p.reference_id = vb.id
+        LEFT JOIN (SELECT bill_id, MAX(project_id) as project_id FROM challans GROUP BY bill_id) ch ON vb.id = ch.bill_id
+        LEFT JOIN projects ch_proj ON ch.project_id = ch_proj.id
+        LEFT JOIN contractor_bills cb ON p.payment_type = 'contractor_payment' AND p.reference_id = cb.id
+        LEFT JOIN projects cb_proj ON cb.project_id = cb_proj.id
+        LEFT JOIN bookings b ON p.payment_type = 'customer_refund' AND p.reference_type = 'booking_cancellation' AND p.reference_id = b.id
+        LEFT JOIN projects pr ON b.project_id = pr.id
+        
         WHERE p.payment_type IN ('vendor_payment','vendor_bill_payment','contractor_payment','customer_refund')
         AND p.payment_date BETWEEN ? AND ?
 
@@ -85,10 +96,14 @@ class ReportService {
             ft.category,
             ft.transaction_date,
             ft.amount,
-            '-' as party_name,
-            pr.project_name
+            CONVERT(COALESCE(inv.investor_name, ft.description, '-') USING utf8mb4) as party_name,
+            CONVERT(pr.project_name USING utf8mb4) as project_name,
+            pr.id as project_id
         FROM financial_transactions ft
         LEFT JOIN projects pr ON ft.project_id = pr.id
+        LEFT JOIN investment_returns ir ON ft.reference_type = 'investment_return' AND ft.reference_id = ir.id
+        LEFT JOIN investments inv ON ir.investment_id = inv.id
+        
         WHERE ft.transaction_type = 'expenditure'
         AND ft.transaction_date BETWEEN ? AND ?
         " . ($project_filter ? " AND ft.project_id = ?" : "") . "
@@ -109,7 +124,8 @@ class ReportService {
             investment_date as transaction_date,
             amount,
             investor_name as party_name,
-            p.project_name
+            p.project_name,
+            p.id as project_id
         FROM investments i
         LEFT JOIN projects p ON i.project_id = p.id
         WHERE investment_date BETWEEN ? AND ?
@@ -165,6 +181,8 @@ class ReportService {
             'net_profit' => $net_profit,
 
             'total_invested' => $total_invested,
+            'total_returned' => 0, // Not calculated here
+            'net_invested'   => 0, // Not calculated here
             'roi' => $roi,
             'cash_balance' => $cash_balance,
 
@@ -196,7 +214,11 @@ class ReportService {
             $transactions[] = [
                 'date' => $row['transaction_date'],
                 'amount' => $row['amount'],
-                'flow' => 'inflow'
+                'type' => 'inflow',
+                'category' => $row['category'],
+                'party_name' => $row['party_name'] ?? '-',
+                'project_name' => $row['project_name'] ?? '-',
+                'project_id' => $row['project_id'] ?? null
             ];
         }
 
@@ -204,7 +226,11 @@ class ReportService {
             $transactions[] = [
                 'date' => $row['transaction_date'],
                 'amount' => $row['amount'],
-                'flow' => 'inflow'
+                'type' => 'inflow',
+                'category' => 'Investment',
+                'party_name' => $row['party_name'] ?? '-',
+                'project_name' => $row['project_name'] ?? '-',
+                'project_id' => $row['project_id'] ?? null
             ];
         }
 
@@ -212,40 +238,29 @@ class ReportService {
             $transactions[] = [
                 'date' => $row['transaction_date'],
                 'amount' => $row['amount'],
-                'flow' => 'outflow'
+                'type' => 'outflow',
+                'category' => $row['category'],
+                'party_name' => $row['party_name'] ?? '-',
+                'project_name' => $row['project_name'] ?? '-',
+                'project_id' => $row['project_id'] ?? null
             ];
         }
 
+        // Sort by Date ASC
         usort($transactions, fn($a, $b) => strtotime($a['date']) <=> strtotime($b['date']));
 
-        $daily = [];
+        // Calculate Running Balance
         $running_balance = 0;
-
-        foreach ($transactions as $txn) {
-            $date = $txn['date'];
-
-            if (!isset($daily[$date])) {
-                $daily[$date] = [
-                    'inflow' => 0,
-                    'outflow' => 0,
-                    'net' => 0,
-                    'balance' => 0
-                ];
-            }
-
-            if ($txn['flow'] === 'inflow') {
-                $daily[$date]['inflow'] += $txn['amount'];
+        foreach ($transactions as &$txn) {
+            if ($txn['type'] === 'inflow') {
                 $running_balance += $txn['amount'];
             } else {
-                $daily[$date]['outflow'] += $txn['amount'];
                 $running_balance -= $txn['amount'];
             }
-
-            $daily[$date]['net'] = $daily[$date]['inflow'] - $daily[$date]['outflow'];
-            $daily[$date]['balance'] = $running_balance;
+            $txn['balance'] = $running_balance;
         }
 
-        return $daily;
+        return $transactions; // Return detailed list instead of grouped daily
     }
 
 
@@ -374,10 +389,30 @@ class ReportService {
 
         $sql = "SELECT p.*, 
                    pt.name as party_name,
-                   u.full_name as created_by_name
+                   u.full_name as created_by_name,
+                   COALESCE(pr_booking.project_name, pr_challan.project_name, pr_bill.project_name, pr_cbill.project_name) as project_name,
+                   COALESCE(pr_booking.id, pr_challan.id, pr_bill.id, pr_cbill.id) as project_id
             FROM payments p
             JOIN parties pt ON p.party_id = pt.id
             LEFT JOIN users u ON p.created_by = u.id
+            
+            -- Join for Bookings (Customer Receipts)
+            LEFT JOIN bookings b ON p.payment_type = 'customer_receipt' AND p.reference_id = b.id
+            LEFT JOIN projects pr_booking ON b.project_id = pr_booking.id
+            
+            -- Join for Vendor Payments (Direct Challan)
+            LEFT JOIN challans c ON p.payment_type = 'vendor_payment' AND p.reference_type = 'challan' AND p.reference_id = c.id
+            LEFT JOIN projects pr_challan ON c.project_id = pr_challan.id
+            
+            -- Join for Vendor Bill Payments
+            LEFT JOIN bills vb ON p.payment_type = 'vendor_bill_payment' AND p.reference_id = vb.id
+            LEFT JOIN (SELECT bill_id, MAX(project_id) as project_id FROM challans GROUP BY bill_id) ch_link ON vb.id = ch_link.bill_id
+            LEFT JOIN projects pr_bill ON ch_link.project_id = pr_bill.id
+            
+            -- Join for Contractor Payments
+            LEFT JOIN contractor_bills cb ON p.payment_type = 'contractor_payment' AND p.reference_id = cb.id
+            LEFT JOIN projects pr_cbill ON cb.project_id = pr_cbill.id
+            
             WHERE $where
             ORDER BY p.payment_date DESC, p.created_at DESC";
 
@@ -584,9 +619,14 @@ class ReportService {
         // 6. Net Profit
         $net_profit = $total_received - $total_expenses;
 
-        // 7. Total Invested
+        // 7. Total Invested & Net Invested
         $stmt = $this->db->query("SELECT COALESCE(SUM(amount), 0) as total_invested FROM investments");
         $total_invested = $stmt->fetch()['total_invested'];
+
+        $stmt = $this->db->query("SELECT COALESCE(SUM(amount), 0) as total_returned FROM investment_returns");
+        $total_returned = $stmt->fetch()['total_returned'];
+
+        $net_invested = $total_invested - $total_returned;
 
         // 7. Monthly Stats for Chart (Current Year)
         $monthly_stats = $this->db->query("SELECT 
@@ -704,6 +744,8 @@ class ReportService {
             'total_expenses' => $total_expenses,
             'net_profit' => $net_profit,
             'total_invested' => $total_invested,
+            'total_returned' => $total_returned,
+            'net_invested'   => $net_invested,
             'monthly_stats' => $monthly_stats,
             'project_stats' => $project_stats,
             'recent_bookings' => $recent_bookings,
@@ -715,6 +757,81 @@ class ReportService {
             'pending_growth' => $pending_growth,
             'approvals_today' => $approvals_today,
             'total_cancelled' => $total_cancelled
+        ];
+    }
+
+    public function getInvestmentROI($date_from = null, $date_to = null) {
+        $date_from = $date_from ?? date('Y-01-01');
+        $date_to = $date_to ?? date('Y-12-31');
+
+        // 1. Project-wise Performance
+        // Get total invested and returned per project
+        $sql = "SELECT p.id as project_id, p.project_name,
+                       SUM(CASE WHEN i.id IS NOT NULL THEN i.amount ELSE 0 END) as total_invested,
+                       COALESCE(SUM(ir.amount), 0) as total_returned,
+                       MAX(i.investment_date) as last_investment_date,
+                       MAX(ir.return_date) as last_return_date
+                FROM projects p
+                LEFT JOIN investments i ON p.id = i.project_id
+                LEFT JOIN investment_returns ir ON i.id = ir.investment_id
+                GROUP BY p.id
+                HAVING total_invested > 0
+                ORDER BY total_invested DESC";
+        $projects = $this->db->query($sql)->fetchAll();
+
+        foreach ($projects as &$proj) {
+            $proj['net_profit'] = $proj['total_returned'] - $proj['total_invested'];
+            $proj['roi_percentage'] = $proj['total_invested'] > 0 ? ($proj['net_profit'] / $proj['total_invested']) * 100 : 0;
+            
+            // Annualized Return (Simple approximation)
+            // If investment span > 1 year, divide ROI by years
+            if ($proj['last_investment_date']) {
+                $start = new DateTime($proj['last_investment_date']); // Using last investment as proxy for now, ideally strictly first
+                $end = new DateTime($proj['last_return_date'] ?? 'now');
+                $interval = $start->diff($end);
+                $years = $interval->y + ($interval->m / 12) + ($interval->d / 365);
+                
+                if ($years > 1) {
+                    $proj['annualized_roi'] = $proj['roi_percentage'] / $years;
+                } else {
+                    $proj['annualized_roi'] = $proj['roi_percentage'];
+                }
+            } else {
+                $proj['annualized_roi'] = 0;
+            }
+        }
+
+        // 2. Monthly Returns Trend (Cash Flow In)
+        $monthly_returns = $this->db->query("SELECT 
+            DATE_FORMAT(return_date, '%Y-%m') as month_key,
+            SUM(amount) as total_amount
+        FROM investment_returns
+        WHERE return_date BETWEEN ? AND ?
+        GROUP BY month_key
+        ORDER BY month_key ASC", [$date_from, $date_to])->fetchAll(PDO::FETCH_KEY_PAIR);
+
+        // Fill gaps for chart
+        $chart_labels = [];
+        $chart_data = [];
+        $start = new DateTime($date_from);
+        $end = new DateTime($date_to);
+        $end->modify('last day of this month');
+        
+        $interval = DateInterval::createFromDateString('1 month');
+        $period = new DatePeriod($start, $interval, $end);
+
+        foreach ($period as $dt) {
+            $key = $dt->format("Y-m");
+            $chart_labels[] = $dt->format("M Y");
+            $chart_data[] = $monthly_returns[$key] ?? 0;
+        }
+
+        return [
+            'projects' => $projects,
+            'chart_labels' => $chart_labels,
+            'chart_data' => $chart_data,
+            'total_invested' => array_sum(array_column($projects, 'total_invested')),
+            'total_returned' => array_sum(array_column($projects, 'total_returned'))
         ];
     }
 }

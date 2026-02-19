@@ -193,13 +193,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
 
                 if ($notifTitle) {
-                    // Notify Admin (User 1)
-                    $ns->create(1, $notifTitle, $notifMsg, 'info', $notifLink);
-                    
-                    // Also notify current user if not admin
-                    if ($_SESSION['user_id'] != 1) {
-                         $ns->create($_SESSION['user_id'], $notifTitle, "You recorded: " . $notifMsg, 'success', $notifLink);
-                    }
+                    // Notify Admin + Finance Team
+                    $ns->notifyUsersWithPermission('finance', $notifTitle, $notifMsg . " (Recorded by " . $_SESSION['username'] . ")", 'info', $notifLink);
                 }
             } // Restore missing brace here
 

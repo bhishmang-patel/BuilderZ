@@ -104,4 +104,40 @@ class NotificationService {
     public function clearAll($userId) {
         return $this->db->delete('notifications', "user_id = :uid", ['uid' => $userId]);
     }
+    /**
+     * Notify all users who have a specific permission (or are admin)
+     * 
+     * @param string $permission The permission key required (e.g., 'sales', 'projects')
+     * @param string $title
+     * @param string $message
+     * @param string $type
+     * @param string|null $link
+     * @return int Number of notifications sent
+     */
+    public function notifyUsersWithPermission($permission, $title, $message, $type = 'info', $link = null) {
+        // Fetch all active users
+        $users = $this->db->query("SELECT id, role, permissions FROM users WHERE status = 'active'")->fetchAll();
+        
+        $count = 0;
+        foreach ($users as $user) {
+            $shouldNotify = false;
+
+            // 1. Admins always get notified
+            if (($user['role'] ?? '') === 'admin') {
+                $shouldNotify = true;
+            } else {
+                // 2. Check specific permission
+                $perms = json_decode($user['permissions'] ?? '[]', true);
+                if (is_array($perms) && in_array($permission, $perms)) {
+                    $shouldNotify = true;
+                }
+            }
+
+            if ($shouldNotify) {
+                $this->create($user['id'], $title, $message, $type, $link);
+                $count++;
+            }
+        }
+        return $count;
+    }
 }

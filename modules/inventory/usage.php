@@ -58,8 +58,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $notifMsg   = "Stock for {$mat['material_name']} has fallen to {$new_stock} {$mat['unit']} (Below limit: $min_limit)";
                     $notifLink  = BASE_URL . "modules/inventory/index.php";
 
-                    // Notify Admin and potentially Store Manager
-                    $ns->create(1, $notifTitle, $notifMsg, 'warning', $notifLink);
+                    // Notify Admin and Inventory Managers
+                    $ns->notifyUsersWithPermission('inventory', $notifTitle, $notifMsg, 'warning', $notifLink);
                 }
 
                 $db->commit();

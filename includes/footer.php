@@ -7,7 +7,7 @@
         </div> <!-- Closes main-content -->
     </div> <!-- Closes wrapper -->
 
-    <script src="<?= BASE_URL ?>assets/js/script.js"></script>
+
 
     <style>
     /* ── Main Footer ──────────────────────────────────────── */

@@ -159,6 +159,25 @@ function checkPermission($allowed_roles) {
     }
 }
 
+function hasPageAccess($page_key) {
+    if (session_status() === PHP_SESSION_NONE) session_start();
+    
+    // Admin always has access
+    if (($_SESSION['user_role'] ?? '') === 'admin') return true;
+    
+    $perms = json_decode($_SESSION['permissions'] ?? '[]', true);
+    if (!is_array($perms)) $perms = [];
+    
+    return in_array($page_key, $perms);
+}
+
+function requirePageAccess($page_key) {
+    if (!hasPageAccess($page_key)) {
+        setFlashMessage('error', 'You do not have permission to access this page.');
+        redirect('modules/dashboard/index.php');
+    }
+}
+
 function getProjectName($project_id) {
     $db = Database::getInstance();
     $stmt = $db->select('projects', 'id = ?', [$project_id], 'project_name');
@@ -573,3 +592,5 @@ function convertNumberToWords($number) {
     
     return $result;
 }
+
+

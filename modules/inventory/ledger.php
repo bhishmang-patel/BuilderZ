@@ -26,18 +26,22 @@ $sql_in = "SELECT c.challan_date as date,
                   p.name as party_name, 
                   'purchase' as type,
                   ci.quantity,
-                  ci.rate
+                  ci.rate,
+                  NULL as project_name,
+                  NULL as project_id
            FROM challan_items ci
            JOIN challans c ON ci.challan_id = c.id
            JOIN parties p ON c.party_id = p.id
            WHERE ci.material_id = ? AND c.status = 'approved'";
 
 $sql_out = "SELECT mu.usage_date as date, 
-                   CONCAT('Usage - ', pr.project_name) as reference, 
+                   'Usage' as reference, 
                    u.full_name as party_name, 
                    'usage' as type,
                    mu.quantity,
-                   0 as rate
+                   0 as rate,
+                   pr.project_name,
+                   pr.id as project_id
             FROM material_usage mu
             JOIN projects pr ON mu.project_id = pr.id
             LEFT JOIN users u ON mu.created_by = u.id
@@ -360,10 +364,14 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
                             <td>
                                 <span class="party-name"><?= htmlspecialchars($txn['party_name'] ?? 'N/A') ?></span>
                             </td>
-
                             <!-- Reference -->
                             <td>
-                                <span class="ref-text"><?= htmlspecialchars($txn['reference']) ?></span>
+                                <?php if ($txn['type'] === 'usage'): ?>
+                                    <span class="ref-text" style="margin-right:0.3rem">Usage</span>
+                                    <?= renderProjectBadge($txn['project_name'], $txn['project_id']) ?>
+                                <?php else: ?>
+                                    <span class="ref-text"><?= htmlspecialchars($txn['reference']) ?></span>
+                                <?php endif; ?>
                             </td>
 
                             <!-- In -->
@@ -390,7 +398,6 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
                                     <?= $txn['rate'] > 0 ? formatCurrency($txn['rate']) : '<span class="qty-nil">—</span>' ?>
                                 </span>
                             </td>
-
                         </tr>
                     <?php endforeach; endif; ?>
                 </tbody>

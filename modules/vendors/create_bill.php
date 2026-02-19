@@ -104,11 +104,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $notifMsg   = "Bill #{$bill_no} for Vendor ID {$vendor_id} has been created.";
         $notifLink  = BASE_URL . "modules/vendors/view_bill.php?id=" . $bill_id;
         
-        // Notify current user (or Admin user ID 1)
-        $ns->create($_SESSION['user_id'], $notifTitle, $notifMsg, 'success', $notifLink);
-        if ($_SESSION['user_id'] != 1) {
-             $ns->create(1, $notifTitle, $notifMsg . " (Created by " . $_SESSION['username'] . ")", 'info', $notifLink);
-        }
+        // Notify Admins + Purchasing team
+        $ns->notifyUsersWithPermission('purchasing', $notifTitle, $notifMsg . " (Created by " . $_SESSION['username'] . ")", 'info', $notifLink);
 
         $db->commit();
         setFlashMessage('success', "Vendor Bill {$bill_no} created successfully.");

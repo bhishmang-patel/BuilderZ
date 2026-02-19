@@ -159,13 +159,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $notifMsg   = "Challan #{$challan_no} created for Vendor: {$vendor_name}";
         $notifLink  = BASE_URL . "modules/vendors/challans/material.php";
 
-        // Notify Admin (User 1)
-        $ns->create(1, $notifTitle, $notifMsg, 'info', $notifLink);
-        
-        // Also notify current user if not admin
-        if ($_SESSION['user_id'] != 1) {
-             $ns->create($_SESSION['user_id'], $notifTitle, "You created: " . $notifMsg, 'success', $notifLink);
-        }
+        // Notify Admins + Purchasing team
+        $ns->notifyUsersWithPermission('purchasing', $notifTitle, $notifMsg . " (Created by " . $_SESSION['username'] . ")", 'info', $notifLink);
 
         $db->commit();
         setFlashMessage('success', "Delivery Challan $challan_no created successfully");

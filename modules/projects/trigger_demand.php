@@ -83,6 +83,23 @@ try {
         $generated_count++;
     }
     
+    if ($generated_count > 0) {
+        // Fetch project name for notification
+        $projStmt = $db->query("SELECT project_name FROM projects WHERE id = ?", [$project_id]);
+        $project = $projStmt->fetch();
+        $projectName = $project ? $project['project_name'] : 'Project #' . $project_id;
+
+        // Notification Logic
+        require_once __DIR__ . '/../../includes/NotificationService.php';
+        $ns = new NotificationService();
+        $notifTitle = "Payment Demands Generated";
+        $notifMsg   = "Generated $generated_count demands for '$stage_name' in '$projectName'.";
+        $notifLink  = BASE_URL . "modules/booking/demands.php?project_id={$project_id}"; 
+        
+        // Notify Admins + Sales team
+        $ns->notifyUsersWithPermission('sales', $notifTitle, $notifMsg, 'info', $notifLink);
+    }
+
     $db->commit();
     setFlashMessage('success', "Successfully generated $generated_count payment demands for '$stage_name'.");
     

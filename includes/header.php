@@ -690,22 +690,30 @@ $headerLogoUrl = !empty($companySettings['company_logo']) ? BASE_URL . $companyS
             </div>
             
             <ul class="sidebar-menu">
+                <?php if (hasPageAccess('dashboard')): ?>
                 <li>
                     <a href="<?= BASE_URL ?>modules/dashboard/index.php" class="<?= ($current_page ?? '') === 'dashboard' ? 'active' : '' ?>">
                         <i class="fas fa-chart-line"></i> <span>Dashboard</span>
                     </a>
                 </li>
+                <?php endif; ?>
 
-                <li class="menu-section">OPERATIONS</li>
+                <!-- PROJECTS -->
+                <?php if (hasPageAccess('projects')): ?>
+                <li class="menu-section">PROJECTS</li>
                 <li>
-                    <a href="<?= BASE_URL ?>modules/booking/index.php" class="<?= ($current_page ?? '') === 'booking' ? 'active' : '' ?>">
-                        <i class="fas fa-handshake"></i> <span>Bookings</span>
+                    <a href="<?= BASE_URL ?>modules/projects/projects.php" class="<?= ($current_page ?? '') === 'projects' ? 'active' : '' ?>">
+                        <i class="fas fa-building"></i> <span>Projects</span>
                     </a>
                 </li>
-                <?php if (in_array($_SESSION['user_role'], ['admin', 'project_manager', 'accountant'])): ?>
                 <li>
-                    <a href="<?= BASE_URL ?>modules/vendors/challans/material.php" class="<?= ($current_page ?? '') === 'material_challan' ? 'active' : '' ?>">
-                        <i class="fas fa-file-invoice"></i> <span>Delivery Challans</span>
+                    <a href="<?= BASE_URL ?>modules/projects/flats/flats.php" class="<?= ($current_page ?? '') === 'flats' ? 'active' : '' ?>">
+                        <i class="fas fa-house"></i> <span>Units</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="<?= BASE_URL ?>modules/projects/stage_of_work.php" class="<?= ($current_page ?? '') === 'stage_of_work' ? 'active' : '' ?>">
+                        <i class="fas fa-list-ol"></i> <span>Stage of Work</span>
                     </a>
                 </li>
                 <li>
@@ -713,15 +721,31 @@ $headerLogoUrl = !empty($companySettings['company_logo']) ? BASE_URL . $companyS
                         <i class="fas fa-tasks"></i> <span>Project Progress</span>
                     </a>
                 </li>
+                <?php endif; ?>
+
+                <!-- SALES (Leads, Bookings, Demands) -->
+                <?php if (hasPageAccess('sales')): ?>
+                <li class="menu-section">SALES</li>
                 <li>
-                    <a href="<?= BASE_URL ?>modules/vendors/procurement/index.php" class="<?= ($current_page ?? '') === 'procurement' ? 'active' : '' ?>">
-                        <i class="fa-solid fa-receipt"></i> <span>Procurement (PO)</span>
+                    <a href="<?= BASE_URL ?>modules/crm/index.php" class="<?= (strpos($current_page ?? '', 'lead') !== false) ? 'active' : '' ?>">
+                        <i class="fas fa-bullhorn"></i> <span>Leads</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="<?= BASE_URL ?>modules/booking/index.php" class="<?= ($current_page ?? '') === 'booking' ? 'active' : '' ?>">
+                        <i class="fas fa-handshake"></i> <span>Bookings</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="<?= BASE_URL ?>modules/booking/demands.php" class="<?= ($current_page ?? '') === 'demands' ? 'active' : '' ?>">
+                        <i class="fas fa-file-invoice-dollar"></i> <span>Payment Demand</span>
                     </a>
                 </li>
                 <?php endif; ?>
 
+                <!-- FINANCE -->
+                <?php if (hasPageAccess('finance')): ?>
                 <li class="menu-section">FINANCE</li>
-                <?php if (in_array($_SESSION['user_role'], ['admin', 'accountant'])): ?>
                 <li>
                     <a href="<?= BASE_URL ?>modules/investments/index.php" class="<?= ($current_page ?? '') === 'investments' ? 'active' : '' ?>">
                         <i class="fas fa-hand-holding-usd"></i> <span>Investments</span>
@@ -733,59 +757,49 @@ $headerLogoUrl = !empty($companySettings['company_logo']) ? BASE_URL . $companyS
                     </a>
                 </li>
                 <li>
-                    <a href="<?= BASE_URL ?>modules/booking/demands.php" class="<?= ($current_page ?? '') === 'demands' ? 'active' : '' ?>">
-                        <i class="fas fa-file-invoice-dollar"></i> <span>Payment Demands</span>
-                    </a>
-                </li>
-                <?php endif; ?>
-                <li>
                     <a href="<?= BASE_URL ?>modules/accounts/index.php" class="<?= ($current_page ?? '') === 'accounts' ? 'active' : '' ?>">
                         <i class="fas fa-file-invoice-dollar"></i> <span>Accounts & Expenses</span>
                     </a>
                 </li>
-
-                <li class="menu-section">MASTERS</li>
-                <?php if (in_array($_SESSION['user_role'], ['admin', 'project_manager'])): ?>
-                <li>
-                    <a href="<?= BASE_URL ?>modules/projects/stage_of_work.php" class="<?= ($current_page ?? '') === 'stage_of_work' ? 'active' : '' ?>">
-                        <i class="fas fa-list-ol"></i> <span>Stage of Work</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?= BASE_URL ?>modules/projects/projects.php" class="<?= ($current_page ?? '') === 'projects' ? 'active' : '' ?>">
-                        <i class="fas fa-building"></i> <span>Projects</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?= BASE_URL ?>modules/projects/flats/flats.php" class="<?= ($current_page ?? '') === 'flats' ? 'active' : '' ?>">
-                        <i class="fas fa-house"></i> <span>Flats</span>
-                    </a>
-                </li>
                 <?php endif; ?>
+
+                <!-- PURCHASING -->
+                <?php if (hasPageAccess('purchasing')): ?>
+                <li class="menu-section">PURCHASING</li>
                 <li>
-                <!-- <li>
-                    <a href="<?= BASE_URL ?>modules/masters/parties.php" class="<?= ($current_page ?? '') === 'parties' ? 'active' : '' ?>">
-                        <i class="fas fa-users"></i> <span>Parties</span>
+                    <a href="<?= BASE_URL ?>modules/vendors/procurement/index.php" class="<?= ($current_page ?? '') === 'procurement' ? 'active' : '' ?>">
+                        <i class="fa-solid fa-receipt"></i> <span>Procurement (PO)</span>
                     </a>
-                </li> -->
+                </li>
+                <li>
+                    <a href="<?= BASE_URL ?>modules/vendors/challans/material.php" class="<?= ($current_page ?? '') === 'material_challan' ? 'active' : '' ?>">
+                        <i class="fas fa-file-invoice"></i> <span>Delivery Challans</span>
+                    </a>
+                </li>
                 <li>
                     <a href="<?= BASE_URL ?>modules/vendors/index.php" class="<?= ($current_page ?? '') === 'vendors' ? 'active' : '' ?>">
                         <i class="fas fa-boxes-stacked"></i> <span>Vendor Bills</span>
                     </a>
                 </li>
-                <?php if (in_array($_SESSION['user_role'], ['admin', 'project_manager', 'accountant'])): ?>
-                <li>
-                    <a href="<?= BASE_URL ?>modules/contractors/index.php" class="<?= ($current_page ?? '') === 'contractor_pay' ? 'active' : '' ?>">
-                        <i class="fas fa-hard-hat"></i> <span>Contractor Bills</span>
-                    </a>
-                </li>
+                <?php endif; ?>
+
+                <!-- CONTRACTOR MANAGEMENT -->
+                <?php if (hasPageAccess('contractors')): ?>
+                <li class="menu-section">CONTRACTOR MGMT</li>
                 <li>
                     <a href="<?= BASE_URL ?>modules/contractors/work_orders.php" class="<?= ($current_page ?? '') === 'work_orders' ? 'active' : '' ?>">
                         <i class="fas fa-file-contract"></i> <span>Work Orders</span>
                     </a>
                 </li>
+                <li>
+                    <a href="<?= BASE_URL ?>modules/contractors/index.php" class="<?= ($current_page ?? '') === 'contractor_pay' ? 'active' : '' ?>">
+                        <i class="fas fa-hard-hat"></i> <span>Contractor Bills</span>
+                    </a>
+                </li>
                 <?php endif; ?>
-
+                
+                <!-- INVENTORY -->
+                <?php if (hasPageAccess('inventory')): ?>
                 <li class="menu-section">INVENTORY</li>
                 <li>
                     <a href="<?= BASE_URL ?>modules/inventory/index.php" class="<?= ($current_page ?? '') === 'stock' ? 'active' : '' ?>">
@@ -797,7 +811,10 @@ $headerLogoUrl = !empty($companySettings['company_logo']) ? BASE_URL . $companyS
                         <i class="fas fa-truck-loading"></i> <span>Material Usage</span>
                     </a>
                 </li>
+                <?php endif; ?>
 
+                <!-- REPORTS -->
+                <?php if (hasPageAccess('reports')): ?>
                 <li class="menu-section">REPORTS</li>
                 <li>
                     <a href="<?= BASE_URL ?>modules/reports/project_pl.php" class="<?= ($current_page ?? '') === 'project_pl' ? 'active' : '' ?>">
@@ -814,6 +831,22 @@ $headerLogoUrl = !empty($companySettings['company_logo']) ? BASE_URL . $companyS
                         <i class="fas fa-chart-pie"></i> <span>Financial Overview</span>
                     </a>
                 </li>
+                <li>
+                    <a href="<?= BASE_URL ?>modules/reports/roi_report.php" class="<?= ($current_page ?? '') === 'roi_report' ? 'active' : '' ?>">
+                        <i class="fas fa-chart-line"></i> <span>ROI & Profits</span>
+                    </a>
+                </li>
+                <?php endif; ?>
+
+                <!-- ADMINISTRATION -->
+                <?php /* if (hasPageAccess('masters')): ?>
+                <li class="menu-section">ADMINISTRATION</li>
+                <li>
+                    <a href="<?= BASE_URL ?>modules/masters/parties.php" class="<?= ($current_page ?? '') === 'parties' ? 'active' : '' ?>">
+                        <i class="fas fa-users"></i> <span>Parties</span>
+                    </a>
+                </li>
+                <?php endif; */ ?>
             </ul>
 
             <div class="sidebar-footer">
@@ -833,7 +866,6 @@ $headerLogoUrl = !empty($companySettings['company_logo']) ? BASE_URL . $companyS
                     <button class="sidebar-toggle" onclick="toggleSidebar()">
                         <i class="fas fa-bars"></i>
                     </button>
-                    <h4 class="page-title"><?= $page_title ?? 'Dashboard' ?></h4>
                 </div>
                 
                 <div class="navbar-right">

@@ -721,11 +721,11 @@ select.f-ctrl {
 
                 <div class="fsec"><i class="fas fa-info-circle"></i> Project Essentials</div>
                 <div class="fgrid" style="margin-bottom:1rem;">
-                    <div class="fg fspan">
+                    <div class="fg">
                         <label>Project Name <span style="color:#dc2626">*</span></label>
                         <input type="text" name="project_name" class="f-input" required placeholder="e.g. Skyline Towers Phase I">
                     </div>
-                    <div class="fg fspan">
+                    <div class="fg">
                         <label>Location <span style="color:#dc2626">*</span></label>
                         <input type="text" name="location" class="f-input" required placeholder="e.g. Sector 45, Downtown">
                     </div>

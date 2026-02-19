@@ -12,6 +12,7 @@ function startSession($user) {
     $_SESSION['username'] = $user['username'];
     $_SESSION['full_name'] = $user['full_name'];
     $_SESSION['user_role'] = $user['role'];
+    $_SESSION['permissions'] = $user['permissions'] ?? '[]'; // JSON string
     $_SESSION['last_activity'] = time();
     
     logAudit('login', 'users', $user['id']);

@@ -13,14 +13,45 @@ $db           = Database::getInstance();
 $page_title   = 'Stock Status';
 $current_page = 'stock';
 
-$sql = "SELECT m.*, 
-        (SELECT COALESCE(SUM(ci.quantity), 0) FROM challan_items ci JOIN challans c ON ci.challan_id = c.id WHERE ci.material_id = m.id AND c.status = 'approved') as total_in,
-        (SELECT COALESCE(SUM(ci.quantity * ci.rate), 0) FROM challan_items ci JOIN challans c ON ci.challan_id = c.id WHERE ci.material_id = m.id AND c.status = 'approved') as total_spend,
-        (SELECT COALESCE(SUM(mu.quantity), 0) FROM material_usage mu WHERE mu.material_id = m.id) as total_out
-    FROM materials m
-    GROUP BY m.id
-    HAVING total_in > 0 OR total_out > 0
-    ORDER BY m.material_name";
+// Updated SQL to group by Material AND Project
+$sql = "SELECT 
+            m.id as material_id,
+            m.material_name,
+            m.unit,
+            m.default_rate,
+            p.id as project_id,
+            p.project_name,
+            SUM(t.in_qty) as total_in,
+            SUM(t.spend) as total_spend,
+            SUM(t.out_qty) as total_out
+        FROM (
+            -- Purchases (In)
+            SELECT 
+                ci.material_id,
+                c.project_id,
+                ci.quantity as in_qty,
+                (ci.quantity * ci.rate) as spend,
+                0 as out_qty
+            FROM challan_items ci
+            JOIN challans c ON ci.challan_id = c.id
+            WHERE c.status = 'approved'
+
+            UNION ALL
+
+            -- Usage (Out)
+            SELECT 
+                mu.material_id,
+                mu.project_id,
+                0 as in_qty,
+                0 as spend,
+                mu.quantity as out_qty
+            FROM material_usage mu
+        ) t
+        JOIN materials m ON t.material_id = m.id
+        JOIN projects p ON t.project_id = p.id
+        GROUP BY m.id, p.id
+        HAVING SUM(t.in_qty) > 0 OR SUM(t.out_qty) > 0
+        ORDER BY m.material_name, p.project_name";
 
 $stock_data = $db->query($sql)->fetchAll();
 
@@ -31,14 +62,20 @@ $low_stock_count = 0;
 
 foreach ($stock_data as $item) {
     $real_stock  = $item['total_in'] - $item['total_out'];
-    $avg_rate    = ($item['total_in'] > 0 && $item['total_spend'] > 0)
-                    ? ($item['total_spend'] / $item['total_in'])
-                    : $item['default_rate'];
-    $cur_value   = ($item['total_spend'] > 0)
-                    ? $item['total_spend']
-                    : ($item['total_in'] * $item['default_rate']);
-    $total_value += $cur_value;
+    
+    // Calculate Cur Value
+    // If we have specific spend, use it.
+    // If no spend (e.g. transfer/opening), fallback to default rate?
+    // Current logic: Avg Rate = Total Spend / Total In
+    
+    $avg_rate = ($item['total_in'] > 0) ? ($item['total_spend'] / $item['total_in']) : $item['default_rate'];
+    if ($avg_rate == 0) $avg_rate = $item['default_rate'];
+    
+    $stock_value = $real_stock * $avg_rate;
+    
+    $total_value += $stock_value;
     $total_usage += $item['total_out'];
+    
     if ($real_stock < 10) $low_stock_count++;
 }
 
@@ -319,6 +356,7 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
                 <thead>
                     <tr>
                         <th class="al-l" style="padding-left:1.25rem;">Material</th>
+                        <th>Project</th>
                         <th class="al-c">In (Purchased)</th>
                         <th class="al-c">Out (Used)</th>
                         <th class="al-c">Current Stock</th>
@@ -349,14 +387,11 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
                             $is_low     = $real_stock < 10;
                             $is_est     = false;
 
-                            if ($item['total_in'] > 0 && $item['total_spend'] > 0) {
-                                $avg_rate       = $item['total_spend'] / $item['total_in'];
-                                $display_amount = $item['total_spend'];
-                            } else {
-                                $avg_rate       = $item['default_rate'];
-                                $display_amount = $item['total_in'] * $avg_rate;
-                                $is_est         = true;
-                            }
+                            // Calculate average rate
+                            $avg_rate = ($item['total_in'] > 0) ? ($item['total_spend'] / $item['total_in']) : $item['default_rate'];
+                            if ($avg_rate == 0) $avg_rate = $item['default_rate'];
+                            
+                            $display_amount = $real_stock * $avg_rate;
 
                             // Progress bar: pct of stock remaining vs total_in
                             $bar_pct = $item['total_in'] > 0 ? max(0, min(100, ($real_stock / $item['total_in']) * 100)) : 0;
@@ -373,6 +408,11 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
                                         <div class="mat-unit"><?= ucfirst($item['unit']) ?></div>
                                     </div>
                                 </div>
+                            </td>
+
+                            <!-- Project Badge -->
+                            <td>
+                                <?= renderProjectBadge($item['project_name'], $item['project_id']) ?>
                             </td>
 
                             <!-- In -->
@@ -408,9 +448,6 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
                             <td class="al-c">
                                 <span class="avg-price">
                                     <?= formatCurrency($avg_rate) ?> / <?= $item['unit'] ?>
-                                    <?php if ($is_est): ?>
-                                        <i class="fas fa-info-circle est-icon" title="Estimated — based on master rate (no bill data yet)"></i>
-                                    <?php endif; ?>
                                 </span>
                             </td>
 
@@ -421,7 +458,7 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
 
                             <!-- Ledger link -->
                             <td class="al-c">
-                                <a href="<?= BASE_URL ?>modules/inventory/ledger.php?id=<?= $item['id'] ?>"
+                                <a href="<?= BASE_URL ?>modules/inventory/ledger.php?id=<?= $item['material_id'] ?>"
                                    class="ledger-btn" title="View Ledger">
                                     <i class="fas fa-history"></i>
                                 </a>

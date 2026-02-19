@@ -17,13 +17,28 @@ $current_page = 'demands';
 // Fetch all projects for filter
 $projects = $db->query("SELECT id, project_name FROM projects ORDER BY project_name")->fetchAll();
 
+// Fetch all unique stages for filter
+$stages = $db->query("SELECT DISTINCT stage_name FROM booking_demands ORDER BY stage_name")->fetchAll(PDO::FETCH_COLUMN);
+
 $project_id = $_GET['project_id'] ?? '';
-$where_clause = "";
+$stage_filter = $_GET['stage'] ?? '';
+
+$where_conditions = [];
 $params = [];
 
 if (!empty($project_id)) {
-    $where_clause = "WHERE b.project_id = ?";
+    $where_conditions[] = "b.project_id = ?";
     $params[] = $project_id;
+}
+
+if (!empty($stage_filter)) {
+    $where_conditions[] = "bd.stage_name = ?";
+    $params[] = $stage_filter;
+}
+
+$where_clause = "";
+if (!empty($where_conditions)) {
+    $where_clause = "WHERE " . implode(" AND ", $where_conditions);
 }
 
 // Fetch Demands
@@ -150,26 +165,46 @@ include __DIR__ . '/../../includes/header.php';
     .toolbar-subtitle { font-size: 0.73rem; color: var(--ink-mute); margin-left: 0.4rem; }
     .toolbar-div { width: 1.5px; height: 28px; background: var(--border); flex-shrink: 0; }
 
-    .toolbar-actions { display: flex; align-items: center; gap: 0.5rem; flex: 1; justify-content: flex-end; flex-wrap: wrap; }
+    .toolbar-actions { display: flex; align-items: center; gap: 0.5rem; flex: 1; justify-content: flex-end; flex-wrap: nowrap; }
 
     /* Filter */
     .filter-wrap {
-        display: flex; align-items: center; gap: 0.6rem;
-        padding: 0.5rem 0.85rem; background: var(--accent-bg);
-        border: 1.5px solid #e0c9b5; border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        gap: 18px;
+        padding: 0 20px;
+        height: 44px;
+        background: var(--accent-bg);
+        border: 1.5px solid #e0c9b5;
+        border-radius: 12px;
     }
-    .filter-label {
-        font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em;
-        text-transform: uppercase; color: var(--accent); white-space: nowrap;
-        display: flex; align-items: center; gap: 0.4rem;
+
+    /* Left side (icon + FILTER text) */
+    .filter-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--accent);
     }
+
+    /* Select */
     .filter-select {
-        border: none; background: transparent; padding: 0.2rem 1.5rem 0.2rem 0.3rem;
-        font-size: 0.82rem; font-weight: 600; color: var(--ink);
-        cursor: pointer; outline: none; -webkit-appearance: none; appearance: none;
+        border: none;
+        background: transparent;
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--ink);
+        cursor: pointer;
+        outline: none;
+        appearance: none;
+        padding-right: 18px;
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23b5622a' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-        background-repeat: no-repeat; background-position: right center;
-        min-width: 140px;
+        background-repeat: no-repeat;
+        background-position: right center;
     }
 
     @media (max-width: 920px) {
@@ -283,18 +318,32 @@ include __DIR__ . '/../../includes/header.php';
             <div class="toolbar-div"></div>
 
             <div class="toolbar-actions">
-                <form method="GET" class="filter-wrap">
-                    <label class="filter-label">
-                        <i class="fas fa-filter"></i> Filter
-                    </label>
-                    <select name="project_id" class="filter-select" onchange="this.form.submit()">
-                        <option value="">All Projects</option>
-                        <?php foreach($projects as $proj): ?>
-                            <option value="<?= $proj['id'] ?>" <?= $project_id == $proj['id'] ? 'selected' : '' ?>>
-                                <?= htmlspecialchars($proj['project_name']) ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
+                    <form method="GET" class="filter-wrap">
+                        <div class="filter-left">
+                            <i class="fas fa-filter"></i>
+                            <span>Filter</span>
+                        </div>
+
+                        <select name="project_id" class="filter-select" onchange="this.form.submit()">
+                            <option value="">All Projects</option>
+                            <?php foreach($projects as $proj): ?>
+                                <option value="<?= $proj['id'] ?>" <?= $project_id == $proj['id'] ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($proj['project_name']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+
+                        <!-- Stage Filter -->
+                        <div style="width:1px; height:24px; background:#e0c9b5; margin:0 5px;"></div>
+                        
+                        <select name="stage" class="filter-select" onchange="this.form.submit()">
+                            <option value="">All Stages</option>
+                            <?php foreach($stages as $stg): ?>
+                                <option value="<?= htmlspecialchars($stg) ?>" <?= $stage_filter === $stg ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($stg) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
                 </form>
             </div>
         </div>

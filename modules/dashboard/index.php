@@ -287,18 +287,18 @@ include __DIR__ . '/../../includes/header.php';
     <!-- ── Page Header ──────────────────────── -->
     <div class="dash-header">
         <div class="eyebrow">Overview</div>
-        <h1>Welcome back, <em><?= htmlspecialchars($_SESSION['user_name'] ?? 'User') ?></em></h1>
+        <h1>Welcome back, <em><?= htmlspecialchars($_SESSION['full_name'] ?? $_SESSION['username'] ?? 'User') ?></em></h1>
         <div class="dash-subtitle">Here's what's happening with your projects today</div>
     </div>
 
     <!-- ── Top Stats Grid ───────────────────── -->
     <div class="stats-grid">
-        <div class="stat-card">
+        <div class="stat-card" title="Total: <?= formatCurrencyShort($data['total_invested']) ?> | Returned: <?= formatCurrencyShort($data['total_returned']) ?>">
             <div class="stat-top">
                 <div class="s-icon ico-orange"><i class="fas fa-hand-holding-usd"></i></div>
             </div>
-            <div class="stat-label">Total Invested</div>
-            <div class="stat-value"><?= formatCurrencyShort($total_invested) ?></div>
+            <div class="stat-label">Net Invested</div>
+            <div class="stat-value"><?= formatCurrencyShort($data['net_invested']) ?></div>
         </div>
 
         <div class="stat-card">

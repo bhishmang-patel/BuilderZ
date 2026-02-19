@@ -62,6 +62,10 @@ $recent_expenses = $db->query(
      ORDER BY e.date DESC, e.id DESC LIMIT 5"
 )->fetchAll();
 
+// Fetch Active Project for fallback display
+$active_project_stmt = $db->query("SELECT id, project_name FROM projects WHERE status = 'active' ORDER BY created_at DESC LIMIT 1");
+$active_project = $active_project_stmt->fetch();
+
 include __DIR__ . '/../../includes/header.php';
 ?>
 
@@ -456,7 +460,9 @@ include __DIR__ . '/../../includes/header.php';
                             </td>
                             <td>
                                 <?php if (!empty($expense['project_name'])): ?>
-                                  <?= renderProjectBadge($expense['project_name'], $expense['project_id']) ?>                                    </span>
+                                  <?= renderProjectBadge($expense['project_name'], $expense['project_id']) ?>
+                                <?php elseif ($active_project): ?>
+                                    <?= renderProjectBadge($active_project['project_name'], $active_project['id']) ?>
                                 <?php else: ?>
                                     <span class="pill gray">Head Office</span>
                                 <?php endif; ?>

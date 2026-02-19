@@ -107,6 +107,13 @@ class BookingService {
             logAudit('create', 'bookings', $booking_id, null, $booking_data);
             $this->db->commit();
             
+            // Link Lead if applicable
+            if (!empty($data['lead_id'])) {
+                require_once __DIR__ . '/CrmService.php';
+                $crm = CrmService::getInstance();
+                $crm->updateLead($data['lead_id'], ['status' => 'Booked']);
+            }
+            
             return [
                 'success' => true,
                 'booking_id' => $booking_id,
