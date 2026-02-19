@@ -1,0 +1,105 @@
+[18-Feb-2026 19:08:01 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined method Database::exec() in C:\xampp\htdocs\builderz\run_migration.php:6
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\run_migration.php on line 6
+[18-Feb-2026 19:08:42 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined method Database::exec() in C:\xampp\htdocs\builderz\run_migration.php:31
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\run_migration.php on line 31
+[18-Feb-2026 19:09:00 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to undefined method Database::exec() in C:\xampp\htdocs\builderz\run_migration.php:26
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\builderz\run_migration.php on line 26
+[19-Feb-2026 10:12:25 Asia/Kolkata] Database query error: SQLSTATE[23000]: Integrity constraint violation: 1452 Cannot add or update a child row: a foreign key constraint fails (`builderz_erp`.`investments`, CONSTRAINT `investments_ibfk_1` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE)
+[19-Feb-2026 10:12:25 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1452 Cannot add or update a child row: a foreign key constraint fails (`builderz_erp`.`investments`, CONSTRAINT `investments_ibfk_1` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE) in C:\xampp\htdocs\builderz\builderz\config\database.php:39
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(39): PDOStatement->execute(Array)
+#1 C:\xampp\htdocs\builderz\builderz\config\database.php(52): Database->query('INSERT INTO inv...', Array)
+#2 C:\xampp\htdocs\builderz\builderz\includes\InvestmentService.php(23): Database->insert('investments', Array)
+#3 C:\xampp\htdocs\builderz\test_investments_ft.php(18): InvestmentService->createInvestment(Array, 1)
+#4 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 39
+[19-Feb-2026 10:12:48 Asia/Kolkata] Database query error: SQLSTATE[23000]: Integrity constraint violation: 1452 Cannot add or update a child row: a foreign key constraint fails (`builderz_erp`.`investments`, CONSTRAINT `investments_ibfk_1` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE)
+[19-Feb-2026 10:12:48 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1452 Cannot add or update a child row: a foreign key constraint fails (`builderz_erp`.`investments`, CONSTRAINT `investments_ibfk_1` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE) in C:\xampp\htdocs\builderz\builderz\config\database.php:39
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(39): PDOStatement->execute(Array)
+#1 C:\xampp\htdocs\builderz\builderz\config\database.php(52): Database->query('INSERT INTO inv...', Array)
+#2 C:\xampp\htdocs\builderz\builderz\includes\InvestmentService.php(23): Database->insert('investments', Array)
+#3 C:\xampp\htdocs\builderz\test_investments_ft.php(21): InvestmentService->createInvestment(Array, 1)
+#4 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 39
+[19-Feb-2026 10:35:31 Asia/Kolkata] PHP Warning:  include(C:\xampp\htdocs\builderz\builderz\modules\vendors\challans/../../includes/footer.php): Failed to open stream: No such file or directory in C:\xampp\htdocs\builderz\builderz\modules\vendors\challans\material.php on line 816
+[19-Feb-2026 10:35:31 Asia/Kolkata] PHP Warning:  include(): Failed opening 'C:\xampp\htdocs\builderz\builderz\modules\vendors\challans/../../includes/footer.php' for inclusion (include_path='C:\xampp\php\PEAR') in C:\xampp\htdocs\builderz\builderz\modules\vendors\challans\material.php on line 816
+[19-Feb-2026 10:47:24 Asia/Kolkata] PHP Parse error:  syntax error, unexpected token "public" in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 728
+[19-Feb-2026 10:47:26 Asia/Kolkata] PHP Parse error:  syntax error, unexpected token "public" in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 728
+[19-Feb-2026 10:47:28 Asia/Kolkata] PHP Parse error:  syntax error, unexpected token "public" in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 728
+[19-Feb-2026 10:47:36 Asia/Kolkata] PHP Parse error:  syntax error, unexpected token "public" in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 728
+[19-Feb-2026 10:47:41 Asia/Kolkata] PHP Parse error:  syntax error, unexpected token "public" in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 728
+[19-Feb-2026 10:48:25 Asia/Kolkata] PHP Parse error:  syntax error, unexpected token "public" in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 728
+[19-Feb-2026 10:49:08 Asia/Kolkata] PHP Parse error:  syntax error, unexpected token "public" in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 728
+[19-Feb-2026 10:50:17 Asia/Kolkata] PHP Parse error:  syntax error, unexpected token "public" in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 728
+[19-Feb-2026 10:50:26 Asia/Kolkata] PHP Parse error:  syntax error, unexpected token "public" in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 728
+[19-Feb-2026 10:51:12 Asia/Kolkata] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in C:\xampp\htdocs\builderz\test_dashboard_roi.php on line 21
+[19-Feb-2026 11:05:29 Asia/Kolkata] PHP Warning:  Undefined variable $total_returned in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 168
+[19-Feb-2026 11:05:29 Asia/Kolkata] PHP Warning:  Undefined variable $net_invested in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 169
+[19-Feb-2026 11:05:35 Asia/Kolkata] PHP Warning:  Undefined variable $total_returned in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 168
+[19-Feb-2026 11:05:35 Asia/Kolkata] PHP Warning:  Undefined variable $net_invested in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 169
+[19-Feb-2026 11:05:42 Asia/Kolkata] PHP Warning:  Undefined variable $total_returned in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 168
+[19-Feb-2026 11:05:42 Asia/Kolkata] PHP Warning:  Undefined variable $net_invested in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 169
+[19-Feb-2026 11:06:00 Asia/Kolkata] PHP Warning:  Undefined variable $total_returned in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 168
+[19-Feb-2026 11:06:00 Asia/Kolkata] PHP Warning:  Undefined variable $net_invested in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 169
+[19-Feb-2026 11:06:12 Asia/Kolkata] PHP Warning:  Undefined variable $total_returned in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 168
+[19-Feb-2026 11:06:12 Asia/Kolkata] PHP Warning:  Undefined variable $net_invested in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 169
+[19-Feb-2026 11:06:20 Asia/Kolkata] PHP Warning:  Undefined variable $total_returned in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 168
+[19-Feb-2026 11:06:20 Asia/Kolkata] PHP Warning:  Undefined variable $net_invested in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 169
+[19-Feb-2026 11:13:03 Asia/Kolkata] PHP Warning:  Undefined variable $total_returned in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 168
+[19-Feb-2026 11:13:03 Asia/Kolkata] PHP Warning:  Undefined variable $net_invested in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 169
+[19-Feb-2026 11:13:06 Asia/Kolkata] PHP Warning:  Undefined variable $total_returned in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 168
+[19-Feb-2026 11:13:06 Asia/Kolkata] PHP Warning:  Undefined variable $net_invested in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 169
+[19-Feb-2026 11:14:14 Asia/Kolkata] PHP Warning:  Undefined variable $total_returned in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 168
+[19-Feb-2026 11:14:14 Asia/Kolkata] PHP Warning:  Undefined variable $net_invested in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 169
+[19-Feb-2026 11:15:00 Asia/Kolkata] PHP Warning:  Undefined variable $total_returned in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 168
+[19-Feb-2026 11:15:00 Asia/Kolkata] PHP Warning:  Undefined variable $net_invested in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 169
+[19-Feb-2026 11:15:02 Asia/Kolkata] PHP Warning:  Undefined variable $total_returned in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 168
+[19-Feb-2026 11:15:02 Asia/Kolkata] PHP Warning:  Undefined variable $net_invested in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 169
+[19-Feb-2026 11:18:14 Asia/Kolkata] PHP Warning:  Undefined variable $total_returned in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 168
+[19-Feb-2026 11:18:14 Asia/Kolkata] PHP Warning:  Undefined variable $net_invested in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 169
+[19-Feb-2026 11:18:42 Asia/Kolkata] PHP Warning:  Undefined variable $total_returned in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 168
+[19-Feb-2026 11:18:42 Asia/Kolkata] PHP Warning:  Undefined variable $net_invested in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 169
+[19-Feb-2026 11:27:11 Asia/Kolkata] PHP Warning:  Undefined variable $total_returned in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 168
+[19-Feb-2026 11:27:11 Asia/Kolkata] PHP Warning:  Undefined variable $net_invested in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 169
+[19-Feb-2026 11:31:57 Asia/Kolkata] Database query error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.vendor_bills' doesn't exist
+[19-Feb-2026 11:31:57 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.vendor_bills' doesn't exist in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT \r\n      ...')
+#1 C:\xampp\htdocs\builderz\builderz\includes\ReportService.php(115): Database->query('SELECT \r\n      ...', Array)
+#2 C:\xampp\htdocs\builderz\test_cashflow_verify.php(27): ReportService->getFinancialOverview('2026-02-17', '2026-02-17')
+#3 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[19-Feb-2026 11:32:53 Asia/Kolkata] Database query error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.vendor_bills' doesn't exist
+[19-Feb-2026 11:32:53 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.vendor_bills' doesn't exist in C:\xampp\htdocs\builderz\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\builderz\config\database.php(38): PDO->prepare('SELECT \r\n      ...')
+#1 C:\xampp\htdocs\builderz\builderz\includes\ReportService.php(111): Database->query('SELECT \r\n      ...', Array)
+#2 C:\xampp\htdocs\builderz\test_cashflow_verify.php(27): ReportService->getFinancialOverview('2026-02-17', '2026-02-17')
+#3 {main}
+  thrown in C:\xampp\htdocs\builderz\builderz\config\database.php on line 38
+[19-Feb-2026 11:33:23 Asia/Kolkata] Database query error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.vendor_bills' doesn't exist
+[19-Feb-2026 11:34:42 Asia/Kolkata] Database query error: SQLSTATE[HY000]: General error: 1271 Illegal mix of collations for operation 'UNION'
+[19-Feb-2026 11:35:59 Asia/Kolkata] Database query error: SQLSTATE[HY000]: General error: 1271 Illegal mix of collations for operation 'UNION'
+[19-Feb-2026 11:37:08 Asia/Kolkata] PHP Warning:  Undefined variable $total_returned in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 179
+[19-Feb-2026 11:37:08 Asia/Kolkata] PHP Warning:  Undefined variable $net_invested in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 180
+[19-Feb-2026 11:37:51 Asia/Kolkata] PHP Warning:  Undefined variable $total_returned in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 179
+[19-Feb-2026 11:37:51 Asia/Kolkata] PHP Warning:  Undefined variable $net_invested in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 180
+[19-Feb-2026 11:38:23 Asia/Kolkata] PHP Warning:  Undefined variable $total_returned in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 179
+[19-Feb-2026 11:38:23 Asia/Kolkata] PHP Warning:  Undefined variable $net_invested in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 180
+[19-Feb-2026 11:38:48 Asia/Kolkata] PHP Warning:  Undefined variable $total_returned in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 179
+[19-Feb-2026 11:38:48 Asia/Kolkata] PHP Warning:  Undefined variable $net_invested in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 180
+[19-Feb-2026 11:39:56 Asia/Kolkata] PHP Warning:  Undefined variable $total_returned in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 179
+[19-Feb-2026 11:39:56 Asia/Kolkata] PHP Warning:  Undefined variable $net_invested in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 180
+[19-Feb-2026 11:46:52 Asia/Kolkata] PHP Warning:  Undefined variable $total_returned in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 179
+[19-Feb-2026 11:46:52 Asia/Kolkata] PHP Warning:  Undefined variable $net_invested in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 180
+[19-Feb-2026 12:00:43 Asia/Kolkata] PHP Warning:  Undefined variable $total_returned in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 179
+[19-Feb-2026 12:00:43 Asia/Kolkata] PHP Warning:  Undefined variable $net_invested in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 180
+[19-Feb-2026 12:00:47 Asia/Kolkata] PHP Warning:  Undefined variable $total_returned in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 179
+[19-Feb-2026 12:00:47 Asia/Kolkata] PHP Warning:  Undefined variable $net_invested in C:\xampp\htdocs\builderz\builderz\includes\ReportService.php on line 180
