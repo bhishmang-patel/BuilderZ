@@ -129,7 +129,7 @@ Keep your books clean.
 ### Login Credentials
 - **URL**: `http://localhost/builderz/`
 - **Username**: `admin`
-- **Password**: `admin123`
+- **Password**: `*******`
 - *Note: Please change password after first login via Profile settings.*
 
 ---
