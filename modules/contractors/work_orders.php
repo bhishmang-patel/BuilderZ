@@ -137,6 +137,12 @@ include __DIR__ . '/../../includes/header.php';
         font-size: 1.6rem; font-weight: 700; color: var(--ink);
         font-family: 'Fraunces', serif; line-height: 1.1;
     }
+    
+    /* Hover reveal for large numbers */
+    .stat-value .short-val, .stat-value .full-val { transition: opacity 0.2s; }
+    .stat-value .full-val { display: none; }
+    .stat-card:hover .stat-value .short-val { display: none; }
+    .stat-card:hover .stat-value .full-val { display: inline; }
     .stat-icon {
         width: 36px; height: 36px; border-radius: 8px;
         display: flex; align-items: center; justify-content: center;
@@ -258,17 +264,26 @@ include __DIR__ . '/../../includes/header.php';
         <div class="stat-card">
             <div class="stat-icon"><i class="fas fa-file-contract"></i></div>
             <div class="stat-title">Commitment Value</div>
-            <div class="stat-value" style="color:var(--accent)"><?= formatCurrencyShort($stats['total_value']) ?></div>
+            <div class="stat-value" style="color:var(--accent)">
+                <span class="short-val"><?= formatCurrencyShort($stats['total_value']) ?></span>
+                <span class="full-val"><?= formatCurrency($stats['total_value']) ?></span>
+            </div>
         </div>
         <div class="stat-card">
             <div class="stat-icon" style="background:#ecfdf5;color:#059669"><i class="fas fa-check-circle"></i></div>
             <div class="stat-title">Paid Amount</div>
-            <div class="stat-value" style="color:#059669"><?= formatCurrencyShort($stats['total_paid']) ?></div>
+            <div class="stat-value" style="color:#059669">
+                <span class="short-val"><?= formatCurrencyShort($stats['total_paid']) ?></span>
+                <span class="full-val"><?= formatCurrency($stats['total_paid']) ?></span>
+            </div>
         </div>
         <div class="stat-card">
             <div class="stat-icon" style="background:#fff7ed;color:#ea580c"><i class="fas fa-hourglass-half"></i></div>
             <div class="stat-title">Pending</div>
-            <div class="stat-value" style="color:#ea580c"><?= formatCurrencyShort($stats['pending_value']) ?></div>
+            <div class="stat-value" style="color:#ea580c">
+                <span class="short-val"><?= formatCurrencyShort($stats['pending_value']) ?></span>
+                <span class="full-val"><?= formatCurrency($stats['pending_value']) ?></span>
+            </div>
         </div>
     </div>
 

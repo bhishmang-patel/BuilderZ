@@ -131,6 +131,12 @@ include __DIR__ . '/../../includes/header.php';
         color: var(--ink); line-height: 1; font-variant-numeric: tabular-nums;
         margin-bottom: 0.4rem;
     }
+    
+    /* Hover reveal for large numbers */
+    .stat-value .short-val, .stat-value .full-val { transition: opacity 0.2s; }
+    .stat-value .full-val { display: none; }
+    .stat-card:hover .stat-value .short-val { display: none; }
+    .stat-card:hover .stat-value .full-val { display: inline; }
     .stat-value.green { color: #10b981; }
     .stat-value.orange { color: #f59e0b; }
     .stat-value.red { color: #ef4444; }
@@ -302,25 +308,37 @@ include __DIR__ . '/../../includes/header.php';
     <div class="stats-grid">
         <div class="stat-card receipts">
             <div class="stat-label">Total Receipts</div>
-            <div class="stat-value green"><?= formatCurrencyShort($total_receipts) ?></div>
+            <div class="stat-value green">
+                <span class="short-val"><?= formatCurrencyShort($total_receipts) ?></span>
+                <span class="full-val"><?= formatCurrency($total_receipts) ?></span>
+            </div>
             <div class="stat-sub">From <?= $customer_receipts_count ?> transactions</div>
         </div>
 
         <div class="stat-card payments">
             <div class="stat-label">Total Payments</div>
-            <div class="stat-value orange"><?= formatCurrencyShort($total_payments) ?></div>
+            <div class="stat-value orange">
+                <span class="short-val"><?= formatCurrencyShort($total_payments) ?></span>
+                <span class="full-val"><?= formatCurrency($total_payments) ?></span>
+            </div>
             <div class="stat-sub">Vendors: <?= $vendor_payments_count ?> | Contractors: <?= $contractor_payments_count ?></div>
         </div>
 
         <div class="stat-card refunds">
             <div class="stat-label">Refunds</div>
-            <div class="stat-value red"><?= formatCurrencyShort($total_refunds) ?></div>
+            <div class="stat-value red">
+                <span class="short-val"><?= formatCurrencyShort($total_refunds) ?></span>
+                <span class="full-val"><?= formatCurrency($total_refunds) ?></span>
+            </div>
             <div class="stat-sub"><?= $refunds_count ?> processed</div>
         </div>
 
         <div class="stat-card net">
             <div class="stat-label">Net Cash Flow</div>
-            <div class="stat-value <?= $net_cashflow >= 0 ? 'blue' : 'red' ?>"><?= formatCurrencyShort($net_cashflow) ?></div>
+            <div class="stat-value <?= $net_cashflow >= 0 ? 'blue' : 'red' ?>">
+                <span class="short-val"><?= formatCurrencyShort($net_cashflow) ?></span>
+                <span class="full-val"><?= formatCurrency($net_cashflow) ?></span>
+            </div>
             <div class="stat-sub">Receipts - (Payments + Refunds)</div>
         </div>
     </div>

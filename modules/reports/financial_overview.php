@@ -181,6 +181,12 @@ include __DIR__ . '/../../includes/header.php';
         color: var(--ink); line-height: 1; font-variant-numeric: tabular-nums;
         margin-bottom: 0.4rem;
     }
+    
+    /* Hover reveal for large numbers */
+    .stat-value .short-val, .stat-value .full-val { transition: opacity 0.2s; }
+    .stat-value .full-val { display: none; }
+    .stat-card:hover .stat-value .short-val { display: none; }
+    .stat-card:hover .stat-value .full-val { display: inline; }
     .stat-value.green { color: #10b981; }
     .stat-value.red { color: #ef4444; }
     .stat-value.blue { color: var(--accent); }
@@ -357,7 +363,10 @@ include __DIR__ . '/../../includes/header.php';
                 <div class="stat-label">Total Income</div>
                 <div class="stat-icon ico-green"><i class="fas fa-arrow-down"></i></div>
             </div>
-            <div class="stat-value green"><?= formatCurrencyShort($total_income) ?></div>
+            <div class="stat-value green">
+                <span class="short-val"><?= formatCurrencyShort($total_income) ?></span>
+                <span class="full-val"><?= formatCurrency($total_income) ?></span>
+            </div>
             <div class="stat-sub"><?= count($income_data) ?> transactions</div>
         </div>
 
@@ -366,7 +375,10 @@ include __DIR__ . '/../../includes/header.php';
                 <div class="stat-label">Total Expenditure</div>
                 <div class="stat-icon ico-red"><i class="fas fa-arrow-up"></i></div>
             </div>
-            <div class="stat-value red"><?= formatCurrencyShort($total_expenditure) ?></div>
+            <div class="stat-value red">
+                <span class="short-val"><?= formatCurrencyShort($total_expenditure) ?></span>
+                <span class="full-val"><?= formatCurrency($total_expenditure) ?></span>
+            </div>
             <div class="stat-sub"><?= count($expenditure_data) ?> transactions</div>
         </div>
 
@@ -375,7 +387,10 @@ include __DIR__ . '/../../includes/header.php';
                 <div class="stat-label">Net Profit</div>
                 <div class="stat-icon ico-blue"><i class="fas fa-wallet"></i></div>
             </div>
-            <div class="stat-value <?= $net_profit >= 0 ? 'blue' : 'red' ?>"><?= formatCurrencyShort($net_profit) ?></div>
+            <div class="stat-value <?= $net_profit >= 0 ? 'blue' : 'red' ?>">
+                <span class="short-val"><?= formatCurrencyShort($net_profit) ?></span>
+                <span class="full-val"><?= formatCurrency($net_profit) ?></span>
+            </div>
             <div class="stat-sub">
                 <?= $total_income > 0 ? number_format(($net_profit / $total_income) * 100, 1) : 0 ?>% Net Margin
             </div>
@@ -386,7 +401,10 @@ include __DIR__ . '/../../includes/header.php';
                 <div class="stat-label">Total Invested</div>
                 <div class="stat-icon ico-orange"><i class="fas fa-hand-holding-usd"></i></div>
             </div>
-            <div class="stat-value orange"><?= formatCurrencyShort($total_invested) ?></div>
+            <div class="stat-value orange">
+                <span class="short-val"><?= formatCurrencyShort($total_invested) ?></span>
+                <span class="full-val"><?= formatCurrency($total_invested) ?></span>
+            </div>
             <div class="stat-sub">Capital employed</div>
         </div>
 
@@ -406,7 +424,10 @@ include __DIR__ . '/../../includes/header.php';
                 <div class="stat-label">Cash Balance</div>
                 <div class="stat-icon ico-cyan"><i class="fas fa-coins"></i></div>
             </div>
-            <div class="stat-value cyan"><?= formatCurrencyShort($cash_balance) ?></div>
+            <div class="stat-value cyan">
+                <span class="short-val"><?= formatCurrencyShort($cash_balance) ?></span>
+                <span class="full-val"><?= formatCurrency($cash_balance) ?></span>
+            </div>
             <div class="stat-sub">Current position</div>
         </div>
 

@@ -142,6 +142,12 @@ include __DIR__ . '/../../includes/header.php';
         font-family: 'Fraunces', serif; font-size: 1.75rem; font-weight: 700;
         color: var(--ink); line-height: 1; font-variant-numeric: tabular-nums;
     }
+    
+    /* Hover reveal for large numbers */
+    .stat-value .short-val, .stat-value .full-val { transition: opacity 0.2s; }
+    .stat-value .full-val { display: none; }
+    .stat-card:hover .stat-value .short-val { display: none; }
+    .stat-card:hover .stat-value .full-val { display: inline; }
 
     /* ── Chart Cards ─────────────────────────── */
     .chart-row {
@@ -293,12 +299,15 @@ include __DIR__ . '/../../includes/header.php';
 
     <!-- ── Top Stats Grid ───────────────────── -->
     <div class="stats-grid">
-        <div class="stat-card" title="Total: <?= formatCurrencyShort($data['total_invested']) ?> | Returned: <?= formatCurrencyShort($data['total_returned']) ?>">
+        <div class="stat-card" title="Total: <?= formatCurrencyShort($data['total_invested'], false) ?> | Returned: <?= formatCurrencyShort($data['total_returned'], false) ?>">
             <div class="stat-top">
                 <div class="s-icon ico-orange"><i class="fas fa-hand-holding-usd"></i></div>
             </div>
             <div class="stat-label">Net Invested</div>
-            <div class="stat-value"><?= formatCurrencyShort($data['net_invested']) ?></div>
+            <div class="stat-value">
+                <span class="short-val"><?= formatCurrencyShort($data['net_invested']) ?></span>
+                <span class="full-val"><?= formatCurrency($data['net_invested']) ?></span>
+            </div>
         </div>
 
         <div class="stat-card">
@@ -309,7 +318,10 @@ include __DIR__ . '/../../includes/header.php';
                 </span>
             </div>
             <div class="stat-label">Total Expenses</div>
-            <div class="stat-value"><?= formatCurrencyShort($total_expenses) ?></div>
+            <div class="stat-value">
+                <span class="short-val"><?= formatCurrencyShort($total_expenses) ?></span>
+                <span class="full-val"><?= formatCurrency($total_expenses) ?></span>
+            </div>
         </div>
 
         <div class="stat-card">
@@ -320,7 +332,10 @@ include __DIR__ . '/../../includes/header.php';
                 </span>
             </div>
             <div class="stat-label">Total Sales</div>
-            <div class="stat-value"><?= formatCurrencyShort($total_sales) ?></div>
+            <div class="stat-value">
+                <span class="short-val"><?= formatCurrencyShort($total_sales) ?></span>
+                <span class="full-val"><?= formatCurrency($total_sales) ?></span>
+            </div>
         </div>
 
         <div class="stat-card">
@@ -331,7 +346,10 @@ include __DIR__ . '/../../includes/header.php';
                 </span>
             </div>
             <div class="stat-label">Net Profit</div>
-            <div class="stat-value"><?= formatCurrencyShort($net_profit) ?></div>
+            <div class="stat-value">
+                <span class="short-val"><?= formatCurrencyShort($net_profit) ?></span>
+                <span class="full-val"><?= formatCurrency($net_profit) ?></span>
+            </div>
         </div>
     </div>
 

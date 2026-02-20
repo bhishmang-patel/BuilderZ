@@ -123,6 +123,12 @@ include __DIR__ . '/../../includes/header.php';
         color: var(--ink); line-height: 1; font-variant-numeric: tabular-nums;
         margin-bottom: 0.3rem;
     }
+    
+    /* Hover reveal for large numbers */
+    .stat-value .short-val, .stat-value .full-val { transition: opacity 0.2s; }
+    .stat-value .full-val { display: none; }
+    .stat-card:hover .stat-value .short-val { display: none; }
+    .stat-card:hover .stat-value .full-val { display: inline; }
     .stat-value.blue { color: var(--accent); }
     .stat-value.green { color: #10b981; }
     .stat-value.red { color: #ef4444; }
@@ -229,13 +235,19 @@ include __DIR__ . '/../../includes/header.php';
     <div class="stats-grid">
         <div class="stat-card invested">
             <div class="stat-label">Total Invested</div>
-            <div class="stat-value blue"><?= formatCurrencyShort($data['total_invested']) ?></div>
+            <div class="stat-value blue">
+                <span class="short-val"><?= formatCurrencyShort($data['total_invested']) ?></span>
+                <span class="full-val"><?= formatCurrency($data['total_invested']) ?></span>
+            </div>
             <div class="stat-sub">Capital deployed</div>
         </div>
 
         <div class="stat-card returned">
             <div class="stat-label">Total Returned</div>
-            <div class="stat-value green"><?= formatCurrencyShort($data['total_returned']) ?></div>
+            <div class="stat-value green">
+                <span class="short-val"><?= formatCurrencyShort($data['total_returned']) ?></span>
+                <span class="full-val"><?= formatCurrency($data['total_returned']) ?></span>
+            </div>
             <div class="stat-sub">Revenue generated</div>
         </div>
 
@@ -246,7 +258,10 @@ include __DIR__ . '/../../includes/header.php';
                 $profit_class = $net_profit >= 0 ? 'green' : 'red';
             ?>
             <div class="stat-label">Net Profit / ROI</div>
-            <div class="stat-value <?= $profit_class ?>"><?= formatCurrencyShort($net_profit) ?></div>
+            <div class="stat-value <?= $profit_class ?>">
+                <span class="short-val"><?= formatCurrencyShort($net_profit) ?></span>
+                <span class="full-val"><?= formatCurrency($net_profit) ?></span>
+            </div>
             <div class="stat-sub">
                 <span style="font-weight:700;color:<?= $net_profit >= 0 ? '#10b981' : '#ef4444' ?>">
                     <?= number_format($total_roi, 1) ?>% ROI

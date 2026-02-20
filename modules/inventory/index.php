@@ -180,6 +180,12 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
 .sc-val.orange { color: var(--orange); }
 .sc-val.red    { color: var(--red); }
 
+/* Hover reveal for large numbers */
+.sc-val .short-val, .sc-val .full-val { transition: opacity 0.2s; }
+.sc-val .full-val { display: none; }
+.stat-card:hover .sc-val .short-val { display: none; }
+.stat-card:hover .sc-val .full-val { display: inline; }
+
 /* ── Main panel ───────────────────── */
 .panel {
     background: var(--surface); border: 1.5px solid var(--border);
@@ -318,7 +324,10 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
             <div class="sc-ic green"><i class="fas fa-wallet"></i></div>
             <div>
                 <div class="sc-lbl">Total Spend</div>
-                <div class="sc-val green"><?= formatCurrencyShort($total_value) ?></div>
+                <div class="sc-val green">
+                    <span class="short-val"><?= formatCurrencyShort($total_value) ?></span>
+                    <span class="full-val"><?= formatCurrency($total_value) ?></span>
+                </div>
             </div>
         </div>
         <div class="stat-card s3">

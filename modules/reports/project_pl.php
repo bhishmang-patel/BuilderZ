@@ -301,7 +301,7 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
             <div class="sc-ic blue"><i class="fas fa-coins"></i></div>
             <div>
                 <div class="sc-lbl">Total Collected</div>
-                <div class="sc-val accent"><?= formatCurrencyShort($totals['turnover']) ?></div>
+                <div class="sc-val accent"><?= formatCurrencyShort($totals['turnover'], false) ?></div>
                 <div class="sc-sub"><?= formatCurrency($totals['turnover']) ?></div>
             </div>
         </div>
@@ -309,7 +309,7 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
             <div class="sc-ic red"><i class="fas fa-wallet"></i></div>
             <div>
                 <div class="sc-lbl">Total Payout</div>
-                <div class="sc-val red"><?= formatCurrencyShort($totals['expense']) ?></div>
+                <div class="sc-val red"><?= formatCurrencyShort($totals['expense'], false) ?></div>
                 <div class="sc-sub"><?= formatCurrency($totals['expense']) ?></div>
             </div>
         </div>
@@ -319,7 +319,7 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
             </div>
             <div>
                 <div class="sc-lbl">Net Cash Flow</div>
-                <div class="sc-val <?= $totals['net'] >= 0 ? 'green' : 'red' ?>"><?= formatCurrencyShort($totals['net']) ?></div>
+                <div class="sc-val <?= $totals['net'] >= 0 ? 'green' : 'red' ?>"><?= formatCurrencyShort($totals['net'], false) ?></div>
                 <div class="sc-sub"><?= formatCurrency($totals['net']) ?></div>
             </div>
         </div>

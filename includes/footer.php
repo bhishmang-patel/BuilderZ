@@ -148,30 +148,38 @@
         }
 
         document.addEventListener('DOMContentLoaded', function () {
-
-            /* Restore sidebar collapse state */
-            const sidebar = document.querySelector('.sidebar');
-            if (sidebar && localStorage.getItem('sidebar_collapsed') === 'true') {
-                sidebar.classList.add('collapsed');
-            }
-
-            /* Sidebar scroll persistence */
             const sidebarMenu = document.querySelector('.sidebar-menu');
-            if (sidebarMenu) {
-                const savedScroll = localStorage.getItem('sidebar_scroll_pos');
-                if (savedScroll) sidebarMenu.scrollTop = parseInt(savedScroll, 10);
-                window.addEventListener('beforeunload', () => {
-                    localStorage.setItem('sidebar_scroll_pos', sidebarMenu.scrollTop);
-                });
+            if (!sidebarMenu) return;
+
+            const saved = localStorage.getItem('sidebar_scroll_pos');
+            if (saved !== null) {
+                const scrollPos = parseInt(saved, 10);
+                
+                const applyScroll = () => {
+                    sidebarMenu.scrollTop = scrollPos;
+                };
+
+                // Apply immediately and at various points of page rendering
+                applyScroll();
+                setTimeout(applyScroll, 50);
+                setTimeout(applyScroll, 150);
+                window.addEventListener('load', applyScroll);
             }
 
-            /* Auto-dismiss flash alerts after 5 s */
-            document.querySelectorAll('.alert:not(.alert-permanent)').forEach(alert => {
-                setTimeout(() => {
-                    alert.style.transition = 'opacity 0.3s ease';
-                    alert.style.opacity = '0';
-                    setTimeout(() => alert.remove(), 320);
-                }, 5000);
+            // Save on click of any link
+            sidebarMenu.addEventListener('click', function(e) {
+                if (e.target.closest('a')) {
+                    localStorage.setItem('sidebar_scroll_pos', sidebarMenu.scrollTop);
+                }
+            });
+            
+            // Also keep it updated on scroll with a slight debounce
+            let scrollTimeout;
+            sidebarMenu.addEventListener('scroll', function() {
+                clearTimeout(scrollTimeout);
+                scrollTimeout = setTimeout(() => {
+                    localStorage.setItem('sidebar_scroll_pos', sidebarMenu.scrollTop);
+                }, 100);
             });
         });
 

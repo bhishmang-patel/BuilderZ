@@ -140,17 +140,17 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
     <div class="stat-grid">
         <div class="stat-card">
             <div class="sc-label">Total Revenue</div>
-            <div class="sc-value"><?= formatCurrencyShort($project['total_income']) ?></div>
+            <div class="sc-value"><?= formatCurrencyShort($project['total_income'], false) ?></div>
             <div class="sc-sub">Collected</div>
         </div>
         <div class="stat-card">
             <div class="sc-label">Total Expense</div>
-            <div class="sc-value red"><?= formatCurrencyShort($project['total_expense']) ?></div>
+            <div class="sc-value red"><?= formatCurrencyShort($project['total_expense'], false) ?></div>
             <div class="sc-sub">Outflow</div>
         </div>
         <div class="stat-card">
             <div class="sc-label">Net Profit</div>
-            <div class="sc-value <?= $project['net_profit'] >= 0 ? 'green' : 'red' ?>"><?= formatCurrencyShort($project['net_profit']) ?></div>
+            <div class="sc-value <?= $project['net_profit'] >= 0 ? 'green' : 'red' ?>"><?= formatCurrencyShort($project['net_profit'], false) ?></div>
             <div class="sc-sub"><?= formatCurrency($project['net_profit']) ?></div>
         </div>
         <div class="stat-card">

@@ -1,191 +1,186 @@
-# 🎉 BuilderZ - Complete System Built!
+# �️ EstateAxis ERP - Ultimate Real Estate & Construction Management System
 
-## Real Estate Booking + Construction + Accounting ERP
-**Indian Standards | Desktop Deployment | Production Ready**
-
----
-
-## 🆕 Recent Updates (v1.1) - Feb 2026
-
-### 📊 Reporting & Exports
-- **Fixed Audit Export**: Resolved issue with empty exports by correcting the default date range selection logic.
-- **Excel Compatibility**: Updated all CSV exports (Sales, Expenses, Bookings) to use **`DD-MM-YYYY`** date format, resolving display issues in Excel.
-- **Premium UI**: Enhanced the **Project P&L Report** with smooth fade-in animations and staggered card reveals for a polished, professional user experience.
-
-### 🧹 System Maintenance
-- **Code Cleanup**: Removed unused diagnostic scripts and temporary files (`debug_*.php`, `test_*.php`) to ensure a clean production build.
-- **Documentation**: Updated installation guides and feature lists.
+**Version**: 1.1 (Feb 2026)  
+**Tech Stack**: PHP 8+, MySQL, Vanilla JS, CSS3 (Modern UI)  
+**Target Audience**: Indian Real Estate Developers & Construction Firms
 
 ---
 
-## ✅ COMPLETED MODULES (Phase 1 & 2)
+## 📖 Project Overview
 
-### 🔐 Authentication & Security
-- ✅ Secure login with password hashing
-- ✅ Role-based access control (Admin/Accountant/Project Manager)
-- ✅ Session management with timeout (1 hour)
-- ✅ Logout functionality
-- ✅ Audit trail for all actions
-- ✅ **Enhanced Audit UI**: "Multiple" badge for bulk actions
-- ✅ **Bulk Delete**: Single log entry for batch deletions
+**EstateAxis** is a production-ready, desktop-optimized ERP system designed to manage the entire lifecycle of a real estate project. From **Lead Generation (CRM)** to **Construction (Work Orders, Inventory)** to **Sales (Bookings, Payments)** and **Final Handover**, EstateAxis handles it all with a unified, professional interface.
 
-### 🏗️ Master Data Management
-
-**1. Projects Module** ✅
-- Create, edit, delete projects
-- Track project details, location, timeline
-- Floors and flats count
-- Status management (Active/Completed/On Hold)
-- Search and filter capabilities
-
-**2. Flats Module** ✅
-- **BULK CREATION**: Generate multiple flats at once!
-- **Professional Modal UI**: New, clean interface for bulk actions
-- **Multi-Tower Support**: Automatic tower prefixes (e.g., A-101, B-101)
-- Individual flat management
-- Auto-calculated total value (area × rate)
-- Status tracking (Available/Booked/Sold)
-
-**3. Parties Module** ✅
-- **Unified system** for Customers, Vendors, and Labour
-- Contact management, GST number tracking
-- Mobile and email
-- Filter by party type (Customer/Vendor/Labour)
-
-**4. Materials Module** ✅
-- Material master with 9 unit types
-- Stock tracking (auto-updated via challans)
-- Default rate management
-- Multiple units: Kg, Ton, Bag, CFT, Sqft, Nos, Ltr, Brass, Bundle
-
-### 💰 Booking & Customer Payments
-
-**5. Booking Module** ✅
-- Create flat bookings
-- Link customers to flats
-- Auto-populate flat details
-- Agreement value tracking
-- Status management (Active/Cancelled)
-
-**6. Booking Details & Payments** ✅
-- Comprehensive booking view
-- Customer and property details
-- **Payment tracking** with history
-- Multiple payment modes (Cash/Bank/UPI/Cheque)
-- **Visual progress bar** showing payment status
-- **Indian formatting** (₹ symbol, DD-MM-YYYY dates)
-
-### 📋 Challan Management
-
-**7. Material Challan Module** ✅
-- Create material challans with **multiple items**
-- Auto-generated challan numbers (MAT/2026/0001)
-- Material item breakdown with **Automatic stock updates**
-- Vendor outstanding tracking
-- Approval workflow (Admin only)
-
-**8. Labour Pay Module** ✅
-- Create work records (formerly challans)
-- Work description and period tracking
-- Auto-generated pay numbers (LAB/2026/0001)
-- Labour outstanding calculation
-- Approval workflow & Payment status tracking
-
-### 📊 Dashboard & Analytics
-
-**9. Investments Module** ✅
-- **Track Capital**: Record partner contributions, loans, and personal capital
-- **Export to CSV**: Download investment reports instantly
-- Project-wise investment tracking
-
-**10. Dashboard** ✅
-- **Real-time financial metrics**: Total Sales, Received, Pending, Expenses, Net Profit
-- Recent bookings list & Pending approvals alerts
+It is purpose-built for the **Indian market**, featuring GST support, Indian currency formatting (`₹ 1,00,000`), TDS calculations, and local unit measurements (Sqft, Brass, CFT).
 
 ---
 
-## 🎨 Indian Standards & UI Features
+## 🚀 Key Features at a Glance
 
-### Currency & Formatting
-✅ Indian Rupee symbol (₹)
-✅ Currency formatting: ₹ 1,25,000.00
-✅ Date format: DD-MM-YYYY
-✅ Number formatting with lakhs/crores support
+### 🏢 Core Modules
+| Module | Description |
+| :--- | :--- |
+| **CRM & Leads** | Track inquiries, site visits, and convert leads to customers. |
+| **Project Master** | Manage multiple projects, towers, and unit costs. |
+| **Inventory Mgmt** | Material stock tracking, purchase challans, and consumption logs. |
+| **Contractor Mgmt** | Work orders, running bills (RA Wills), TDS tracking, and retention. |
+| **Sales & Booking** | Flat availability, booking agreements, payment schedules, and receipts. |
+| **Finance** | Expense recording, payment vouchers, partner investments, and P&L reports. |
 
-### User Interface
-✅ Modern, clean design with gradient themes & purple accent colors
-✅ Responsive layout & Color-coded status badges
-✅ Modal-based forms, Toast notifications, Confirmation dialogs
-✅ Search, filter, and sortable tables on all listings
-✅ **Premium Animations** on key reports
-
----
-
-## 📋 Installation & Usage Guide
-
-### System Requirements
-- **OS**: Windows 7/8/10/11
-- **RAM**: 4GB minimum (8GB recommended)
-- **Software**: XAMPP 7.4 or higher (Apache + MySQL + PHP)
-
-### Installation Steps
-
-1. **Install XAMPP**: Download from [apachefriends.org](https://www.apachefriends.org/) and install to `C:\xampp\`.
-2. **Copy Files**: Place the `builderz` folder in `C:\xampp\htdocs\`.
-3. **Start Services**: Open XAMPP Control Panel and start **Apache** and **MySQL**.
-4. **Run Installer**: Open browser and go to `http://localhost/builderz/config/install.php`.
-5. **Login**: 
-   - URL: `http://localhost/builderz/`
-   - Default User: `admin`
-   - Default Pass: `admin123` (Change immediately!)
-
-### Daily Operations Workflow
-
-**1. Booking a Flat**
-`Dashboard` → `Bookings` → `New Booking` → Select Flat & Customer → Save.
-
-**2. Receiving Payment**
-`Bookings` → `View` → `Add Payment` → Enter Amount & Mode → Save.
-
-**3. Material Purchase**
-`Material Challans` → `Create` → Select Vendor & Materials → Save. (Stock updates automatically).
-
-**4. Exporting Reports**
-`CA & Tax` → Select Month (e.g., February 2026) → `Download Audit Pack`.
+### ✨ Premium Features
+- **Project P&L Report**: Real-time profit/loss analysis with animated charts.
+- **Bulk Flat Creation**: Generate 100+ flats (e.g., A-101 to A-1004) in seconds.
+- **Audit Reports**: CA-ready exports for sales, expenses, and GST returns.
+- **Role-Based Security**: Admin, Project Manager, Accountant, and Sales access levels.
 
 ---
 
-## 📁 Complete File Structure
-```
+## 📚 End-to-End Module Guide
+
+### 1. 🎛️ Dashboard
+The central command center providing a snapshot of your business health.
+- **Financial Cards**: Total Sales, Total Received, Total Outstanding, and Net Profit.
+- **Live Activity**: Recent bookings and pending approvals.
+- **Quick Actions**: Shortcuts to adding leads, expenses, or bookings.
+
+### 2. 🤝 CRM (Customer Relationship Management)
+*Located in: `modules/crm/`*
+Stop losing sales on spreadsheets. Track every potential buyer.
+- **Lead Stages**: New → Follow-up → Site Visit → Interested → Booked → Lost.
+- **Lead Details**: Capture name, mobile, email, budget, and source (e.g., "Newspaper Ad").
+- **Filters**: Quickly filter leads by "Hot" interest level or "Site Visit" status.
+
+### 3. 🏗️ Projects & Inventory
+*Located in: `modules/projects/`, `modules/inventory/`, `modules/masters/`*
+Manage the construction side of operations.
+
+#### **Project Setup**
+- Create **Projects** (e.g., "Sunrise Apartments").
+- Configure **Towers** and **Flats**.
+- **Bulk Create**: Use the bulk tool to create flats A-101 through A-1004 automatically based on floor count and flats-per-floor.
+
+#### **Material Management**
+- **Material Master**: Pre-loaded with Cement (Bag), Steel (Kg), Sand (Brass), Bricks (Nos), etc.
+- **Purchase (Inward)**: Create **Material Challans** when goods arrive at the site. This **automatically increases stock**.
+- **Consumption (Outward)**: Use the **Usage** form to record material used (e.g., "50 Bags Cement used for Foundation"). This **decreases stock**.
+- **Stock Alerts**: System notifies when stock dips below minimum levels.
+
+### 4. 👷 Contractors & Work Orders
+*Located in: `modules/contractors/`*
+Streamline labour management and billing.
+- **Work Orders (WO)**: Issue formal contracts to contractors (e.g., "Brickwork at ₹18/sqft").
+- **Running Bills**: Generate bills against active WOs. The system tracks:
+    - **Total Work Done**
+    - **Previous Paid Amount**
+    - **TDS Deduction** (e.g., 1% or 2%)
+    - **Net Payable**
+- **Contractor Ledger**: View complete history of work done vs. payments made.
+
+### 5. � Sales & Bookings
+*Located in: `modules/booking/`*
+The revenue engine.
+- **Interactive Flat List**: Color-coded status (Green=Available, Red=Sold, Yellow=Booked).
+- **Booking Flow**:
+    1. Select a Lead/Customer.
+    2. Select a valid Flat.
+    3. Enter **Agreement Value** and **Booking Date**.
+    4. System changes Flat status to **Booked**.
+- **Payments**: Record payments against bookings (Cheque/NEFT/Cash).
+- **Payment Plan**: Track how much is received vs. pending for each customer.
+
+### 6. 🧾 Accounts & Finance
+*Located in: `modules/accounts/`, `modules/investments/`*
+Keep your books clean.
+- **Expense Recording**: Log daily office expenses, tea/coffee, salary, etc.
+- **Payment Vouchers**: Record payments made to Vendors and Contractors.
+- **Investments**: Track capital brought in by partners or loans from banks.
+- **Reports**:
+    - **Day Book**: Daily cash/bank flow.
+    - **Ledgers**: Party-wise statements.
+    - **Project P&L**: Detailed Profit & Loss per project.
+
+### 7. 🔒 Admin & Security
+*Located in: `modules/admin/`*
+- **User Management**: Create users and assign roles.
+- **Audit Trail**: View a log of *who* did *what* and *when* (e.g., "User 'Raj' deleted Payment #104").
+
+---
+
+## � Technical Installation Guide
+
+### Prerequisites
+- **OS**: Windows 10/11 (Preferred)
+- **Web Server**: XAMPP (Apache + MySQL + PHP)
+- **PHP Version**: 8.0, 8.1, or 8.2
+
+### Step-by-Step Installation
+
+1.  **Download XAMPP** from [apachefriends.org](https://www.apachefriends.org/) and install it.
+2.  **Start Services**: Open XAMPP Control Panel and start **Apache** and **MySQL**.
+3.  **Deploy Code**:
+    - Project folder: `builderz`
+    - Copy to: `C:\xampp\htdocs\`
+    - Resulting path: `C:\xampp\htdocs\builderz\`
+4.  **Run Installer**:
+    - Open Chrome/Edge.
+    - Go to: `http://localhost/builderz/config/install.php`
+    - Click **"Install Database"**.
+    - *Success! User tables created.*
+
+### Login Credentials
+- **URL**: `http://localhost/builderz/`
+- **Username**: `admin`
+- **Password**: `admin123`
+- *Note: Please change password after first login via Profile settings.*
+
+---
+
+## 📁 Directory Structure
+
+```plaintext
 builderz/
-├── config/             # Config, DB connection, Schema, Install
-├── includes/           # Auth, Header, Footer, Helpers
-├── modules/            
-│   ├── auth/           # Login/Logout
-│   ├── dashboard/      # Main stats
-│   ├── masters/        # Projects, Flats, Parties, Materials
-│   ├── bookings/       # Booking & Payment logic
-│   ├── challans/       # Material & Labour challans
-│   ├── payments/       # Payment processing history
-│   ├── reports/        # Financial & Audit reports (P&L, Exports)
-│   ├── admin/          # Admin settings & Audit trail
-│   └── investments/    # Capital tracking
-├── assets/             # CSS, JS, Images
-├── backups/            # Database backups
-├── uploads/            # Temporary export files
-└── index.php           # Entry point
+├── assets/                 # CSS (style.css), JS, Images, Fonts
+├── backups/                # Database SQL backups
+├── config/                 # Configuration files
+│   ├── database.php        # DB Connection Class
+│   ├── config.php          # App constants (BASE_URL)
+│   ├── schema.sql          # Database structure
+│   └── install.php         # One-click installer
+├── includes/               # Reusable PHP components
+│   ├── auth.php            # Security & Session checks
+│   ├── header.php          # Top navigation bar
+│   ├── footer.php          # Closing tags & scripts
+│   └── functions.php       # Helper functions
+├── modules/                # CORE FUNCTIONALITY
+│   ├── accounts/           # Expense & General Ledger
+│   ├── admin/              # User Mgmt, Audit Logs
+│   ├── auth/               # Login, Logout
+│   ├── booking/            # Sales, Payment Collection
+│   ├── contractors/        # Work Orders, Bills
+│   ├── crm/                # Leads (New!)
+│   ├── dashboard/          # Home screen stats
+│   ├── inventory/          # Material Usage & Stock
+│   ├── masters/            # Setup (Materials, Projects, Flats)
+│   ├── payments/           # Payment History (Global)
+│   └── reports/            # CA Exports, P&L
+├── uploads/                # File storage (Docs, Images)
+├── index.php               # Redirects to Login/Dashboard
+└── README.md               # This file
 ```
 
 ---
 
-## 🛠 Troubleshooting
+## � Troubleshooting Common Issues
 
-- **Database Error**: Ensure MySQL is running in XAMPP.
-- **Page Not Found**: Check if URL is `http://localhost/builderz/`.
-- **Empty Exports**: Ensure you select the **Current Month** (not the default Last Month) in the export page.
-- **Dates show as ###### in Excel**: Expand the column width in Excel.
+**1. "Database Connection Failed"**
+- Check if MySQL is running in XAMPP.
+- Verify credentials in `config/.env` or `database.php` (Default: `root` / empty password).
+
+**2. "Exported CSV is empty"**
+- In the Audit Export page, check the **Month** selected. The system defaults to *Last Month*. If you entered data today, select *Current Month*.
+
+**3. "Dates show as ###### in Excel"**
+- This is an Excel display issue. The column width is too narrow. Double-click the column header border to expand it.
 
 ---
 
-**BuilderZ v1.1**  
-*Complete Real Estate & Construction Management Solution*
+**EstateAxis ERP** | Built for stability, speed, and scale.

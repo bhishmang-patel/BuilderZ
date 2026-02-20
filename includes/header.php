@@ -54,8 +54,8 @@
         left: 0;
         top: 0;
         height: 100vh;
-        overflow-y: auto;
         z-index: 1000;
+        overflow-y: auto;
     }
 
     .sidebar.collapsed { width: 70px; }
@@ -758,7 +758,7 @@ $headerLogoUrl = !empty($companySettings['company_logo']) ? BASE_URL . $companyS
                 </li>
                 <li>
                     <a href="<?= BASE_URL ?>modules/accounts/index.php" class="<?= ($current_page ?? '') === 'accounts' ? 'active' : '' ?>">
-                        <i class="fas fa-file-invoice-dollar"></i> <span>Accounts & Expenses</span>
+                        <i class="fas fa-book"></i> <span>Accounts & Expenses</span>
                     </a>
                 </li>
                 <li>

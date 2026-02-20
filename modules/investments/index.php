@@ -458,6 +458,12 @@ include __DIR__ . '/../../includes/header.php';
         font-family:'Fraunces',serif; font-size:1.65rem; font-weight:400;
         color:var(--ink); letter-spacing:-0.02em; line-height:1;
     }
+    
+    /* Hover reveal for large numbers */
+    .kpi-val .short-val, .kpi-val .full-val { transition: opacity 0.2s; }
+    .kpi-val .full-val { display: none; }
+    .kpi-cell:hover .kpi-val .short-val { display: none; }
+    .kpi-cell:hover .kpi-val .full-val { display: inline; }
     .kpi-delta { margin-top:0.45rem; font-size:0.7rem; font-weight:600; }
     .kpi-delta.up   { color:#10b981; }
     .kpi-delta.down { color:#ef4444; }
@@ -640,26 +646,38 @@ include __DIR__ . '/../../includes/header.php';
 <div class="kpi-strip">
     <div class="kpi-cell">
         <div class="kpi-lbl">Total Invested</div>
-        <div class="kpi-val"><?= formatCurrencyShort($total_invested) ?></div>
+        <div class="kpi-val">
+            <span class="short-val"><?= formatCurrencyShort($total_invested) ?></span>
+            <span class="full-val"><?= formatCurrency($total_invested) ?></span>
+        </div>
         <div class="kpi-delta neu"><?= count($investments) ?> records total</div>
     </div>
     <div class="kpi-cell">
         <div class="kpi-lbl">Total Returned</div>
-        <div class="kpi-val"><?= formatCurrencyShort($total_returned_all) ?></div>
+        <div class="kpi-val">
+            <span class="short-val"><?= formatCurrencyShort($total_returned_all) ?></span>
+            <span class="full-val"><?= formatCurrency($total_returned_all) ?></span>
+        </div>
         <div class="kpi-delta up">
             ↑ <?= $total_invested > 0 ? number_format($total_returned_all/$total_invested*100,1) : 0 ?>% return rate
         </div>
     </div>
     <div class="kpi-cell">
         <div class="kpi-lbl">Balance Outstanding</div>
-        <div class="kpi-val"><?= formatCurrencyShort($balance_all) ?></div>
+        <div class="kpi-val">
+            <span class="short-val"><?= formatCurrencyShort($balance_all) ?></span>
+            <span class="full-val"><?= formatCurrency($balance_all) ?></span>
+        </div>
         <div class="kpi-delta <?= $balance_all > 0 ? 'down' : 'up' ?>">
             <?= $balance_all > 0 ? '↓ Pending recovery' : '✓ Fully recovered' ?>
         </div>
     </div>
     <div class="kpi-cell">
         <div class="kpi-lbl">Avg. Investment</div>
-        <div class="kpi-val"><?= formatCurrencyShort($avg_investment) ?></div>
+        <div class="kpi-val">
+            <span class="short-val"><?= formatCurrencyShort($avg_investment) ?></span>
+            <span class="full-val"><?= formatCurrency($avg_investment) ?></span>
+        </div>
         <div class="kpi-delta neu"><?= count($byProject) ?> projects tracked</div>
     </div>
 </div>
