@@ -1,0 +1,82 @@
+Debug Export Content for 2026-02
+Range: 2026-02-01 to 2026-02-28
+
+--- 1. SALES ---
+Count: 0
+Array
+(
+)
+
+--- 2. EXPENSES ---
+Count: 7
+Array
+(
+    [0] => Array
+        (
+            [date] => 2026-02-19
+            [amount] => 2000.00
+            [category] => Electricity Bill
+        )
+
+    [1] => Array
+        (
+            [date] => 2026-02-19
+            [amount] => 1234.56
+            [category] => Electricity Bill
+        )
+
+    [2] => Array
+        (
+            [date] => 2026-02-19
+            [amount] => 1234.56
+            [category] => Electricity Bill
+        )
+
+    [3] => Array
+        (
+            [date] => 2026-02-19
+            [amount] => 999.99
+            [category] => Electricity Bill
+        )
+
+    [4] => Array
+        (
+            [date] => 2026-02-19
+            [amount] => 999.99
+            [category] => Electricity Bill
+        )
+
+    [5] => Array
+        (
+            [date] => 2026-02-19
+            [amount] => 999.99
+            [category] => Electricity Bill
+        )
+
+    [6] => Array
+        (
+            [date] => 2026-02-19
+            [amount] => 999.99
+            [category] => Electricity Bill
+        )
+
+)
+
+--- 3. BOOKINGS ---
+Count (with JOINs): 2
+Array
+(
+    [0] => Array
+        (
+            [booking_date] => 2026-02-17
+            [agreement_value] => 6120000.00
+        )
+
+    [1] => Array
+        (
+            [booking_date] => 2026-02-17
+            [agreement_value] => 4760000.00
+        )
+
+)
+Raw Bookings Count: 2

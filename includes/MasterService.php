@@ -210,7 +210,7 @@ class MasterService {
     }
 
     public function createProject($data, $userId) {
-        $allowedInfos = ['project_name', 'location', 'start_date', 'expected_completion', 'total_floors', 'total_flats', 'total_shops', 'total_offices', 'status', 'has_multiple_towers', 'default_stage_of_work_id'];
+        $allowedInfos = ['project_name', 'location', 'start_date', 'expected_completion', 'total_floors', 'total_flats', 'total_shops', 'total_offices', 'status', 'has_multiple_towers', 'default_stage_of_work_id', 'land_cost'];
         $insertData = array_intersect_key($data, array_flip($allowedInfos));
         $insertData['created_by'] = $userId;
         
@@ -222,6 +222,7 @@ class MasterService {
         $insertData['total_offices'] = intval($insertData['total_offices'] ?? 0);
         $insertData['default_stage_of_work_id'] = !empty($data['default_stage_of_work_id']) ? intval($data['default_stage_of_work_id']) : null;
         $insertData['has_multiple_towers'] = isset($data['has_multiple_towers']) ? 1 : 0;
+        $insertData['land_cost'] = !empty($data['land_cost']) ? floatval($data['land_cost']) : 0.00;
 
         $id = $this->db->insert('projects', $insertData);
         logAudit('create', 'projects', $id, null, $insertData);
@@ -229,7 +230,7 @@ class MasterService {
     }
 
     public function updateProject($id, $data) {
-        $allowedInfos = ['project_name', 'location', 'start_date', 'expected_completion', 'total_floors', 'total_flats', 'total_shops', 'total_offices', 'status', 'has_multiple_towers', 'default_stage_of_work_id'];
+        $allowedInfos = ['project_name', 'location', 'start_date', 'expected_completion', 'total_floors', 'total_flats', 'total_shops', 'total_offices', 'status', 'has_multiple_towers', 'default_stage_of_work_id', 'land_cost'];
         $updateData = array_intersect_key($data, array_flip($allowedInfos));
         
         $updateData['status'] = $updateData['status'] ?? 'active';
@@ -239,6 +240,7 @@ class MasterService {
         $updateData['total_offices'] = intval($updateData['total_offices'] ?? 0);
         $updateData['default_stage_of_work_id'] = !empty($data['default_stage_of_work_id']) ? intval($data['default_stage_of_work_id']) : null;
         $updateData['has_multiple_towers'] = isset($data['has_multiple_towers']) ? 1 : 0;
+        $updateData['land_cost'] = !empty($data['land_cost']) ? floatval($data['land_cost']) : 0.00;
 
         $this->db->update('projects', $updateData, 'id = ?', ['id' => $id]);
         logAudit('update', 'projects', $id, null, $updateData);
@@ -558,5 +560,71 @@ class MasterService {
 
         logAudit('delete', 'parties', $id);
         return $this->db->delete('parties', 'id = ?', [$id]);
+    }
+
+    // ==========================================
+    // COMPANY BANK ACCOUNTS
+    // ==========================================
+
+    public function getAllBankAccounts($filters = []) {
+        $where = '1=1';
+        $params = [];
+
+        if (!empty($filters['status'])) {
+            $where .= ' AND status = ?';
+            $params[] = $filters['status'];
+        }
+
+        $sql = "SELECT * FROM company_accounts WHERE $where ORDER BY bank_name, account_name";
+        return $this->db->query($sql, $params)->fetchAll();
+    }
+
+    public function getActiveBankAccounts() {
+        return $this->db->query("SELECT * FROM company_accounts WHERE status = 'active' ORDER BY account_name")->fetchAll();
+    }
+
+    public function getBankAccount($id) {
+        return $this->db->select('company_accounts', 'id = ?', [$id])->fetch();
+    }
+
+    public function createBankAccount($data) {
+        // Validation
+        if (empty($data['bank_name']) || empty($data['account_number']) || empty($data['account_name'])) {
+            throw new Exception("Bank Name, Account Name and Account Number are required.");
+        }
+
+        // Ensure defaults
+        $data['account_type'] = $data['account_type'] ?? 'current';
+
+        try {
+            $id = $this->db->insert('company_accounts', $data);
+            logAudit('create', 'company_accounts', $id, null, $data);
+            return $id;
+        } catch (PDOException $e) {
+            if ($e->getCode() == 23000) {
+                 throw new Exception("An account with this number already exists.");
+            }
+            throw $e;
+        }
+    }
+
+    public function updateBankAccount($id, $data) {
+        $this->db->update('company_accounts', $data, 'id = ?', ['id' => $id]);
+        logAudit('update', 'company_accounts', $id, null, $data);
+        return true;
+    }
+
+    public function deleteBankAccount($id) {
+        // Check for dependencies (Future: Payments)
+        // For now, just soft delete or check if payments exist
+        /*
+        $count = $this->db->query("SELECT COUNT(*) FROM payments WHERE bank_account_id = ?", [$id])->fetchColumn();
+        if ($count > 0) {
+            throw new Exception("Cannot delete account: Transactions exist.");
+        }
+        */
+        
+        logAudit('delete', 'company_accounts', $id);
+        return $this->db->delete('company_accounts', 'id = ?', [$id]);
     }
 }

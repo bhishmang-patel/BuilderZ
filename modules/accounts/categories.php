@@ -15,26 +15,72 @@ $page_title = 'Manage Expense Categories';
 
 // Handle Add Category
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $name        = trim($_POST['name']        ?? '');
-    $description = trim($_POST['description'] ?? '');
+    if (isset($_POST['add_category'])) {
+        $name        = trim($_POST['name']        ?? '');
+        $description = trim($_POST['description'] ?? '');
 
-    if (empty($name)) {
-        $error = "Category name is required.";
-    } else {
+        if (empty($name)) {
+            $error = "Category name is required.";
+        } else {
+            try {
+                $stmt = $db->query("SELECT id FROM expense_categories WHERE name = ?", [$name]);
+                if ($stmt->fetch()) {
+                    $error = "Category already exists.";
+                } else {
+                    $db->insert('expense_categories', [
+                        'name'        => $name,
+                        'description' => $description,
+                        'type'        => 'expense'
+                    ]);
+                    $success = "Category added successfully!";
+                }
+            } catch (Exception $e) {
+                $error = "Error adding category: " . $e->getMessage();
+            }
+        }
+    }
+
+    // Handle Edit Category
+    if (isset($_POST['edit_category'])) {
+        $id          = $_POST['category_id'];
+        $name        = trim($_POST['name'] ?? '');
+        $description = trim($_POST['description'] ?? '');
+
+        if (empty($name)) {
+            $error = "Category name is required.";
+        } else {
+            try {
+                // Check if name exists for another category
+                $stmt = $db->query("SELECT id FROM expense_categories WHERE name = ? AND id != ?", [$name, $id]);
+                if ($stmt->fetch()) {
+                    $error = "Category name already exists.";
+                } else {
+                    $db->query("UPDATE expense_categories SET name = ?, description = ? WHERE id = ?", [$name, $description, $id]);
+                    $success = "Category updated successfully!";
+                }
+            } catch (Exception $e) {
+                $error = "Error updating category: " . $e->getMessage();
+            }
+        }
+    }
+
+    // Handle Delete Category
+    if (isset($_POST['delete_category'])) {
+        $id = $_POST['category_id'];
+
         try {
-            $stmt = $db->query("SELECT id FROM expense_categories WHERE name = ?", [$name]);
-            if ($stmt->fetch()) {
-                $error = "Category already exists.";
+            // Check if category is used
+            $stmt = $db->query("SELECT COUNT(*) as count FROM expenses WHERE category_id = ?", [$id]);
+            $count = $stmt->fetch()['count'];
+
+            if ($count > 0) {
+                $error = "Cannot delete category. It is used in $count expense records.";
             } else {
-                $db->insert('expense_categories', [
-                    'name'        => $name,
-                    'description' => $description,
-                    'type'        => 'expense'
-                ]);
-                $success = "Category added successfully!";
+                $db->query("DELETE FROM expense_categories WHERE id = ?", [$id]);
+                $success = "Category deleted successfully!";
             }
         } catch (Exception $e) {
-            $error = "Error adding category: " . $e->getMessage();
+            $error = "Error deleting category: " . $e->getMessage();
         }
     }
 }
@@ -431,6 +477,124 @@ table.cat-table {
   transition: border-color .18s, color .18s;
 }
 .cat-link-btn:hover { border-color: var(--c-accent); color: var(--c-accent); }
+
+/* ── Modal ───────────────────────────────────────────────── */
+.m-backdrop { 
+    display:none; position:fixed; inset:0; z-index:10000; 
+    background:rgba(26,23,20,.45); backdrop-filter:blur(3px); 
+    align-items:center; justify-content:center; padding:1rem; 
+}
+.m-backdrop.open { display:flex; animation:fadeIn .25s cubic-bezier(.22,1,.36,1); }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+.m-box { 
+    background:white; border-radius:14px; overflow:hidden; width:100%; 
+    box-shadow:0 24px 48px rgba(26,23,20,.18); max-height:92vh; 
+    display:flex; flex-direction:column; 
+}
+.m-backdrop.open .m-box { animation:modalIn .32s cubic-bezier(.34,1.56,.64,1); }
+@keyframes modalIn { 
+    from{opacity:0;transform:scale(.9) translateY(-20px)} 
+    to{opacity:1;transform:scale(1) translateY(0)} 
+}
+
+/* edit modal */
+.m-box.md { max-width:400px; }
+.m-head { 
+    display:flex; align-items:center; justify-content:space-between; 
+    padding:1.1rem 1.5rem; border-bottom:1.5px solid #e8e3db; 
+    background:#fafbff; flex-shrink:0; 
+}
+.m-head-l { display:flex; align-items:center; gap:.6rem; }
+.m-hic { 
+    width:28px; height:28px; border-radius:7px; flex-shrink:0; 
+    display:flex; align-items:center; justify-content:center; 
+    font-size:.72rem; background:#eff4ff; color:#2a58b5; 
+}
+.m-head h3 { 
+    font-family:'Fraunces',serif; font-size:1rem; 
+    font-weight:600; color:#1a1714; margin:0; 
+}
+.m-close { 
+    width:26px; height:26px; border-radius:5px; 
+    border:1.5px solid #e8e3db; background:white; 
+    color:#9e9690; cursor:pointer; 
+    display:flex; align-items:center; justify-content:center; 
+    font-size:.85rem; transition:all .15s; 
+}
+.m-close:hover { 
+    border-color:#dc2626; color:#dc2626; background:#fee2e2; 
+}
+.m-body { padding:1.4rem 1.5rem; overflow-y:auto; flex:1; }
+.m-foot { 
+    display:flex; justify-content:flex-end; gap:.65rem; 
+    padding:1rem 1.5rem; border-top:1.5px solid #e8e3db; 
+    background:#fafbff; flex-shrink:0; 
+}
+
+/* delete modal */
+.m-box.del { max-width:460px; }
+.del-inner { padding:2.5rem 2rem 2rem; text-align:center; }
+.del-icon { 
+    width:64px; height:64px; border-radius:50%; 
+    background:#fee2e2; display:flex; align-items:center; 
+    justify-content:center; margin:0 auto 1.25rem; 
+    border:2px solid #fca5a5; 
+}
+.del-icon svg { width:28px; height:28px; color:#dc2626; }
+.del-title { 
+    font-family:'Fraunces',serif; font-size:1.3rem; 
+    font-weight:700; color:#1a1714; margin:0 0 .5rem; 
+    line-height:1.2; 
+}
+.del-msg { 
+    font-size:.88rem; color:#6b6560; line-height:1.6; 
+    margin:0 0 1.75rem; 
+}
+.del-msg strong { color:#1a1714; font-weight:700; }
+.del-actions { display:flex; gap:.65rem; justify-content:center; }
+
+/* modal buttons */
+.btn-modal { 
+    display:inline-flex; align-items:center; gap:.4rem; 
+    padding:.6rem 1.3rem; border-radius:7px; 
+    font-family:'DM Sans',sans-serif; font-size:.875rem; 
+    font-weight:600; cursor:pointer; border:1.5px solid transparent; 
+    transition:all .18s; 
+}
+.btn-modal-ghost { 
+    background:white; border-color:#e8e3db; color:#6b6560; 
+}
+.btn-modal-ghost:hover { 
+    border-color:#2a58b5; color:#2a58b5; background:#f0f5ff; 
+}
+.btn-modal-submit { 
+    background:#1a1714; color:white; border-color:#1a1714; 
+}
+.btn-modal-submit:hover { 
+    background:#2a58b5; border-color:#2a58b5; 
+    transform:translateY(-1px); box-shadow:0 4px 12px rgba(42,88,181,.3); 
+}
+.btn-modal-danger { 
+    background:#dc2626; color:white; border-color:#dc2626; 
+}
+.btn-modal-danger:hover { 
+    background:#b91c1c; transform:translateY(-1px); 
+    box-shadow:0 4px 12px rgba(220,38,38,.3); 
+}
+
+/* Action Buttons */
+.act-btn {
+    width: 28px; height: 28px; border-radius: 6px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 0.72rem; text-decoration: none; cursor: pointer;
+    border: 1.5px solid var(--c-border2); background: var(--c-surface);
+    color: var(--c-ink2); transition: all 0.16s; margin-left: 4px;
+}
+.act-btn:hover { border-color: var(--c-accent); color: var(--c-accent); background: var(--c-accent-bg); }
+.act-btn.del:hover { border-color: var(--c-red); color: var(--c-red); background: var(--c-red-bg); }
+.act-btn.edit:hover { border-color: var(--c-green); color: var(--c-green); background: var(--c-green-bg); }
+
 </style>
 
 <div class="cat-wrap">
@@ -479,6 +643,7 @@ table.cat-table {
             <?php endif; ?>
 
             <form method="POST">
+                <input type="hidden" name="add_category" value="1">
               <div class="cat-field">
                 <label class="cat-label">Category Name <span class="cat-req">*</span></label>
                 <input type="text" name="name" class="cat-input"
@@ -536,6 +701,7 @@ table.cat-table {
                 <th>Description</th>
                 <th class="center">Type</th>
                 <th class="center">Status</th>
+                <th class="center">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -590,6 +756,17 @@ table.cat-table {
                         Active
                       </span>
                     </td>
+                    <td class="center">
+                        <div style="display:flex;justify-content:center;">
+                            <button type="button" class="act-btn edit" title="Edit" 
+                                onclick="openEditModal('<?= $cat['id'] ?>', '<?= htmlspecialchars(addslashes($cat['name'])) ?>', '<?= htmlspecialchars(addslashes($cat['description'])) ?>')">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                            </button>
+                            <button type="button" class="act-btn del" title="Delete" onclick="openDeleteModal('<?= $cat['id'] ?>', '<?= htmlspecialchars(addslashes($cat['name'])) ?>')">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                            </button>
+                        </div>
+                    </td>
                   </tr>
                 <?php endforeach; ?>
               <?php endif; ?>
@@ -622,3 +799,132 @@ table.cat-table {
 </div>
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
+
+<!-- Edit Modal -->
+<div class="m-backdrop" id="editModal">
+    <div class="m-box md">
+        <form method="POST">
+            <input type="hidden" name="edit_category" value="1">
+            <input type="hidden" name="category_id" id="edit_id">
+            
+            <div class="m-head">
+                <div class="m-head-l">
+                    <div class="m-hic">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                    </div>
+                    <h3>Edit Category</h3>
+                </div>
+                <button type="button" class="m-close" onclick="closeEditModal()">×</button>
+            </div>
+            
+            <div class="m-body">
+                <div class="cat-field">
+                    <label class="cat-label">Category Name <span class="cat-req">*</span></label>
+                    <input type="text" name="name" id="edit_name" class="cat-input" required>
+                </div>
+
+                <div class="cat-field">
+                    <label class="cat-label">Description</label>
+                    <textarea name="description" id="edit_description" class="cat-textarea"></textarea>
+                </div>
+            </div>
+
+            <div class="m-foot">
+                <button type="button" class="btn-modal btn-modal-ghost" onclick="closeEditModal()">
+                    Cancel
+                </button>
+                <button type="submit" class="btn-modal btn-modal-submit">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <circle cx="8" cy="8" r="7"/><path d="M5 8l2 2 4-4"/>
+                    </svg>
+                    Update Category
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="m-backdrop" id="deleteModal">
+    <div class="m-box del">
+        <div class="del-inner">
+            <div class="del-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+            </div>
+            
+            <h3 class="del-title">Delete Category?</h3>
+            <p class="del-msg">
+                Are you sure you want to delete 
+                <strong id="delete_cat_name"></strong>? 
+                This action cannot be undone.
+            </p>
+
+            <form method="POST">
+                <input type="hidden" name="delete_category" value="1">
+                <input type="hidden" name="category_id" id="delete_cat_id">
+                
+                <div class="del-actions">
+                    <button type="button" class="btn-modal btn-modal-ghost" onclick="closeDeleteModal()">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn-modal btn-modal-danger">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            <line x1="10" y1="11" x2="10" y2="17"/>
+                            <line x1="14" y1="11" x2="14" y2="17"/>
+                        </svg>
+                        Yes, Delete
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+<script>
+function openEditModal(id, name, description) {
+    document.getElementById('edit_id').value = id;
+    document.getElementById('edit_name').value = name;
+    document.getElementById('edit_description').value = description;
+    document.getElementById('editModal').classList.add('open');
+}
+
+function closeEditModal() {
+    document.getElementById('editModal').classList.remove('open');
+}
+
+document.getElementById('editModal').addEventListener('click', function(e) {
+    if (e.target === this) closeEditModal();
+});
+
+function openDeleteModal(id, name) {
+    document.getElementById('delete_cat_id').value = id;
+    document.getElementById('delete_cat_name').textContent = name;
+    document.getElementById('deleteModal').classList.add('open');
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.remove('open');
+}
+
+document.getElementById('deleteModal').addEventListener('click', function(e) {
+    if (e.target === this) closeDeleteModal();
+});
+
+// Close modals on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeEditModal();
+        closeDeleteModal();
+    }
+});
+</script>

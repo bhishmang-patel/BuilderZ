@@ -15,6 +15,11 @@ $db = Database::getInstance();
 $page_title = 'Payments';
 $current_page = 'payments';
 
+// Fetch active bank accounts
+require_once __DIR__ . '/../../includes/MasterService.php';
+$masterService = new MasterService();
+$bankAccounts = $masterService->getActiveBankAccounts();
+
 // Handle payment operations
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
@@ -32,7 +37,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $amount = round((float)$_POST['payment_amount_final'], 2);
         $payment_mode = $_POST['payment_mode'];
         $reference_no = sanitize($_POST['reference_no']);
+        $reference_no = sanitize($_POST['reference_no']);
         $remarks = sanitize($_POST['remarks']);
+        $company_account_id = !empty($_POST['company_account_id']) ? intval($_POST['company_account_id']) : null;
         
         $db->beginTransaction();
         try {
@@ -59,6 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             'payment_mode' => $payment_mode,
                             'reference_no' => $reference_no,
                             'remarks' => $remarks . " (Allocated from global payment)",
+                            'company_account_id' => $company_account_id,
                             'created_by' => $_SESSION['user_id']
                         ];
                         $pid = $db->insert('payments', $payment_data);
@@ -99,6 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             'payment_mode' => $payment_mode,
                             'reference_no' => $reference_no,
                             'remarks' => $remarks . " (Allocated from global payment)",
+                            'company_account_id' => $company_account_id,
                             'created_by' => $_SESSION['user_id']
                         ];
                         $pid = $db->insert('payments', $payment_data);
@@ -151,6 +160,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'payment_mode' => $payment_mode,
                     'reference_no' => $reference_no,
                     'remarks' => $remarks,
+                    'company_account_id' => $company_account_id,
                     'created_by' => $_SESSION['user_id']
                 ];
                 
@@ -1038,6 +1048,22 @@ include __DIR__ . '/../../includes/header.php';
                             <option value="cheque">Cheque</option>
                         </select>
                     </div>
+                </div>
+                
+                <!-- Added Bank Account Selection -->
+                <div class="field">
+                     <label>Bank Account (Source/Dest)</label>
+                     <select name="company_account_id" class="f-select" style="width:100%">
+                         <option value="">-- Select Bank Account --</option>
+                         <?php foreach ($bankAccounts as $acc): ?>
+                             <?php $display = $acc['bank_name'] . ' - ' . $acc['account_name'] . ' (' . substr($acc['account_number'], -4) . ')'; ?>
+                             <option value="<?= $acc['id'] ?>"><?= htmlspecialchars($display) ?></option>
+                         <?php endforeach; ?>
+                     </select>
+                     <small style="color:var(--ink-mute); font-size:0.75rem;">Select which company account creates/receives this payment.</small>
+                </div>
+
+                <div class="field-row">
                     <div class="field">
                         <label>Reference / UTR No</label>
                         <input type="text" name="reference_no" placeholder="Transaction ID">

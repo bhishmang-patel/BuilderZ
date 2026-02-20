@@ -448,7 +448,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <span class="wm-name"><?= APP_NAME ?></span>
             </div>
 
-            <div class="panel-tag">Construction ERP</div>
+            <div class="panel-tag">Builders ERP</div>
 
             <h2 class="panel-headline">
                 Build with<br><em>clarity.</em><br>Close with<br><em>confidence.</em>

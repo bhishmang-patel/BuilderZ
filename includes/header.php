@@ -80,7 +80,7 @@
     .logo-box {
         width: 38px;
         height: 38px;
-        background: linear-gradient(135deg, #1e293b 100%);
+        background: transparent;
         border-radius: 10px;
         display: flex;
         align-items: center;
@@ -90,8 +90,8 @@
     }
 
     .logo-box img {
-        width: 70%;
-        height: 70%;
+        width: 120%;
+        height: 120%;
         object-fit: cover;
     }
 
@@ -683,8 +683,8 @@ $headerLogoUrl = !empty($companySettings['company_logo']) ? BASE_URL . $companyS
                         <img src="<?= BASE_URL ?>assets/images/app_icon.png" alt="App Icon">
                     </div>
                     <div class="logo-text">
-                        <h3>BuilderZ</h3>
-                        <p>Construction Management</p>
+                        <h3>EstateAxis</h3>
+                        <p>Builder Management System</p>
                     </div>
                 </div>
             </div>
@@ -761,6 +761,11 @@ $headerLogoUrl = !empty($companySettings['company_logo']) ? BASE_URL . $companyS
                         <i class="fas fa-file-invoice-dollar"></i> <span>Accounts & Expenses</span>
                     </a>
                 </li>
+                <li>
+                    <a href="<?= BASE_URL ?>modules/masters/bank_accounts.php" class="<?= ($current_page ?? '') === 'masters' ? 'active' : '' ?>">
+                        <i class="fas fa-university"></i> <span>Bank Accounts</span>
+                    </a>
+                </li>
                 <?php endif; ?>
 
                 <!-- PURCHASING -->
@@ -817,7 +822,7 @@ $headerLogoUrl = !empty($companySettings['company_logo']) ? BASE_URL . $companyS
                 <?php if (hasPageAccess('reports')): ?>
                 <li class="menu-section">REPORTS</li>
                 <li>
-                    <a href="<?= BASE_URL ?>modules/reports/project_pl.php" class="<?= ($current_page ?? '') === 'project_pl' ? 'active' : '' ?>">
+                    <a href="<?= BASE_URL ?>modules/reports/project_pl/project_pl.php" class="<?= ($current_page ?? '') === 'project_pl' ? 'active' : '' ?>">
                         <i class="fas fa-balance-scale"></i> <span>Project P&amp;L</span>
                     </a>
                 </li>
@@ -834,6 +839,11 @@ $headerLogoUrl = !empty($companySettings['company_logo']) ? BASE_URL . $companyS
                 <li>
                     <a href="<?= BASE_URL ?>modules/reports/roi_report.php" class="<?= ($current_page ?? '') === 'roi_report' ? 'active' : '' ?>">
                         <i class="fas fa-chart-line"></i> <span>ROI & Profits</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="<?= BASE_URL ?>modules/reports/compliance.php" class="<?= ($current_page ?? '') === 'compliance' ? 'active' : '' ?>">
+                        <i class="fas fa-file-export"></i> <span>Audit Exports (CA)</span>
                     </a>
                 </li>
                 <?php endif; ?>

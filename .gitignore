@@ -1,26 +1,8 @@
-# Composer
-/vendor/
-node_modules/
-
-# Environment files
+vendor/
 .env
-config.php
-
-# PHP files
-*.log
 error.log
-
-# IDE specific files
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# OS specific files
-.DS_Store
-Thumbs.db
-
-# Project specific
-tmp/
-backups/
 uploads/
+*.log
+.vscode/
+.idea/
+node_modules/

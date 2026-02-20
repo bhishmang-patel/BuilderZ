@@ -115,6 +115,33 @@ class ReportService {
 
         $expenditure_data = $this->db->query($expenditure_sql, $exp_params)->fetchAll();
 
+        // MERGE EXPENSES INTO EXPENDITURE DATA
+        $expense_sql = "SELECT 
+            ec.name as category,
+            e.date as transaction_date,
+            e.amount,
+            ec.name as party_name,
+            p.project_name,
+            p.id as project_id
+        FROM expenses e
+        JOIN expense_categories ec ON e.category_id = ec.id
+        LEFT JOIN projects p ON e.project_id = p.id
+        WHERE e.date BETWEEN ? AND ?
+        " . ($project_filter ? " AND e.project_id = ?" : "") . "
+        ORDER BY transaction_date ASC";
+
+        $exp_params2 = [$date_from, $date_to];
+        if ($project_filter) $exp_params2[] = $project_filter;
+
+        $expense_data = $this->db->query($expense_sql, $exp_params2)->fetchAll();
+        
+        $expenditure_data = array_merge($expenditure_data, $expense_data);
+        
+        // Re-sort matched array by date
+        usort($expenditure_data, function($a, $b) {
+            return strtotime($a['transaction_date']) - strtotime($b['transaction_date']);
+        });
+
 
         /* =========================
               FETCH INVESTMENTS
@@ -339,7 +366,12 @@ class ReportService {
                (SELECT COALESCE(SUM(ft.amount), 0)
                 FROM financial_transactions ft
                 WHERE ft.project_id = p.id
-                AND ft.transaction_type = 'expenditure') as other_expenses
+                AND ft.transaction_type = 'expenditure') as other_expenses,
+
+               -- General Expenses (from expenses table)
+               (SELECT COALESCE(SUM(e.amount), 0)
+                FROM expenses e
+                WHERE e.project_id = p.id) as general_expenses
 
         FROM projects p
         ORDER BY p.project_name";
@@ -351,7 +383,9 @@ class ReportService {
             $project['labour_cost'] = floatval($project['labour_cost'] ?? 0);
             $project['vendor_payments'] = floatval($project['vendor_payments'] ?? 0);
             $project['contractor_payments'] = floatval($project['contractor_payments'] ?? 0);
+            $project['contractor_payments'] = floatval($project['contractor_payments'] ?? 0);
             $project['other_expenses'] = floatval($project['other_expenses'] ?? 0);
+            $project['general_expenses'] = floatval($project['general_expenses'] ?? 0);
             $project['total_refunds'] = floatval($project['total_refunds'] ?? 0);
             $project['cancellation_income'] = floatval($project['cancellation_income'] ?? 0);
             $project['total_received'] = floatval($project['total_received'] ?? 0);
@@ -363,7 +397,7 @@ class ReportService {
             
             $project['total_income'] = $project['total_received']; // Exclude cancellation_income from "Operating Income"
             
-            $project['total_expense'] = $project['vendor_payments'] + $project['contractor_payments'] + $project['total_refunds'];
+            $project['total_expense'] = $project['vendor_payments'] + $project['contractor_payments'] + $project['total_refunds'] + $project['general_expenses'];
             
             // Gross Profit (Cash Basis)
             $project['gross_profit'] = $project['total_income'] - ($project['vendor_payments'] + $project['contractor_payments']);
@@ -376,6 +410,35 @@ class ReportService {
         }
 
         return $projects;
+    }
+
+    public function getProjectPLDetails($project_id) {
+        // reuse getProjectPL logic but filter by ID
+        // optimized: fetch just one
+        $projects = $this->getProjectPL(); // For now, reuse and filter in PHP (or simple query) - easier to maintain consistent logic
+        // But for efficiency let's copy the logic or filter array
+        $project = null;
+        foreach ($projects as $p) {
+            if ($p['id'] == $project_id) {
+                $project = $p;
+                break;
+            }
+        }
+        
+        if (!$project) return null;
+
+        // Fetch detailed expense breakdown
+        $expense_breakdown = $this->db->query("SELECT ec.name as category_name, SUM(e.amount) as total_amount 
+            FROM expenses e 
+            JOIN expense_categories ec ON e.category_id = ec.id 
+            WHERE e.project_id = ? 
+            GROUP BY ec.id 
+            ORDER BY total_amount DESC", [$project_id])->fetchAll();
+
+        return [
+            'summary' => $project,
+            'expense_breakdown' => $expense_breakdown
+        ];
     }
 
     public function getPaymentRegister($date_from, $date_to, $payment_type_filter = '') {
@@ -414,7 +477,40 @@ class ReportService {
             LEFT JOIN projects pr_cbill ON cb.project_id = pr_cbill.id
             
             WHERE $where
-            ORDER BY p.payment_date DESC, p.created_at DESC";
+            
+            UNION ALL
+            
+            SELECT 
+                e.id,
+                'expense' COLLATE utf8mb4_unicode_ci as payment_type,
+                NULL as reference_type,
+                NULL as reference_id,
+                NULL as party_id,
+                e.bank_account_id as company_account_id,
+                e.date as payment_date,
+                e.amount,
+                e.payment_method COLLATE utf8mb4_unicode_ci as payment_mode,
+                e.reference_no COLLATE utf8mb4_unicode_ci,
+                e.description COLLATE utf8mb4_unicode_ci as remarks,
+                e.created_by,
+                NULL as created_at,
+                e.updated_at,
+                NULL as demand_id,
+                
+                ec.name COLLATE utf8mb4_unicode_ci as party_name,
+                u.full_name COLLATE utf8mb4_unicode_ci as created_by_name,
+                p.project_name COLLATE utf8mb4_unicode_ci,
+                e.project_id
+            FROM expenses e
+            JOIN expense_categories ec ON e.category_id = ec.id
+            LEFT JOIN projects p ON e.project_id = p.id
+            LEFT JOIN users u ON e.created_by = u.id
+            WHERE e.date BETWEEN ? AND ?
+            
+            ORDER BY payment_date DESC";
+
+        // Duplicate params for the UNION part
+        $params = array_merge($params, [$date_from, $date_to]);
 
         $payments = $this->db->query($sql, $params)->fetchAll();
 
@@ -449,6 +545,9 @@ class ReportService {
             } elseif ($payment['payment_type'] === 'contractor_payment') {
                 $totals['payments'] += $payment['amount'];
                 $totals['counts']['contractor']++;
+            } elseif ($payment['payment_type'] === 'expense') {
+                $totals['payments'] += $payment['amount'];
+                // We'll count expenses in 'vendor' or strict 'other' for now, or just add to total count
             }
         }
 
@@ -611,10 +710,15 @@ class ReportService {
         $stmt = $this->db->query("SELECT COALESCE(SUM(total_pending), 0) as total_pending FROM bookings WHERE status = 'active'");
         $total_pending = $stmt->fetch()['total_pending'];
 
-        // 5. Total Expenses (Cash Basis: Vendor + Labour + Contractor + Refunds)
+        // 5. Total Expenses (Cash Basis: Vendor + Labour + Contractor + Refunds + General Expenses)
         // Matches Payment Register logic
         $stmt = $this->db->query("SELECT COALESCE(SUM(amount), 0) as total_expenses FROM payments WHERE payment_type IN ('vendor_payment', 'customer_refund', 'vendor_bill_payment', 'contractor_payment')");
-        $total_expenses = $stmt->fetch()['total_expenses'];
+        $payment_expenses = $stmt->fetch()['total_expenses'];
+        
+        $stmt = $this->db->query("SELECT COALESCE(SUM(amount), 0) as total_gen_expenses FROM expenses");
+        $gen_expenses = $stmt->fetch()['total_gen_expenses'];
+        
+        $total_expenses = $payment_expenses + $gen_expenses;
 
         // 6. Net Profit
         $net_profit = $total_received - $total_expenses;
@@ -644,9 +748,19 @@ class ReportService {
             GROUP BY MONTH(payment_date)
         ) i ON m.month = i.month
         LEFT JOIN (
-            SELECT MONTH(payment_date) as month, SUM(amount) as expense 
-            FROM payments WHERE payment_type IN ('vendor_payment', 'customer_refund', 'vendor_bill_payment', 'contractor_payment') AND YEAR(payment_date) = YEAR(CURDATE())
-            GROUP BY MONTH(payment_date)
+            SELECT month, SUM(amount) as expense FROM (
+                SELECT MONTH(payment_date) as month, amount 
+                FROM payments 
+                WHERE payment_type IN ('vendor_payment', 'customer_refund', 'vendor_bill_payment', 'contractor_payment') 
+                AND YEAR(payment_date) = YEAR(CURDATE())
+                
+                UNION ALL
+                
+                SELECT MONTH(date) as month, amount 
+                FROM expenses 
+                WHERE YEAR(date) = YEAR(CURDATE())
+            ) as combined_exp
+            GROUP BY month
         ) e ON m.month = e.month
         ORDER BY m.month")->fetchAll();
 
@@ -703,10 +817,18 @@ class ReportService {
         $received_last_month = $stmt->fetch()['val'];
         $received_growth = $this->calculateTrend($received_this_month, $received_last_month);
 
-        // Expenses Trend (Using Payments table for accurate cashflow timing)
-        $stmt = $this->db->query("SELECT COALESCE(SUM(amount), 0) as val FROM payments WHERE payment_type IN ('vendor_payment', 'customer_refund', 'vendor_bill_payment', 'contractor_payment') AND MONTH(payment_date) = ? AND YEAR(payment_date) = ?", [$current_month, $current_year]);
+        // Expenses Trend (Using Payments table + Expenses table)
+        $stmt = $this->db->query("
+            SELECT (
+                (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE payment_type IN ('vendor_payment', 'customer_refund', 'vendor_bill_payment', 'contractor_payment') AND MONTH(payment_date) = ? AND YEAR(payment_date) = ?) +
+                (SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE MONTH(date) = ? AND YEAR(date) = ?)
+            ) as val", [$current_month, $current_year, $current_month, $current_year]);
         $expense_this_month = $stmt->fetch()['val'];
-        $stmt = $this->db->query("SELECT COALESCE(SUM(amount), 0) as val FROM payments WHERE payment_type IN ('vendor_payment', 'customer_refund', 'vendor_bill_payment', 'contractor_payment') AND MONTH(payment_date) = ? AND YEAR(payment_date) = ?", [$last_month, $last_month_year]);
+        $stmt = $this->db->query("
+            SELECT (
+                (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE payment_type IN ('vendor_payment', 'customer_refund', 'vendor_bill_payment', 'contractor_payment') AND MONTH(payment_date) = ? AND YEAR(payment_date) = ?) +
+                (SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE MONTH(date) = ? AND YEAR(date) = ?)
+            ) as val", [$last_month, $last_month_year, $last_month, $last_month_year]);
         $expense_last_month = $stmt->fetch()['val'];
         $expense_growth = $this->calculateTrend($expense_this_month, $expense_last_month);
 

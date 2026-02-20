@@ -34,6 +34,8 @@ if ($id) {
             $_POST['payment_method'] = $expense['payment_method'];
             $_POST['gst_amount']     = $expense['gst_amount'];
             $_POST['reference_no']   = $expense['reference_no'];
+            $_POST['project_id']     = $expense['project_id'];
+            $_POST['bank_account_id']= $expense['bank_account_id'];
             if ($expense['gst_included']) {
                 $_POST['gst_included'] = 1;
             }
@@ -53,11 +55,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $gst_included   = isset($_POST['gst_included']) ? 1 : 0;
     $gst_amount     = $_POST['gst_amount']     ?? 0;
     $reference_no   = $_POST['reference_no']   ?? '';
+    $project_id     = !empty($_POST['project_id']) ? $_POST['project_id'] : null;
+    $bank_account_id = !empty($_POST['bank_account_id']) ? $_POST['bank_account_id'] : null;
+    
     // Keep original creator if editing, else current user
     $created_by     = $edit_mode ? $expense['created_by'] : $_SESSION['user_id'];
 
     if (empty($category_id) || empty($amount) || empty($date)) {
         $error = "Please fill all required fields.";
+    } elseif ($payment_method !== 'cash' && empty($bank_account_id)) {
+        $error = "Please select a bank account for non-cash payments.";
     } else {
         $data = [
             'category_id'    => $category_id,
@@ -68,20 +75,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'gst_included'   => $gst_included,
             'gst_amount'     => $gst_amount,
             'reference_no'   => $reference_no,
+            'project_id'     => $project_id,
+            'bank_account_id'=> $bank_account_id,
             'created_by'     => $created_by
         ];
 
+        $db->beginTransaction();
         try {
             if ($edit_mode) {
+                // 1. Revert Old Balance
+                if ($expense['bank_account_id']) {
+                    $db->query("UPDATE company_accounts SET balance = balance + ? WHERE id = ?", [$expense['amount'], $expense['bank_account_id']]);
+                }
+
+                // 2. Update Expense
                 $db->update('expenses', $data, 'id = :id', ['id' => $id]);
                 $_SESSION['success'] = "Expense updated successfully!";
             } else {
+                // 3. Create Expense
                 $db->insert('expenses', $data);
                 $_SESSION['success'] = "Expense recorded successfully!";
             }
+
+            // 4. Deduct New Balance
+            if ($bank_account_id) {
+                $db->query("UPDATE company_accounts SET balance = balance - ? WHERE id = ?", [$amount, $bank_account_id]);
+            }
+
+            $db->commit();
             header("Location: index.php");
             exit;
         } catch (Exception $e) {
+            $db->rollBack();
             $error = "Error recording expense: " . $e->getMessage();
         }
     }
@@ -610,6 +635,24 @@ include __DIR__ . '/../../includes/header.php';
               </div>
             </div>
 
+            <!-- Project Selection -->
+            <div class="exp-field">
+                <label class="exp-label">Project (Optional)</label>
+                <div class="exp-select-wrap">
+                    <?php
+                    $projects = $db->query("SELECT id, project_name FROM projects WHERE status = 'active' ORDER BY project_name")->fetchAll();
+                    ?>
+                    <select name="project_id" class="exp-control">
+                        <option value="">— General / Overhead —</option>
+                        <?php foreach ($projects as $proj): ?>
+                            <option value="<?= $proj['id'] ?>" <?= (isset($_POST['project_id']) && $_POST['project_id'] == $proj['id']) ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($proj['project_name']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+            </div>
+
             <div class="exp-field">
               <label class="exp-label">Description / Particulars</label>
               <textarea name="description" class="exp-control"
@@ -652,6 +695,24 @@ include __DIR__ . '/../../includes/header.php';
                   </select>
                 </div>
               </div>
+            </div>
+
+            <!-- Bank Account Selection (Hidden for Cash) -->
+            <div class="exp-field" id="bankAccountField" style="display:none;">
+                <label class="exp-label">Paid From Account <span class="exp-req">*</span></label>
+                <div class="exp-select-wrap">
+                    <?php
+                    $bank_accounts = $db->query("SELECT id, bank_name, account_number, account_type FROM company_accounts WHERE status = 'active' ORDER BY bank_name")->fetchAll();
+                    ?>
+                    <select name="bank_account_id" class="exp-control" id="bankSelect">
+                        <option value="">Select Bank Account...</option>
+                        <?php foreach ($bank_accounts as $bank): ?>
+                            <option value="<?= $bank['id'] ?>" <?= (isset($_POST['bank_account_id']) && $_POST['bank_account_id'] == $bank['id']) ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($bank['bank_name']) . ' - ' . substr($bank['account_number'], -4) . ' (' . ucfirst($bank['account_type']) . ')' ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
             </div>
 
             <div class="exp-field">
@@ -778,6 +839,27 @@ function expToggleGST() {
   row.classList.toggle('is-checked', check.checked);
   reveal.classList.toggle('is-open', check.checked);
   box.textContent = check.checked ? '✓' : '';
+}
+
+// Payment Method Toggle
+const paymentMethodSelect = document.querySelector('select[name="payment_method"]');
+const bankField = document.getElementById('bankAccountField');
+const bankSelect = document.getElementById('bankSelect');
+
+function toggleBankField() {
+    if (paymentMethodSelect.value === 'cash') {
+        bankField.style.display = 'none';
+        bankSelect.required = false;
+        bankSelect.value = '';
+    } else {
+        bankField.style.display = 'flex';
+        bankSelect.required = true;
+    }
+}
+
+if(paymentMethodSelect) {
+    paymentMethodSelect.addEventListener('change', toggleBankField);
+    toggleBankField(); // Run on load
 }
 </script>
 
