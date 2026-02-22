@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/functions.php';
+require_once __DIR__ . '/EmailService.php';
+require_once __DIR__ . '/pdf_excel_helpers.php';
 
 class BookingService {
     private $db;
@@ -31,6 +33,18 @@ class BookingService {
                         'address' => sanitize($data['address'] ?? '')
                     ];
                     $customer_id = $this->db->insert('parties', $customer_data);
+                }
+            } else {
+                // If existing customer ID is provided, optionally update their details if passed in the form
+                if (!empty($data['email']) || !empty($data['mobile'])) {
+                    $update_data = [];
+                    if (!empty($data['email'])) $update_data['email'] = sanitize($data['email']);
+                    if (!empty($data['mobile'])) $update_data['mobile'] = sanitize($data['mobile']);
+                    if (!empty($data['address'])) $update_data['address'] = sanitize($data['address']);
+                    
+                    if (!empty($update_data)) {
+                        $this->db->update('parties', $update_data, 'id = ?', [$customer_id]);
+                    }
                 }
             }
 
@@ -99,13 +113,36 @@ class BookingService {
             $booking_id = $this->db->insert('bookings', $booking_data);
             
             // Auto-Catchup: Generate demands for stages that are already completed for this project
-            $this->syncProjectMilestones($booking_id, $project_id, $booking_data['stage_of_work_id'], $agreement_value);
+            $this->syncProjectMilestones($booking_id, $project_id, $booking_data['stage_of_work_id'], $agreement_value, $customer_id);
             
             // Update flat status to booked
             $this->db->update('flats', ['status' => 'booked'], 'id = ?', ['id' => $flat_id]);
             
             logAudit('create', 'bookings', $booking_id, null, $booking_data);
             $this->db->commit();
+            
+            // Fetch necessary info for email
+            $custQuery = $this->db->query("SELECT name, email FROM parties WHERE id = ?", [$customer_id])->fetch();
+            $projQuery = $this->db->query("SELECT project_name FROM projects WHERE id = ?", [$project_id])->fetch();
+            $flatQuery = $this->db->query("SELECT flat_no FROM flats WHERE id = ?", [$flat_id])->fetch();
+            
+            if ($custQuery && !empty($custQuery['email'])) {
+                $emailDetails = [
+                    'flat_no' => $flatQuery['flat_no'] ?? '',
+                    'project_name' => $projQuery['project_name'] ?? '',
+                    'agreement_value' => $agreement_value
+                ];
+                
+                $pdfResult = generateBookingConfirmationPDF($booking_id);
+                $pdfContent = null;
+                $pdfFilename = null;
+                if ($pdfResult && $pdfResult['success']) {
+                    $pdfContent = $pdfResult['content'];
+                    $pdfFilename = $pdfResult['filename'];
+                }
+                
+                EmailService::sendBookingConfirmation($custQuery['email'], $custQuery['name'], $emailDetails, $pdfContent, $pdfFilename);
+            }
             
             // Link Lead if applicable
             if (!empty($data['lead_id'])) {
@@ -129,7 +166,7 @@ class BookingService {
         }
     }
 
-    private function syncProjectMilestones($bookingId, $projectId, $stageOfWorkId, $agreementValue) {
+    private function syncProjectMilestones($bookingId, $projectId, $stageOfWorkId, $agreementValue, $customerId = null) {
         if (empty($stageOfWorkId)) return;
 
         // 1. Get all completed stages for this project
@@ -176,6 +213,16 @@ class BookingService {
                 ];
                 
                 $this->db->insert('booking_demands', $demandData);
+                
+                if ($customerId) {
+                    $custQuery = $this->db->query("SELECT name, email FROM parties WHERE id = ?", [$customerId])->fetch();
+                    if ($custQuery && !empty($custQuery['email'])) {
+                        EmailService::sendDemandGeneration($custQuery['email'], $custQuery['name'], [
+                            'stage_name' => $item['stage_name'],
+                            'amount' => $amount
+                        ]);
+                    }
+                }
             }
         }
     }

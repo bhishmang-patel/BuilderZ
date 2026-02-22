@@ -52,18 +52,15 @@ function generatePaymentReceipt($payment_id) {
     $primaryColor = [16, 25, 60]; // Navy Blue
     
     // --- Header Section ---
+    $header_y = 10;
     
-    // Logo (Centered Top)
-    $y = 10;
+    // Logo (Top Left)
     if ($company_logo && file_exists(__DIR__ . '/../' . $company_logo)) {
-        $pdf->Image(__DIR__ . '/../' . $company_logo, 90, $y, 30); 
-        $y += 25;
-    } else {
-        $y += 5;
+        $pdf->Image(__DIR__ . '/../' . $company_logo, 15, $header_y, 30); 
     }
     
-    // Company Name
-    $pdf->SetY($y);
+    // Company Name (Top Center)
+    $pdf->SetY($header_y);
     $pdf->SetFont('Arial', 'B', 18);
     $pdf->SetTextColor($primaryColor[0], $primaryColor[1], $primaryColor[2]);
     $pdf->Cell(0, 8, strtoupper($company_name), 0, 1, 'C');
@@ -74,6 +71,14 @@ function generatePaymentReceipt($payment_id) {
     $pdf->Cell(0, 5, 'Registered Office: ' . $company_address, 0, 1, 'C');
     $contact_line = "Tel: $company_phone | Email: $company_email | $company_website";
     $pdf->Cell(0, 5, $contact_line, 0, 1, 'C');
+    
+    // Ensure we move past the logo if it's taller than the text block
+    $current_y = $pdf->GetY();
+    if ($company_logo && file_exists(__DIR__ . '/../' . $company_logo)) {
+        if ($current_y < ($header_y + 25)) {
+            $pdf->SetY($header_y + 25);
+        }
+    }
     
     $pdf->Ln(5);
     
@@ -339,18 +344,15 @@ function generateCancellationReceipt($cancellation_id) {
     $alertColor = [220, 53, 69]; // Red for Cancellation
     
     // --- Header Section ---
+    $header_y = 10;
     
-    // Logo (Centered Top)
-    $y = 10;
+    // Logo (Top Left)
     if ($company_logo && file_exists(__DIR__ . '/../' . $company_logo)) {
-        $pdf->Image(__DIR__ . '/../' . $company_logo, 90, $y, 30); 
-        $y += 25;
-    } else {
-        $y += 5;
+        $pdf->Image(__DIR__ . '/../' . $company_logo, 15, $header_y, 30); 
     }
     
-    // Company Name
-    $pdf->SetY($y);
+    // Company Name (Top Center)
+    $pdf->SetY($header_y);
     $pdf->SetFont('Arial', 'B', 18);
     $pdf->SetTextColor($primaryColor[0], $primaryColor[1], $primaryColor[2]);
     $pdf->Cell(0, 8, strtoupper($company_name), 0, 1, 'C');
@@ -361,6 +363,14 @@ function generateCancellationReceipt($cancellation_id) {
     $pdf->Cell(0, 5, 'Registered Office: ' . $company_address, 0, 1, 'C');
     $contact_line = "Tel: $company_phone | Email: $company_email | $company_website";
     $pdf->Cell(0, 5, $contact_line, 0, 1, 'C');
+    
+    // Ensure we move past the logo if it's taller than the text block
+    $current_y = $pdf->GetY();
+    if ($company_logo && file_exists(__DIR__ . '/../' . $company_logo)) {
+        if ($current_y < ($header_y + 25)) {
+            $pdf->SetY($header_y + 25);
+        }
+    }
     
     $pdf->Ln(5);
     
@@ -528,19 +538,15 @@ function generateBookingConfirmationPDF($booking_id) {
     $primaryColor = [16, 25, 60]; // Navy Blue
     
     // --- Header Section ---
+    $header_y = 10;
     
-    // Logo (Centered Top)
-    $y = 10;
+    // Logo (Top Left)
     if ($company_logo && file_exists(__DIR__ . '/../' . $company_logo)) {
-        // Calculate X to center the image. Assuming width 30
-        $pdf->Image(__DIR__ . '/../' . $company_logo, 90, $y, 30); 
-        $y += 25;
-    } else {
-        $y += 5;
+        $pdf->Image(__DIR__ . '/../' . $company_logo, 15, $header_y, 30); 
     }
     
-    // Company Name
-    $pdf->SetY($y);
+    // Company Name (Top Center)
+    $pdf->SetY($header_y);
     $pdf->SetFont('Arial', 'B', 18);
     $pdf->SetTextColor($primaryColor[0], $primaryColor[1], $primaryColor[2]);
     $pdf->Cell(0, 8, strtoupper($company_name), 0, 1, 'C');
@@ -551,6 +557,14 @@ function generateBookingConfirmationPDF($booking_id) {
     $pdf->Cell(0, 5, 'Registered Office: ' . $company_address, 0, 1, 'C');
     $contact_line = "Tel: $company_phone | Email: $company_email | $company_website";
     $pdf->Cell(0, 5, $contact_line, 0, 1, 'C');
+    
+    // Ensure we move past the logo if it's taller than the text block
+    $current_y = $pdf->GetY();
+    if ($company_logo && file_exists(__DIR__ . '/../' . $company_logo)) {
+        if ($current_y < ($header_y + 25)) {
+            $pdf->SetY($header_y + 25);
+        }
+    }
     
     $pdf->Ln(5);
     

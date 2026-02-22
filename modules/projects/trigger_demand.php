@@ -5,6 +5,7 @@ require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/functions.php';
 require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/../../includes/EmailService.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -78,6 +79,14 @@ try {
         ];
         
         $db->insert('booking_demands', $demand_data);
+        
+        $custQuery = $db->query("SELECT p.name, p.email FROM parties p JOIN bookings b ON b.customer_id = p.id WHERE b.id = ?", [$booking['booking_id']])->fetch();
+        if ($custQuery && !empty($custQuery['email'])) {
+            EmailService::sendDemandGeneration($custQuery['email'], $custQuery['name'], [
+                'stage_name' => $demand_data['stage_name'],
+                'amount' => $demand_data['demand_amount']
+            ]);
+        }
         
         // Optional: Log Audit Trail (skipped for brevity, but recommended)
         $generated_count++;

@@ -4,7 +4,8 @@ require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/functions.php';
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../includes/ColorHelper.php';
-
+require_once __DIR__ . '/../../includes/EmailService.php';
+require_once __DIR__ . '/../../includes/pdf_excel_helpers.php';
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -192,6 +193,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $notifTitle = "Payment Received";
                     $notifMsg   = "Received ₹{$formattedAmount} from Customer: {$partyName}";
                     $notifLink  = BASE_URL . "modules/booking/view.php?id=" . $reference_id; // Link to booking
+                    
+                    $custQuery = $db->query("SELECT name, email FROM parties WHERE id = ?", [$party_id])->fetch();
+                    if ($custQuery && !empty($custQuery['email'])) {
+                        $bk = $db->query("SELECT total_pending FROM bookings WHERE id = ?", [$reference_id])->fetch();
+                        $paymentDetails = [
+                            'amount' => $amount,
+                            'remaining_balance' => $bk ? $bk['total_pending'] : 0
+                        ];
+                        
+                        // Generate PDF specifically as a string
+                        $pdfResult = generatePaymentReceipt($payment_id);
+                        $pdfContent = null;
+                        $pdfFilename = null;
+                        if ($pdfResult && $pdfResult['success']) {
+                            $pdfContent = $pdfResult['content'];
+                            $pdfFilename = $pdfResult['filename'];
+                        }
+                        
+                        EmailService::sendInstallmentReceipt($custQuery['email'], $custQuery['name'], $paymentDetails, $pdfContent, $pdfFilename);
+                    }
                 } elseif (strpos($payment_type, 'vendor') !== false) {
                     $notifTitle = "Vendor Payment Made";
                     $notifMsg   = "Paid ₹{$formattedAmount} to Vendor: {$partyName}";

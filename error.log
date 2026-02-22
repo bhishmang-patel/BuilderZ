@@ -40,3 +40,135 @@
 [20-Feb-2026 15:11:43 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\builderz\includes\functions.php on line 540
 [20-Feb-2026 15:11:55 Asia/Kolkata] PHP Warning:  include(C:\xampp\htdocs\builderz\modules\vendors\challans/../../includes/footer.php): Failed to open stream: No such file or directory in C:\xampp\htdocs\builderz\modules\vendors\challans\material.php on line 816
 [20-Feb-2026 15:11:55 Asia/Kolkata] PHP Warning:  include(): Failed opening 'C:\xampp\htdocs\builderz\modules\vendors\challans/../../includes/footer.php' for inclusion (include_path='C:\xampp\php\PEAR') in C:\xampp\htdocs\builderz\modules\vendors\challans\material.php on line 816
+[22-Feb-2026 12:20:30 Asia/Kolkata] Database query error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.expenses' doesn't exist
+[22-Feb-2026 12:20:30 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.expenses' doesn't exist in C:\Users\patel\Desktop\pr\BuilderZ\config\database.php:38
+Stack trace:
+#0 C:\Users\patel\Desktop\pr\BuilderZ\config\database.php(38): PDO->prepare('SELECT COALESCE...')
+#1 C:\Users\patel\Desktop\pr\BuilderZ\includes\ReportService.php(718): Database->query('SELECT COALESCE...')
+#2 C:\Users\patel\Desktop\pr\BuilderZ\modules\dashboard\index.php(20): ReportService->getDashboardMetrics()
+#3 {main}
+  thrown in C:\Users\patel\Desktop\pr\BuilderZ\config\database.php on line 38
+[22-Feb-2026 12:20:32 Asia/Kolkata] Database query error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.expenses' doesn't exist
+[22-Feb-2026 12:20:32 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.expenses' doesn't exist in C:\Users\patel\Desktop\pr\BuilderZ\config\database.php:38
+Stack trace:
+#0 C:\Users\patel\Desktop\pr\BuilderZ\config\database.php(38): PDO->prepare('SELECT COALESCE...')
+#1 C:\Users\patel\Desktop\pr\BuilderZ\includes\ReportService.php(718): Database->query('SELECT COALESCE...')
+#2 C:\Users\patel\Desktop\pr\BuilderZ\modules\dashboard\index.php(20): ReportService->getDashboardMetrics()
+#3 {main}
+  thrown in C:\Users\patel\Desktop\pr\BuilderZ\config\database.php on line 38
+[22-Feb-2026 12:20:33 Asia/Kolkata] Database query error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.expenses' doesn't exist
+[22-Feb-2026 12:20:33 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.expenses' doesn't exist in C:\Users\patel\Desktop\pr\BuilderZ\config\database.php:38
+Stack trace:
+#0 C:\Users\patel\Desktop\pr\BuilderZ\config\database.php(38): PDO->prepare('SELECT COALESCE...')
+#1 C:\Users\patel\Desktop\pr\BuilderZ\includes\ReportService.php(718): Database->query('SELECT COALESCE...')
+#2 C:\Users\patel\Desktop\pr\BuilderZ\modules\dashboard\index.php(20): ReportService->getDashboardMetrics()
+#3 {main}
+  thrown in C:\Users\patel\Desktop\pr\BuilderZ\config\database.php on line 38
+[22-Feb-2026 12:20:33 Asia/Kolkata] Database query error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.expenses' doesn't exist
+[22-Feb-2026 12:20:33 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.expenses' doesn't exist in C:\Users\patel\Desktop\pr\BuilderZ\config\database.php:38
+Stack trace:
+#0 C:\Users\patel\Desktop\pr\BuilderZ\config\database.php(38): PDO->prepare('SELECT COALESCE...')
+#1 C:\Users\patel\Desktop\pr\BuilderZ\includes\ReportService.php(718): Database->query('SELECT COALESCE...')
+#2 C:\Users\patel\Desktop\pr\BuilderZ\modules\dashboard\index.php(20): ReportService->getDashboardMetrics()
+#3 {main}
+  thrown in C:\Users\patel\Desktop\pr\BuilderZ\config\database.php on line 38
+[22-Feb-2026 12:20:33 Asia/Kolkata] Database query error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.expenses' doesn't exist
+[22-Feb-2026 12:20:33 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.expenses' doesn't exist in C:\Users\patel\Desktop\pr\BuilderZ\config\database.php:38
+Stack trace:
+#0 C:\Users\patel\Desktop\pr\BuilderZ\config\database.php(38): PDO->prepare('SELECT COALESCE...')
+#1 C:\Users\patel\Desktop\pr\BuilderZ\includes\ReportService.php(718): Database->query('SELECT COALESCE...')
+#2 C:\Users\patel\Desktop\pr\BuilderZ\modules\dashboard\index.php(20): ReportService->getDashboardMetrics()
+#3 {main}
+  thrown in C:\Users\patel\Desktop\pr\BuilderZ\config\database.php on line 38
+[22-Feb-2026 12:25:44 Asia/Kolkata] PHP Warning:  Undefined array key "total_shops" in C:\Users\patel\Desktop\pr\BuilderZ\modules\projects\projects.php on line 663
+[22-Feb-2026 12:25:44 Asia/Kolkata] PHP Warning:  Undefined array key "total_offices" in C:\Users\patel\Desktop\pr\BuilderZ\modules\projects\projects.php on line 666
+[22-Feb-2026 12:25:44 Asia/Kolkata] PHP Warning:  Undefined array key "total_shops" in C:\Users\patel\Desktop\pr\BuilderZ\modules\projects\projects.php on line 663
+[22-Feb-2026 12:25:44 Asia/Kolkata] PHP Warning:  Undefined array key "total_offices" in C:\Users\patel\Desktop\pr\BuilderZ\modules\projects\projects.php on line 666
+[22-Feb-2026 12:25:44 Asia/Kolkata] PHP Warning:  Undefined array key "total_shops" in C:\Users\patel\Desktop\pr\BuilderZ\modules\projects\projects.php on line 663
+[22-Feb-2026 12:25:44 Asia/Kolkata] PHP Warning:  Undefined array key "total_offices" in C:\Users\patel\Desktop\pr\BuilderZ\modules\projects\projects.php on line 666
+[22-Feb-2026 12:25:50 Asia/Kolkata] Database query error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.project_completed_stages' doesn't exist
+[22-Feb-2026 12:25:50 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.project_completed_stages' doesn't exist in C:\Users\patel\Desktop\pr\BuilderZ\config\database.php:38
+Stack trace:
+#0 C:\Users\patel\Desktop\pr\BuilderZ\config\database.php(38): PDO->prepare('SELECT stage_na...')
+#1 C:\Users\patel\Desktop\pr\BuilderZ\modules\projects\milestones.php(55): Database->query('SELECT stage_na...', Array)
+#2 {main}
+  thrown in C:\Users\patel\Desktop\pr\BuilderZ\config\database.php on line 38
+[22-Feb-2026 12:25:56 Asia/Kolkata] Database query error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.project_completed_stages' doesn't exist
+[22-Feb-2026 12:25:56 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.project_completed_stages' doesn't exist in C:\Users\patel\Desktop\pr\BuilderZ\config\database.php:38
+Stack trace:
+#0 C:\Users\patel\Desktop\pr\BuilderZ\config\database.php(38): PDO->prepare('SELECT stage_na...')
+#1 C:\Users\patel\Desktop\pr\BuilderZ\modules\projects\milestones.php(55): Database->query('SELECT stage_na...', Array)
+#2 {main}
+  thrown in C:\Users\patel\Desktop\pr\BuilderZ\config\database.php on line 38
+[22-Feb-2026 12:25:59 Asia/Kolkata] Database query error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.project_completed_stages' doesn't exist
+[22-Feb-2026 12:25:59 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.project_completed_stages' doesn't exist in C:\Users\patel\Desktop\pr\BuilderZ\config\database.php:38
+Stack trace:
+#0 C:\Users\patel\Desktop\pr\BuilderZ\config\database.php(38): PDO->prepare('SELECT stage_na...')
+#1 C:\Users\patel\Desktop\pr\BuilderZ\modules\projects\milestones.php(55): Database->query('SELECT stage_na...', Array)
+#2 {main}
+  thrown in C:\Users\patel\Desktop\pr\BuilderZ\config\database.php on line 38
+[22-Feb-2026 12:26:23 Asia/Kolkata] Database query error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.leads' doesn't exist
+[22-Feb-2026 12:26:23 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.leads' doesn't exist in C:\Users\patel\Desktop\pr\BuilderZ\config\database.php:38
+Stack trace:
+#0 C:\Users\patel\Desktop\pr\BuilderZ\config\database.php(38): PDO->prepare('SELECT * FROM l...')
+#1 C:\Users\patel\Desktop\pr\BuilderZ\includes\CrmService.php(59): Database->query('SELECT * FROM l...', Array)
+#2 C:\Users\patel\Desktop\pr\BuilderZ\modules\crm\index.php(17): CrmService->getLeads(Array)
+#3 {main}
+  thrown in C:\Users\patel\Desktop\pr\BuilderZ\config\database.php on line 38
+[22-Feb-2026 12:26:39 Asia/Kolkata] Database query error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.leads' doesn't exist
+[22-Feb-2026 12:26:39 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.leads' doesn't exist in C:\Users\patel\Desktop\pr\BuilderZ\config\database.php:38
+Stack trace:
+#0 C:\Users\patel\Desktop\pr\BuilderZ\config\database.php(38): PDO->prepare('SELECT * FROM l...')
+#1 C:\Users\patel\Desktop\pr\BuilderZ\includes\CrmService.php(59): Database->query('SELECT * FROM l...', Array)
+#2 C:\Users\patel\Desktop\pr\BuilderZ\modules\crm\index.php(17): CrmService->getLeads(Array)
+#3 {main}
+  thrown in C:\Users\patel\Desktop\pr\BuilderZ\config\database.php on line 38
+[22-Feb-2026 12:26:47 Asia/Kolkata] Database query error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.purchase_orders' doesn't exist
+[22-Feb-2026 12:26:47 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.purchase_orders' doesn't exist in C:\Users\patel\Desktop\pr\BuilderZ\config\database.php:38
+Stack trace:
+#0 C:\Users\patel\Desktop\pr\BuilderZ\config\database.php(38): PDO->prepare('SELECT po.*, pr...')
+#1 C:\Users\patel\Desktop\pr\BuilderZ\modules\vendors\procurement\index.php(48): Database->query('SELECT po.*, pr...', Array)
+#2 {main}
+  thrown in C:\Users\patel\Desktop\pr\BuilderZ\config\database.php on line 38
+[22-Feb-2026 12:26:59 Asia/Kolkata] PHP Warning:  Undefined array key "total_shops" in C:\Users\patel\Desktop\pr\BuilderZ\modules\projects\projects.php on line 663
+[22-Feb-2026 12:26:59 Asia/Kolkata] PHP Warning:  Undefined array key "total_offices" in C:\Users\patel\Desktop\pr\BuilderZ\modules\projects\projects.php on line 666
+[22-Feb-2026 12:26:59 Asia/Kolkata] PHP Warning:  Undefined array key "total_shops" in C:\Users\patel\Desktop\pr\BuilderZ\modules\projects\projects.php on line 663
+[22-Feb-2026 12:26:59 Asia/Kolkata] PHP Warning:  Undefined array key "total_offices" in C:\Users\patel\Desktop\pr\BuilderZ\modules\projects\projects.php on line 666
+[22-Feb-2026 12:26:59 Asia/Kolkata] PHP Warning:  Undefined array key "total_shops" in C:\Users\patel\Desktop\pr\BuilderZ\modules\projects\projects.php on line 663
+[22-Feb-2026 12:26:59 Asia/Kolkata] PHP Warning:  Undefined array key "total_offices" in C:\Users\patel\Desktop\pr\BuilderZ\modules\projects\projects.php on line 666
+[22-Feb-2026 12:30:51 Asia/Kolkata] Database query error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.demand_id' in 'on clause'
+[22-Feb-2026 12:30:51 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.demand_id' in 'on clause' in C:\Users\patel\Desktop\pr\BuilderZ\config\database.php:38
+Stack trace:
+#0 C:\Users\patel\Desktop\pr\BuilderZ\config\database.php(38): PDO->prepare('SELECT p.*, u.f...')
+#1 C:\Users\patel\Desktop\pr\BuilderZ\modules\booking\view.php(91): Database->query('SELECT p.*, u.f...', Array)
+#2 {main}
+  thrown in C:\Users\patel\Desktop\pr\BuilderZ\config\database.php on line 38
+[22-Feb-2026 12:30:56 Asia/Kolkata] Database query error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.demand_id' in 'on clause'
+[22-Feb-2026 12:30:56 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.demand_id' in 'on clause' in C:\Users\patel\Desktop\pr\BuilderZ\config\database.php:38
+Stack trace:
+#0 C:\Users\patel\Desktop\pr\BuilderZ\config\database.php(38): PDO->prepare('SELECT p.*, u.f...')
+#1 C:\Users\patel\Desktop\pr\BuilderZ\modules\booking\view.php(91): Database->query('SELECT p.*, u.f...', Array)
+#2 {main}
+  thrown in C:\Users\patel\Desktop\pr\BuilderZ\config\database.php on line 38
+[22-Feb-2026 15:21:00 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\Users\patel\Desktop\pr\BuilderZ\includes\functions.php on line 540
+[22-Feb-2026 15:29:21 Asia/Kolkata] Message could not be sent. Mailer Error: SMTP Error: Could not authenticate.
+[22-Feb-2026 15:29:24 Asia/Kolkata] Message could not be sent. Mailer Error: SMTP Error: Could not authenticate.
+[22-Feb-2026 15:29:27 Asia/Kolkata] Message could not be sent. Mailer Error: SMTP Error: Could not authenticate.
+[22-Feb-2026 15:41:12 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\Users\patel\Desktop\pr\BuilderZ\includes\functions.php on line 540
+[22-Feb-2026 15:49:18 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\Users\patel\Desktop\pr\BuilderZ\includes\pdf_excel_helpers.php on line 180
+[22-Feb-2026 15:52:13 Asia/Kolkata] PHP Warning:  Undefined array key "booking_amount" in C:\Users\patel\Desktop\pr\BuilderZ\includes\pdf_excel_helpers.php on line 635
+[22-Feb-2026 15:52:13 Asia/Kolkata] PHP Deprecated:  number_format(): Passing null to parameter #1 ($num) of type float is deprecated in C:\Users\patel\Desktop\pr\BuilderZ\includes\pdf_excel_helpers.php on line 635
+[22-Feb-2026 16:00:24 Asia/Kolkata] PHP Warning:  Undefined array key "booking_amount" in C:\Users\patel\Desktop\pr\BuilderZ\includes\pdf_excel_helpers.php on line 635
+[22-Feb-2026 16:00:24 Asia/Kolkata] PHP Deprecated:  number_format(): Passing null to parameter #1 ($num) of type float is deprecated in C:\Users\patel\Desktop\pr\BuilderZ\includes\pdf_excel_helpers.php on line 635
+[22-Feb-2026 20:22:46 Asia/Kolkata] Message could not be sent. Mailer Error: SMTP Error: Could not connect to SMTP host. Failed to connect to serverSMTP server error: Failed to connect to server Additional SMTP info: php_network_getaddresses: getaddrinfo for smtp.gmail.com failed: No such host is known. 
+[22-Feb-2026 20:22:46 Asia/Kolkata] Message could not be sent. Mailer Error: SMTP Error: Could not connect to SMTP host. Failed to connect to serverSMTP server error: Failed to connect to server Additional SMTP info: php_network_getaddresses: getaddrinfo for smtp.gmail.com failed: No such host is known. 
+[22-Feb-2026 20:22:46 Asia/Kolkata] PHP Warning:  Undefined array key "booking_amount" in C:\Users\patel\Desktop\pr\BuilderZ\includes\pdf_excel_helpers.php on line 635
+[22-Feb-2026 20:22:46 Asia/Kolkata] PHP Deprecated:  number_format(): Passing null to parameter #1 ($num) of type float is deprecated in C:\Users\patel\Desktop\pr\BuilderZ\includes\pdf_excel_helpers.php on line 635
+[22-Feb-2026 20:22:46 Asia/Kolkata] Message could not be sent. Mailer Error: SMTP Error: Could not connect to SMTP host. Failed to connect to serverSMTP server error: Failed to connect to server Additional SMTP info: php_network_getaddresses: getaddrinfo for smtp.gmail.com failed: No such host is known. 
+[22-Feb-2026 20:23:58 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\Users\patel\Desktop\pr\BuilderZ\includes\pdf_excel_helpers.php on line 180
+[22-Feb-2026 20:27:16 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\Users\patel\Desktop\pr\BuilderZ\includes\functions.php on line 540
+[22-Feb-2026 20:27:46 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\Users\patel\Desktop\pr\BuilderZ\includes\functions.php on line 540
+[22-Feb-2026 20:29:39 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\Users\patel\Desktop\pr\BuilderZ\includes\functions.php on line 540
+[22-Feb-2026 20:29:39 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\Users\patel\Desktop\pr\BuilderZ\includes\functions.php on line 540
+[23-Feb-2026 00:42:10 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\Users\patel\Desktop\pr\BuilderZ\includes\pdf_excel_helpers.php on line 180
+[23-Feb-2026 00:45:08 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\Users\patel\Desktop\pr\BuilderZ\includes\pdf_excel_helpers.php on line 185
