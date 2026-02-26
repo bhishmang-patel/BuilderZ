@@ -179,7 +179,20 @@ class ReportService {
 
         $total_invested = array_sum(array_column($investment_data, 'amount'));
 
-        $roi = $total_invested > 0 ? ($net_profit / $total_invested) * 100 : 0;
+        /* =========================
+              FETCH RETURNS
+        ========================== */
+        $returns_sql = "SELECT COALESCE(SUM(ir.amount), 0) as total_returned
+        FROM investment_returns ir
+        JOIN investments i ON ir.investment_id = i.id
+        WHERE ir.return_date BETWEEN ? AND ?
+        " . ($project_filter ? " AND i.project_id = ?" : "");
+        $returns_params = [$date_from, $date_to];
+        if ($project_filter) $returns_params[] = $project_filter;
+        
+        $total_returned = $this->db->query($returns_sql, $returns_params)->fetch()['total_returned'];
+
+        $roi = $total_invested > 0 ? ($total_returned / $total_invested) * 100 : 0;
 
         // Period cash position (Opening balance assumed 0)
         $cash_balance = $total_invested + $total_income - $total_expenditure;
@@ -208,8 +221,8 @@ class ReportService {
             'net_profit' => $net_profit,
 
             'total_invested' => $total_invested,
-            'total_returned' => 0, // Not calculated here
-            'net_invested'   => 0, // Not calculated here
+            'total_returned' => $total_returned, 
+            'net_invested'   => $total_invested - $total_returned, 
             'roi' => $roi,
             'cash_balance' => $cash_balance,
 
