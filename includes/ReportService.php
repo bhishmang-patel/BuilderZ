@@ -93,25 +93,41 @@ class ReportService {
         UNION ALL
 
         SELECT 
+            'Investment Return' as category,
+            ir.return_date as transaction_date,
+            ir.amount,
+            CONVERT(COALESCE(inv.investor_name, '-') USING utf8mb4) as party_name,
+            CONVERT(pr.project_name USING utf8mb4) as project_name,
+            pr.id as project_id
+        FROM investment_returns ir
+        JOIN investments inv ON ir.investment_id = inv.id
+        LEFT JOIN projects pr ON inv.project_id = pr.id
+        WHERE ir.return_date BETWEEN ? AND ?
+        " . ($project_filter ? " AND inv.project_id = ?" : "") . "
+
+        UNION ALL
+
+        SELECT 
             ft.category,
             ft.transaction_date,
             ft.amount,
-            CONVERT(COALESCE(inv.investor_name, ft.description, '-') USING utf8mb4) as party_name,
+            CONVERT(ft.description USING utf8mb4) as party_name,
             CONVERT(pr.project_name USING utf8mb4) as project_name,
             pr.id as project_id
         FROM financial_transactions ft
         LEFT JOIN projects pr ON ft.project_id = pr.id
-        LEFT JOIN investment_returns ir ON ft.reference_type = 'investment_return' AND ft.reference_id = ir.id
-        LEFT JOIN investments inv ON ir.investment_id = inv.id
         
         WHERE ft.transaction_type = 'expenditure'
+        AND ft.reference_type != 'investment_return'
         AND ft.transaction_date BETWEEN ? AND ?
         " . ($project_filter ? " AND ft.project_id = ?" : "") . "
 
         ORDER BY transaction_date ASC";
 
-        $exp_params = [$date_from, $date_to, $date_from, $date_to];
-        if ($project_filter) $exp_params[] = $project_filter;
+        $exp_params = [$date_from, $date_to, $date_from, $date_to, $date_from, $date_to];
+        if ($project_filter) {
+            $exp_params = [$date_from, $date_to, $project_filter, $date_from, $date_to, $project_filter, $date_from, $date_to, $project_filter];
+        }
 
         $expenditure_data = $this->db->query($expenditure_sql, $exp_params)->fetchAll();
 
