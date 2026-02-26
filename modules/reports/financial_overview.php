@@ -408,6 +408,18 @@ include __DIR__ . '/../../includes/header.php';
             <div class="stat-sub">Capital employed</div>
         </div>
 
+        <div class="stat-card roi">
+            <div class="stat-top">
+                <div class="stat-label">Total Returned</div>
+                <div class="stat-icon ico-purple"><i class="fas fa-undo-alt"></i></div>
+            </div>
+            <div class="stat-value purple">
+                <span class="short-val"><?= formatCurrencyShort($total_returned) ?></span>
+                <span class="full-val"><?= formatCurrency($total_returned) ?></span>
+            </div>
+            <div class="stat-sub">Capital returned</div>
+        </div>
+
         <?php if ($total_invested > 0): ?>
         <div class="stat-card roi">
             <div class="stat-top">
