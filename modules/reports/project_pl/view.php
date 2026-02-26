@@ -270,6 +270,38 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
         </div>
     </div>
 
+    <!-- CAPITAL & RETURNS SECTION -->
+    <?php if ($project['total_invested'] > 0 || $project['total_returned'] > 0): ?>
+    <div class="panel" style="margin-top:1.5rem;">
+        <div class="panel-head">
+            <div class="panel-title">Capital & Returns</div>
+            <div class="panel-icon"><i class="fas fa-hand-holding-usd"></i></div>
+        </div>
+        <div class="dt-list">
+            <div class="dt-item">
+                <span class="dt-label">Total Invested</span>
+                <span class="dt-val" style="color:var(--orange);"><?= formatCurrency($project['total_invested']) ?></span>
+            </div>
+            <div class="dt-item">
+                <span class="dt-label">Total Returned</span>
+                <span class="dt-val" style="color:var(--accent);"><?= formatCurrency($project['total_returned']) ?></span>
+            </div>
+            <?php 
+            $net_invested = $project['total_invested'] - $project['total_returned'];
+            $roi = $project['total_invested'] > 0 ? ($project['total_returned'] / $project['total_invested']) * 100 : 0;
+            ?>
+            <div class="dt-item">
+                <span class="dt-label">Net Capital Employed</span>
+                <span class="dt-val"><?= formatCurrency($net_invested) ?></span>
+            </div>
+            <div class="dt-item" style="background:#fcfcfc;">
+                <span class="dt-label" style="font-weight:700; color:var(--ink);">ROI (Returns on Capital)</span>
+                <span class="dt-val" style="font-weight:700; color:#8b5cf6;"><?= number_format($roi, 1) ?>%</span>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <!-- GENERAL EXPENSES BREAKDOWN -->
     <?php if (!empty($expenses)): ?>
     <div class="panel" style="margin-top:1.5rem;">

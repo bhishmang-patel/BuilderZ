@@ -371,7 +371,18 @@ class ReportService {
                -- General Expenses (from expenses table)
                (SELECT COALESCE(SUM(e.amount), 0)
                 FROM expenses e
-                WHERE e.project_id = p.id) as general_expenses
+                WHERE e.project_id = p.id) as general_expenses,
+                
+               -- Total Invested
+               (SELECT COALESCE(SUM(i.amount), 0)
+                FROM investments i
+                WHERE i.project_id = p.id) as total_invested,
+
+               -- Total Returned (against investments of this project)
+               (SELECT COALESCE(SUM(ir.amount), 0)
+                FROM investment_returns ir
+                JOIN investments i ON ir.investment_id = i.id
+                WHERE i.project_id = p.id) as total_returned
 
         FROM projects p
         ORDER BY p.project_name";
@@ -383,13 +394,15 @@ class ReportService {
             $project['labour_cost'] = floatval($project['labour_cost'] ?? 0);
             $project['vendor_payments'] = floatval($project['vendor_payments'] ?? 0);
             $project['contractor_payments'] = floatval($project['contractor_payments'] ?? 0);
-            $project['contractor_payments'] = floatval($project['contractor_payments'] ?? 0);
             $project['other_expenses'] = floatval($project['other_expenses'] ?? 0);
             $project['general_expenses'] = floatval($project['general_expenses'] ?? 0);
             $project['total_refunds'] = floatval($project['total_refunds'] ?? 0);
             $project['cancellation_income'] = floatval($project['cancellation_income'] ?? 0);
             $project['total_received'] = floatval($project['total_received'] ?? 0);
             $project['total_sales'] = floatval($project['total_sales'] ?? 0);
+            
+            $project['total_invested'] = floatval($project['total_invested'] ?? 0);
+            $project['total_returned'] = floatval($project['total_returned'] ?? 0);
             
             // STRICT DASHBOARD MATCHING LOGIC
             // Dashboard Net Profit = Total Received - Total Payments (Vendor + Labour + Contractor + Refunds)
