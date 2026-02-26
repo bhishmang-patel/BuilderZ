@@ -35,11 +35,11 @@ function generatePaymentReceipt($payment_id) {
     
     // Get company details
     $settings = $db->query("SELECT setting_key, setting_value FROM settings")->fetchAll(PDO::FETCH_KEY_PAIR);
-    $company_name = $settings['company_name'] ?? 'Builderz';
+    $company_name = $settings['company_name'] ?? 'EstateAxis';
     $company_address = $settings['company_address'] ?? '123 Business Park, Sector 15, Mumbai - 400001';
     $company_phone = $settings['company_phone'] ?? '+91-12345678';
-    $company_email = $settings['company_email'] ?? 'bookings@builderz.com';
-    $company_website = $settings['company_website'] ?? 'www.builderz.com';
+    $company_email = $settings['company_email'] ?? 'info@estateaxis.com';
+    $company_website = $settings['company_website'] ?? 'www.estateaxis.com';
     $company_logo = $settings['company_logo'] ?? null;
     
     // Create PDF
@@ -95,7 +95,8 @@ function generatePaymentReceipt($payment_id) {
     $pdf->SetFont('Arial', 'B', 10);
     $pdf->Cell(30, 6, 'Receipt No:', 0, 0);
     $pdf->SetFont('Arial', '', 10);
-    $pdf->Cell(60, 6, 'PMT/' . str_pad($payment['id'], 6, '0', STR_PAD_LEFT), 0, 0);
+    $rcp_prefix = $settings['receipt_prefix'] ?? 'PMT';
+    $pdf->Cell(60, 6, $rcp_prefix . '/' . str_pad($payment['id'], 6, '0', STR_PAD_LEFT), 0, 0);
     
     $pdf->SetFont('Arial', 'B', 10);
     $pdf->Cell(70, 6, 'Date:', 0, 0, 'R');
@@ -173,7 +174,18 @@ function generatePaymentReceipt($payment_id) {
     if (!empty($payment['bank_name'])) $drawRow($pdf, 'Bank Name:', $payment['bank_name']);
     if (!empty($payment['remarks'])) $drawRow($pdf, 'Remarks:', $payment['remarks']);
     
-    $pdf->Ln(20);
+    $pdf->Ln(10);
+    
+    // Terms 
+    if (!empty($settings['receipt_terms'])) {
+        $pdf->SetFont('Arial', 'B', 8);
+        $pdf->Cell(0, 5, 'Terms & Conditions:', 0, 1, 'L');
+        $pdf->SetFont('Arial', '', 8);
+        $pdf->MultiCell(0, 4, strip_tags($settings['receipt_terms']));
+        $pdf->Ln(5);
+    } else {
+        $pdf->Ln(10);
+    }
     
     // --- Signatures ---
     $pdf->SetFont('Arial', 'B', 9);
@@ -182,6 +194,14 @@ function generatePaymentReceipt($payment_id) {
     
     $pdf->SetFont('Arial', '', 9);
     $pdf->Cell(90, 5, $payment['received_by'] ?? 'Admin', 0, 0, 'L');
+    
+    $sig_y = $pdf->GetY() - 15;
+    $sig_x = $pdf->GetPageWidth() - 55;
+    
+    if (isset($settings['auth_signature']) && file_exists(__DIR__ . '/../' . $settings['auth_signature'])) {
+        $pdf->Image(__DIR__ . '/../' . $settings['auth_signature'], $sig_x, $sig_y, 35);
+    }
+    
     $pdf->Cell(90, 5, 'For ' . utf8_decode($company_name), 0, 1, 'R');
     
     $pdf->Ln(20);
@@ -326,11 +346,11 @@ function generateCancellationReceipt($cancellation_id) {
     
     // Get company details
     $settings = $db->query("SELECT setting_key, setting_value FROM settings")->fetchAll(PDO::FETCH_KEY_PAIR);
-    $company_name = $settings['company_name'] ?? 'Builderz';
+    $company_name = $settings['company_name'] ?? 'EstateAxis';
     $company_address = $settings['company_address'] ?? '123 Business Park, Sector 15, Mumbai - 400001';
     $company_phone = $settings['company_phone'] ?? '+91-12345678';
-    $company_email = $settings['company_email'] ?? 'bookings@builderz.com';
-    $company_website = $settings['company_website'] ?? 'www.builderz.com';
+    $company_email = $settings['company_email'] ?? 'info@estateaxis.com';
+    $company_website = $settings['company_website'] ?? 'www.estateaxis.com';
     $company_logo = $settings['company_logo'] ?? null;
     
     // Create PDF
@@ -474,6 +494,14 @@ function generateCancellationReceipt($cancellation_id) {
     
     $pdf->SetFont('Arial', '', 9);
     $pdf->Cell(90, 5, $cancellation['processed_by_name'] ?? 'Admin', 0, 0, 'L');
+    
+    $sig_y = $pdf->GetY() - 15;
+    $sig_x = $pdf->GetPageWidth() - 55;
+    
+    if (isset($settings['auth_signature']) && file_exists(__DIR__ . '/../' . $settings['auth_signature'])) {
+        $pdf->Image(__DIR__ . '/../' . $settings['auth_signature'], $sig_x, $sig_y, 35);
+    }
+    
     $pdf->Cell(90, 5, 'For ' . utf8_decode($company_name), 0, 1, 'R');
     
     $pdf->Ln(20);
@@ -521,11 +549,11 @@ function generateBookingConfirmationPDF($booking_id) {
     
     // Get company details
     $settings = $db->query("SELECT setting_key, setting_value FROM settings")->fetchAll(PDO::FETCH_KEY_PAIR);
-    $company_name = $settings['company_name'] ?? 'Builderz';
+    $company_name = $settings['company_name'] ?? 'EstateAxis';
     $company_address = $settings['company_address'] ?? '123 Business Park, Sector 15, Mumbai - 400001';
     $company_phone = $settings['company_phone'] ?? '+91-12345678';
-    $company_email = $settings['company_email'] ?? 'bookings@builderz.com';
-    $company_website = $settings['company_website'] ?? 'www.builderz.com';
+    $company_email = $settings['company_email'] ?? 'info@estateaxis.com';
+    $company_website = $settings['company_website'] ?? 'www.estateaxis.com';
     $company_logo = $settings['company_logo'] ?? null;
     
     // Create PDF
@@ -581,7 +609,8 @@ function generateBookingConfirmationPDF($booking_id) {
     $pdf->SetFont('Arial', 'B', 10);
     $pdf->Cell(30, 6, 'Booking ID:', 0, 0);
     $pdf->SetFont('Arial', '', 10);
-    $pdf->Cell(60, 6, 'BK' . str_pad($booking['id'], 6, '0', STR_PAD_LEFT), 0, 0);
+    $bok_prefix = $settings['booking_ref_prefix'] ?? 'BOK';
+    $pdf->Cell(60, 6, $bok_prefix . '/' . str_pad($booking['id'], 6, '0', STR_PAD_LEFT), 0, 0);
     
     $pdf->SetFont('Arial', 'B', 10);
     $pdf->Cell(70, 6, 'Date:', 0, 0, 'R');
@@ -691,6 +720,13 @@ function generateBookingConfirmationPDF($booking_id) {
     $pdf->Cell(90, 5, "Customer's Signature", 0, 1, 'R');
     
     $pdf->SetFont('Arial', '', 9);
+    
+    $sig_y = $pdf->GetY() - 15;
+    $sig_x = 15;
+    if (isset($settings['auth_signature']) && file_exists(__DIR__ . '/../' . $settings['auth_signature'])) {
+        $pdf->Image(__DIR__ . '/../' . $settings['auth_signature'], $sig_x, $sig_y, 35);
+    }
+    
     $pdf->Cell(90, 5, $company_name, 0, 0, 'L');
     $pdf->Cell(90, 5, '[' . $booking['customer_name'] . ']', 0, 1, 'R');
     
@@ -701,6 +737,240 @@ function generateBookingConfirmationPDF($booking_id) {
     
     // Output
     $filename = 'booking_conf_' . $booking['id'] . '.pdf';
+    $content = $pdf->Output('S');
+    
+    return ['success' => true, 'filename' => $filename, 'content' => $content];
+}
+
+function generateDemandPDF($demand_id) {
+    global $db;
+    
+    // Check if FPDF is available
+    $fpdf_path = __DIR__ . '/../vendor/fpdf/fpdf.php';
+    if (!file_exists($fpdf_path)) {
+        return ['success' => false, 'message' => 'FPDF library not installed.'];
+    }
+    
+    require_once($fpdf_path);
+    require_once __DIR__ . '/functions.php';
+    
+    // Fetch Demand Details
+    $sql = "SELECT bd.*, 
+                   b.booking_date, b.agreement_value, b.total_received,
+                   b.id as booking_ref_id,
+                   p.name as customer_name, p.mobile, p.address as customer_address,
+                   pr.project_name, pr.location as project_location,
+                   f.flat_no, f.floor
+            FROM booking_demands bd
+            JOIN bookings b ON bd.booking_id = b.id
+            JOIN parties p ON b.customer_id = p.id
+            JOIN projects pr ON b.project_id = pr.id
+            JOIN flats f ON b.flat_id = f.id
+            WHERE bd.id = ?";
+            
+    $stmt = $db->query($sql, [$demand_id]);
+    $data = $stmt->fetch();
+    
+    if (!$data) {
+        return ['success' => false, 'message' => 'Demand not found'];
+    }
+    
+    // Calculate Arrears
+    $arrears = 0;
+    $prev_demands = $db->query(
+        "SELECT stage_name, demand_amount, paid_amount FROM booking_demands 
+         WHERE booking_id = ? AND generated_date < ? AND id != ?", 
+        [$data['booking_id'], $data['generated_date'], $demand_id]
+    )->fetchAll();
+    
+    foreach ($prev_demands as $pd) {
+        $pending = round($pd['demand_amount'] - $pd['paid_amount'], 2);
+        if ($pending > 0) {
+            $arrears += $pending;
+        }
+    }
+    
+    $current_due = round($data['demand_amount'] - $data['paid_amount'], 2);
+    $total_payable_now = $current_due + $arrears;
+    $total_project_balance = $data['agreement_value'] - $data['total_received'];
+
+    // Get company details
+    $settings = $db->query("SELECT setting_key, setting_value FROM settings")->fetchAll(PDO::FETCH_KEY_PAIR);
+    $company_name = $settings['company_name'] ?? 'EstateAxis';
+    $company_address = $settings['company_address'] ?? '123 Business Park, Sector 15, Mumbai - 400001';
+    $company_phone = $settings['company_phone'] ?? '+91-12345678';
+    $company_email = $settings['company_email'] ?? 'bookings@estateaxis.com';
+    $company_logo = $settings['company_logo'] ?? null;
+
+    // Create PDF
+    $pdf = new FPDF();
+    $pdf->AddPage();
+    $pdf->SetAutoPageBreak(true, 15);
+    $pdf->SetMargins(15, 10, 15);
+    
+    // Defines
+    $primaryColor = [16, 25, 60];
+    
+    // --- Header Section ---
+    $header_y = 10;
+    
+    // Logo
+    if ($company_logo && file_exists(__DIR__ . '/../' . $company_logo)) {
+        $pdf->Image(__DIR__ . '/../' . $company_logo, 15, $header_y, 30); 
+    }
+    
+    // Company Details
+    $pdf->SetY($header_y);
+    $pdf->SetFont('Times', 'B', 18);
+    $pdf->SetTextColor(0, 0, 0); // Black for formal demand
+    $pdf->Cell(0, 8, strtoupper($company_name), 0, 1, 'C');
+    
+    $pdf->SetFont('Times', '', 10);
+    // Strip br tags and replace with newlines for PDF
+    $cleanAddress = str_replace('<br />', ', ', nl2br($company_address));
+    $cleanAddress = strip_tags($cleanAddress);
+    $pdf->Cell(0, 5, $cleanAddress, 0, 1, 'C');
+    $pdf->Cell(0, 5, "Phone: $company_phone | Email: $company_email", 0, 1, 'C');
+    
+    $current_y = $pdf->GetY();
+    if ($company_logo && file_exists(__DIR__ . '/../' . $company_logo)) {
+        if ($current_y < ($header_y + 25)) {
+            $pdf->SetY($header_y + 25);
+        }
+    }
+    
+    $pdf->Ln(5);
+    $pdf->Line(15, $pdf->GetY(), 195, $pdf->GetY());
+    $pdf->Ln(5);
+    
+    // Meta Row
+    $pdf->SetFont('Times', 'B', 11);
+    $pdf->Cell(120, 5, 'To,', 0, 0);
+    $pdf->Cell(60, 5, 'Date: ' . date('d-m-Y'), 0, 1, 'R');
+    
+    $pdf->SetFont('Times', '', 11);
+    $pdf->Cell(120, 5, $data['customer_name'], 0, 0);
+    $pdf->SetFont('Times', 'B', 11);
+    $dem_prefix = $settings['demand_prefix'] ?? 'DEM';
+    $pdf->Cell(60, 5, 'Demand Ref: ' . $dem_prefix . '/' . date('Y') . '/' . str_pad($data['id'], 4, '0', STR_PAD_LEFT), 0, 1, 'R');
+    
+    $pdf->SetFont('Times', '', 11);
+    $pdf->Cell(120, 5, 'Phone: ' . $data['mobile'], 0, 1);
+    
+    if (!empty($data['customer_address'])) {
+        $pdf->MultiCell(100, 5, str_replace('<br />', "\n", nl2br($data['customer_address'])));
+    }
+    
+    $pdf->Ln(10);
+    
+    // Subject
+    $pdf->SetFont('Times', 'BU', 12);
+    $pdf->Cell(0, 6, "Subject: Demand for Payment upon completion of " . $data['stage_name'] . " stage.", 0, 1, 'L');
+    $pdf->Ln(5);
+    
+    // Content body
+    $pdf->SetFont('Times', '', 11);
+    $pdf->MultiCell(0, 6, "Dear Sir/Madam,");
+    $pdf->Ln(2);
+    
+    $p1 = "We are pleased to inform you that the construction of your booked unit " . $data['flat_no'] . " in project " . $data['project_name'] . " has reached the \"" . $data['stage_name'] . "\" stage.";
+    $pdf->MultiCell(0, 6, $p1);
+    $pdf->Ln(2);
+    
+    $p2 = "As per the terms of our agreement and the construction-linked payment plan, the following amount is now due for payment. We request you to kindly clear the outstanding dues at the earliest to help us maintain the construction pace.";
+    $pdf->MultiCell(0, 6, $p2);
+    $pdf->Ln(5);
+    
+    // Table
+    $pdf->SetFont('Times', 'B', 11);
+    $pdf->SetFillColor(240, 240, 240);
+    $pdf->Cell(140, 8, 'Description', 1, 0, 'L', true);
+    $pdf->Cell(40, 8, 'Amount (INR)', 1, 1, 'R', true);
+    
+    $pdf->SetFont('Times', '', 11);
+    
+    // Arrears
+    foreach ($prev_demands as $pd) {
+        $pending = round($pd['demand_amount'] - $pd['paid_amount'], 2);
+        if ($pending > 0) {
+            $pdf->SetTextColor(234, 88, 12); // Orange/Red color
+            $pdf->Cell(140, 8, "Arrears: " . $pd['stage_name'] . " Stage", 1, 0, 'L');
+            $pdf->Cell(40, 8, formatNumberIndian($pending), 1, 1, 'R');
+            $pdf->SetTextColor(0, 0, 0);
+        }
+    }
+    
+    // Current Demand
+    $pdf->SetFont('Times', 'B', 11);
+    $pdf->Cell(140, 8, "Demand for " . $data['stage_name'] . " Stage", 1, 0, 'L');
+    $pdf->SetFont('Times', '', 11);
+    $pdf->Cell(40, 8, formatNumberIndian($data['demand_amount']), 1, 1, 'R');
+    
+    // Less paid
+    if ($data['paid_amount'] > 0) {
+        $pdf->Cell(140, 8, "Less: Amount Already Paid for this Stage", 1, 0, 'L');
+        $pdf->SetTextColor(239, 68, 68); // Red
+        $pdf->Cell(40, 8, "- " . formatNumberIndian($data['paid_amount']), 1, 1, 'R');
+        $pdf->SetTextColor(0, 0, 0);
+    }
+    
+    // Agreement value note
+    $pdf->SetFont('Times', 'I', 10);
+    $pdf->SetTextColor(100, 100, 100);
+    $pdf->Cell(140, 6, "(Total Agreement Value: Rs " . formatNumberIndian($data['agreement_value']) . ")", 'LR', 0, 'L');
+    $pdf->Cell(40, 6, "", 'LR', 1, 'R');
+    $pdf->SetTextColor(0, 0, 0);
+    
+    // Total Payable Now
+    $pdf->SetFont('Times', 'B', 12);
+    $pdf->SetFillColor(248, 250, 252);
+    $pdf->Cell(140, 10, 'Total amount payable now', 1, 0, 'L', true);
+    $pdf->Cell(40, 10, 'Rs ' . formatNumberIndian($total_payable_now), 1, 1, 'R', true);
+    
+    $pdf->Ln(5);
+    
+    // Footer Content
+    $pdf->SetFont('Times', '', 11);
+    $dueDateText = date('d-m-Y', strtotime($data['due_date']));
+    $p3 = "Kindly make the payment via Cheque/DD/NEFT in favor of \"$company_name\" on or before $dueDateText in order to avoid interest charges.";
+    $pdf->MultiCell(0, 6, $p3);
+    $pdf->Ln(2);
+    
+    $pdf->SetFont('Times', 'B', 11);
+    $pdf->Cell(0, 6, "Total Outstanding Balance (Including Future Dues): Rs " . formatNumberIndian($total_project_balance), 0, 1);
+    
+    $pdf->SetFont('Times', '', 11);
+    $pdf->Ln(2);
+    $pdf->Cell(0, 6, "Thank you for your continued patronage.", 0, 1);
+    
+    // Terms 
+    if (!empty($settings['demand_terms'])) {
+        $pdf->Ln(5);
+        $pdf->SetFont('Times', 'B', 9);
+        $pdf->Cell(0, 5, 'Terms & Conditions:', 0, 1, 'L');
+        $pdf->SetFont('Times', '', 9);
+        $pdf->MultiCell(0, 5, strip_tags($settings['demand_terms']));
+    }
+    
+    // Signatory
+    $pdf->Ln(15);
+    $sig_y = $pdf->GetY() - 5;
+    $sig_x = $pdf->GetPageWidth() - 55;
+    
+    if (isset($settings['auth_signature']) && file_exists(__DIR__ . '/../' . $settings['auth_signature'])) {
+        $pdf->Image(__DIR__ . '/../' . $settings['auth_signature'], $sig_x, $sig_y, 35);
+        $pdf->Cell(0, 5, "", 0, 1, 'R');
+    } else {
+        $pdf->Cell(0, 5, "__________________________", 0, 1, 'R');
+    }
+    
+    $pdf->SetFont('Times', 'B', 11);
+    $pdf->Cell(0, 5, "Authorised Signatory", 0, 1, 'R');
+    $pdf->SetFont('Times', '', 11);
+    $pdf->Cell(0, 5, "For, $company_name", 0, 1, 'R');
+    
+    // Output
+    $filename = 'demand_' . $data['id'] . '_' . date('Ymd') . '.pdf';
     $content = $pdf->Output('S');
     
     return ['success' => true, 'filename' => $filename, 'content' => $content];

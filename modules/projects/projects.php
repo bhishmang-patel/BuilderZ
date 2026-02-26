@@ -317,7 +317,7 @@ select.f-ctrl {
 .proj-name { font-weight: 700; color: var(--ink); font-size: 0.9rem; }
 
 /* ── Location cell ───────────────────── */
-.loc-cell { font-size: 0.82rem; color: var(--ink-soft); display: flex; align-items: center; gap: 0.35rem; }
+.loc-cell { font-size: 0.82rem; color: var(--ink-soft); display: flex; align-items: center; justify-content: center; gap: 0.35rem; }
 .loc-cell i { font-size: 0.65rem; color: var(--ink-mute); }
 
 /* ── Timeline cell ───────────────────── */
@@ -623,9 +623,9 @@ select.f-ctrl {
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>Project Name</th>
-                            <th>Location</th>
-                            <th>Timeline</th>
+                            <th class="center">Project Name</th>
+                            <th class="center">Location</th>
+                            <th class="center">Timeline</th>
                             <th class="center">Units</th>
                             <th class="center">Status</th>
                             <th class="center" style="width:100px;">Actions</th>
@@ -638,16 +638,16 @@ select.f-ctrl {
                             $delay   = 40 + $i * 42;
                         ?>
                         <tr class="row-anim" style="animation-delay:<?= $delay ?>ms">
-                            <td style="text-align: left; padding-left: 24px;">
+                            <td class="center">
                                 <?= renderProjectBadge($proj['project_name'], $proj['id']) ?>
                             </td>
-                            <td>
+                            <td class="center">
                                 <div class="loc-cell">
                                     <i class="fas fa-map-marker-alt"></i>
                                     <?= htmlspecialchars($proj['location']) ?>
                                 </div>
                             </td>
-                            <td>
+                            <td class="center">
                                 <div class="timeline-cell">
                                     <div>Start: <strong><?= formatDate($proj['start_date']) ?></strong></div>
                                     <?php if ($proj['expected_completion']): ?>
@@ -656,7 +656,7 @@ select.f-ctrl {
                                 </div>
                             </td>
                             <td class="center">
-                                <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+                                <div class="center" style="display:flex;flex-direction:column;align-items:center; justify-content:center; gap:4px;">
                                     <?php if ($proj['total_flats'] > 0): ?>
                                         <span class="pill purple"><?= $proj['total_flats'] ?> Flats</span>
                                     <?php endif; ?>

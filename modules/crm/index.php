@@ -281,8 +281,8 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
                         <th>Source</th>
                         <th class="al-c">Status</th>
                         <th class="al-c">Interest</th>
-                        <th>Last Update</th>
-                        <th class="al-c"></th>
+                        <th class="al-c">Last Update</th>
+                        <th class="al-c">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -341,7 +341,7 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
                             </td>
 
                             <!-- Last update -->
-                            <td>
+                            <td class="al-c">
                                 <span style="font-size:.8rem; color:var(--ink-soft); font-weight:600;"><?= date_format($d, 'd M') ?></span>
                                 <span style="font-size:.72rem; color:var(--ink-mute); display:block;"><?= date_format($d, 'h:i A') ?></span>
                             </td>

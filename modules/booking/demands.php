@@ -167,45 +167,46 @@ include __DIR__ . '/../../includes/header.php';
 
     .toolbar-actions { display: flex; align-items: center; gap: 0.5rem; flex: 1; justify-content: flex-end; flex-wrap: nowrap; }
 
-    /* Filter */
-    .filter-wrap {
-        display: inline-flex;
-        align-items: center;
-        gap: 18px;
-        padding: 0 20px;
-        height: 44px;
-        background: var(--accent-bg);
-        border: 1.5px solid #e0c9b5;
-        border-radius: 12px;
+    /* ── Filter Section ─────────────────────────── */
+    .btn-filter {
+        display: inline-flex; align-items: center; gap: 0.4rem;
+        padding: 0.55rem 1rem; border: 1.5px solid var(--border);
+        background: white; color: var(--ink-soft);
+        border-radius: 7px; font-size: 0.8rem; font-weight: 600;
+        cursor: pointer; transition: all 0.18s; text-decoration: none;
     }
+    .btn-filter:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
 
-    /* Left side (icon + FILTER text) */
-    .filter-left {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 12px;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: var(--accent);
+    .filter-section {
+        display: none; padding: 1.25rem 1.5rem; 
+        border-bottom: 1.5px solid var(--border-lt);
+        background: #fdfcfa;
     }
+    .filter-section.show { display: block; }
 
-    /* Select */
-    .filter-select {
-        border: none;
-        background: transparent;
-        font-size: 15px;
-        font-weight: 600;
-        color: var(--ink);
-        cursor: pointer;
-        outline: none;
-        appearance: none;
-        padding-right: 18px;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23b5622a' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: right center;
+    .filter-form { display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap; }
+    .f-select {
+        height: 40px;
+        padding: 0 2rem 0 0.9rem;
+        border: 1.5px solid var(--border);
+        border-radius: 8px;
+        font-size: 0.85rem;
+        background: white;
+        flex: 0 0 240px;
+        min-width: 220px;
     }
+    .f-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(181,98,42,0.1); }
+
+    .btn-go, .btn-clear {
+        height: 38px; padding: 0 1.25rem; border: none; border-radius: 7px;
+        display: flex; align-items: center; gap: 0.4rem;
+        font-size: 0.8rem; font-weight: 600; cursor: pointer;
+        transition: all 0.18s; text-decoration: none;
+    }
+    .btn-go { background: var(--ink); color: white; }
+    .btn-go:hover { background: var(--accent); }
+    .btn-clear { background: #fee2e2; color: #b91c1c; }
+    .btn-clear:hover { background: #fca5a5; color: white; }
 
     @media (max-width: 920px) {
         .panel-toolbar { flex-wrap: wrap; }
@@ -223,6 +224,7 @@ include __DIR__ . '/../../includes/header.php';
         text-transform: uppercase; color: var(--ink-soft); white-space: nowrap;
     }
     .pd-table thead th.th-r { text-align: right; }
+    .pd-table thead th.th-c { text-align: center; }
 
     .pd-table tbody tr { border-bottom: 1px solid var(--border-lt); transition: background 0.13s; }
     .pd-table tbody tr:last-child { border-bottom: none; }
@@ -318,34 +320,43 @@ include __DIR__ . '/../../includes/header.php';
             <div class="toolbar-div"></div>
 
             <div class="toolbar-actions">
-                    <form method="GET" class="filter-wrap">
-                        <div class="filter-left">
-                            <i class="fas fa-filter"></i>
-                            <span>Filter</span>
-                        </div>
-
-                        <select name="project_id" class="filter-select" onchange="this.form.submit()">
-                            <option value="">All Projects</option>
-                            <?php foreach($projects as $proj): ?>
-                                <option value="<?= $proj['id'] ?>" <?= $project_id == $proj['id'] ? 'selected' : '' ?>>
-                                    <?= htmlspecialchars($proj['project_name']) ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-
-                        <!-- Stage Filter -->
-                        <div style="width:1px; height:24px; background:#e0c9b5; margin:0 5px;"></div>
-                        
-                        <select name="stage" class="filter-select" onchange="this.form.submit()">
-                            <option value="">All Stages</option>
-                            <?php foreach($stages as $stg): ?>
-                                <option value="<?= htmlspecialchars($stg) ?>" <?= $stage_filter === $stg ? 'selected' : '' ?>>
-                                    <?= htmlspecialchars($stg) ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                </form>
+                <button type="button" class="btn-filter" onclick="toggleFilters()">
+                    <i class="fas fa-filter"></i> Filters
+                    <?php if(!empty($project_id) || !empty($stage_filter)): ?>
+                        <span style="background:var(--accent);color:white;border-radius:50%;width:16px;height:16px;font-size:10px;display:inline-flex;align-items:center;justify-content:center;margin-left:2px;"><i class="fas fa-check" style="font-size: 8px;"></i></span>
+                    <?php endif; ?>
+                </button>
             </div>
+        </div>
+
+        <!-- Filter Section -->
+        <div class="filter-section <?= (!empty($project_id) || !empty($stage_filter)) ? 'show' : '' ?>" id="filterSection">
+            <form method="GET" class="filter-form">
+                
+                <select name="project_id" class="f-select">
+                    <option value="">All Projects</option>
+                    <?php foreach($projects as $proj): ?>
+                        <option value="<?= $proj['id'] ?>" <?= $project_id == $proj['id'] ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($proj['project_name']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+
+                <select name="stage" class="f-select">
+                    <option value="">All Stages</option>
+                    <?php foreach($stages as $stg): ?>
+                        <option value="<?= htmlspecialchars($stg) ?>" <?= $stage_filter === $stg ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($stg) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                
+                <button type="submit" class="btn-go"><i class="fas fa-search"></i> Apply</button>
+
+                <?php if(!empty($project_id) || !empty($stage_filter)): ?>
+                    <a href="demands.php" class="btn-clear"><i class="fas fa-times"></i> Clear</a>
+                <?php endif; ?>
+            </form>
         </div>
 
         <!-- Table -->
@@ -353,13 +364,13 @@ include __DIR__ . '/../../includes/header.php';
             <table class="pd-table">
                 <thead>
                     <tr>
-                        <th>Date</th>
+                        <th class="th-c">Date</th>
                         <th>Customer / Flat</th>
                         <th>Stage Name</th>
                         <th class="th-r">Amt Demanded</th>
                         <th class="th-r">Paid</th>
                         <th class="th-r">Balance</th>
-                        <th>Status</th>
+                        <th class="th-c">Status</th>
                         <th class="th-r">Actions</th>
                     </tr>
                 </thead>
@@ -397,7 +408,7 @@ include __DIR__ . '/../../includes/header.php';
                                     <span style="color:var(--border)">—</span>
                                 <?php endif; ?>
                             </td>
-                            <td>
+                            <td class="td-c">
                                 <?php if ($d['status'] == 'pending'): ?>
                                     <span class="pill red">Pending</span>
                                 <?php elseif ($d['status'] == 'partial'): ?>
@@ -428,5 +439,11 @@ include __DIR__ . '/../../includes/header.php';
     </div>
 
 </div>
+
+<script>
+function toggleFilters() {
+    document.getElementById('filterSection').classList.toggle('show');
+}
+</script>
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>

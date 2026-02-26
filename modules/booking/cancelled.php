@@ -208,8 +208,8 @@ body {
     color: var(--ink-mute); margin-bottom: 0.25rem;
 }
 .stat-value {
-    font-family: 'Fraunces', serif;
-    font-size: 1.5rem; font-weight: 700; line-height: 1; color: var(--ink);
+    font-family: 'Fraunces', serif; text-align: center;
+    font-size: 1.2rem; font-weight: 700; line-height: 1; color: var(--ink);
 }
 
 /* ── Card head ───────────────────────── */

@@ -98,15 +98,36 @@ $filters  = ['project_id' => $_GET['project'] ?? '', 'status' => $_GET['status']
 $flats    = $masterService->getAllFlats($filters);
 $projects = $masterService->getAllProjects();
 
-$detailedStats = $masterService->getDetailedStats();
+// Group flats by project
+$groupedFlats = [];
+foreach ($flats as $flat) {
+    $pid = $flat['project_id'];
+    if (!isset($groupedFlats[$pid])) {
+        $groupedFlats[$pid] = [
+            'project_name' => $flat['project_name'],
+            'flats' => [],
+            'count_flat' => 0,
+            'count_shop' => 0,
+            'count_office' => 0
+        ];
+    }
+    $groupedFlats[$pid]['flats'][] = $flat;
+    $type = strtolower($flat['unit_type'] ?? 'flat');
+    if ($type === 'shop') $groupedFlats[$pid]['count_shop']++;
+    elseif ($type === 'office') $groupedFlats[$pid]['count_office']++;
+    else $groupedFlats[$pid]['count_flat']++;
+}
+
 $counts = ['flat' => ['total'=>0,'available'=>0], 'shop' => ['total'=>0,'available'=>0], 'office' => ['total'=>0,'available'=>0], 'all' => ['total'=>0,'available'=>0]];
-foreach ($detailedStats as $row) {
-    $type  = strtolower($row['unit_type'] ?? 'flat');
+foreach ($flats as $flat) {
+    $type = strtolower($flat['unit_type'] ?? 'flat');
     if (!isset($counts[$type])) $type = 'flat';
-    $cnt   = intval($row['count']);
-    $counts[$type]['total'] += $cnt;
-    $counts['all']['total'] += $cnt;
-    if ($row['status'] === 'available') { $counts[$type]['available'] += $cnt; $counts['all']['available'] += $cnt; }
+    $counts[$type]['total']++;
+    $counts['all']['total']++;
+    if ($flat['status'] === 'available') {
+        $counts[$type]['available']++;
+        $counts['all']['available']++;
+    }
 }
 $has_filters = $filters['project_id'] || $filters['status'] || $filters['search'];
 
@@ -251,6 +272,20 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
 .act-btn { width:28px; height:28px; border-radius:6px; border:1.5px solid var(--border); background:white; color:var(--ink-mute); display:inline-flex; align-items:center; justify-content:center; font-size:.65rem; cursor:pointer; transition:all .15s; }
 .act-btn:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-bg); }
 .act-btn.del:hover { border-color:var(--red); color:var(--red); background:var(--red-lt); }
+
+/* ── Accordion ────────────────────── */
+.proj-accordion { border-bottom:1.5px solid var(--border-lt); background:white; }
+.proj-accordion:last-child { border-bottom:none; }
+.pa-header { padding:1.25rem 1.5rem; display:flex; align-items:center; justify-content:space-between; cursor:pointer; transition:background .15s; user-select:none; }
+.pa-header:hover { background:#fbfcfe; }
+.pa-title { display:flex; align-items:center; gap:1rem; font-family:'Fraunces',serif; font-size:1.1rem; font-weight:600; color:var(--ink); }
+.pa-count { font-size:.7rem; font-weight:700; color:var(--ink-mute); padding:.2rem .6rem; border-radius:20px; background:var(--cream); font-family:'DM Sans',sans-serif; letter-spacing:.05em; border:1px solid var(--border); }
+.pa-icon { width:28px; height:28px; border-radius:50%; background:var(--cream); color:var(--ink-soft); display:flex; align-items:center; justify-content:center; font-size:.75rem; transition:transform .3s ease,background .2s,color .2s; }
+.proj-accordion.open .pa-icon { transform:rotate(180deg); background:var(--accent-lt); color:var(--accent); }
+.pa-body-wrapper { display:grid; grid-template-rows:0fr; transition:grid-template-rows .3s ease-in-out; }
+.proj-accordion.open .pa-body-wrapper { grid-template-rows:1fr; }
+.pa-body { overflow:hidden; }
+.proj-accordion.open .pa-header { background:#fafbff; }
 
 /* empty */
 .empty-state { text-align:center; padding:4rem 1.5rem; }
@@ -445,84 +480,109 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
             </div>
         </form>
 
-        <!-- Table -->
-        <div style="overflow-x:auto;">
-            <form id="bulkForm" method="POST">
-                <?= csrf_field() ?>
-                <input type="hidden" name="action" value="bulk_delete">
-                <input type="hidden" name="ids" id="bulkIds">
-                <table class="flat-table">
-                    <thead>
-                        <tr>
-                            <th style="width:36px;"><input type="checkbox" id="selAll" class="chk" onclick="fToggleAll(this)"></th>
-                            <th>Project</th>
-                            <th>Unit No</th>
-                            <th class="al-c">Floor</th>
-                            <th class="al-c">BHK / Type</th>
-                            <th class="al-r">Area (sqft)</th>
-                            <th class="al-r">Rate / sqft</th>
-                            <th class="al-r">Ag. Amount</th>
-                            <th class="al-c">Status</th>
-                            <th class="al-r" style="width:90px;"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (empty($flats)): ?>
-                            <tr><td colspan="10">
-                                <div class="empty-state">
-                                    <span class="es-icon"><i class="fas fa-building"></i></span>
-                                    <h4>No units found</h4>
-                                    <p>Start by adding units to your projects.</p>
-                                </div>
-                            </td></tr>
-                        <?php else:
-                            foreach ($flats as $i => $flat):
-                                $statusClass = $flat['status'] === 'available' ? 'available' : ($flat['status'] === 'booked' ? 'booked' : 'sold');
-                                $bhkLabel = !empty($flat['bhk']) ? htmlspecialchars(str_replace('BHK',' BHK',$flat['bhk'])) : (!empty($flat['unit_type']) && strtolower($flat['unit_type']) !== 'flat' ? ucfirst(htmlspecialchars($flat['unit_type'])) : '—');
-                        ?>
-                            <tr class="row-in" style="animation-delay:<?= $i*20 ?>ms;">
-                                <td class="al-c">
-                                    <?php if ($flat['status'] === 'available'): ?>
-                                        <input type="checkbox" class="chk flat-chk" value="<?= $flat['id'] ?>" onclick="fUpdateBulk()">
-                                    <?php else: ?>
-                                        <i class="fas fa-lock lock-ic"></i>
-                                    <?php endif; ?>
-                                </td>
-                                <td><?= renderProjectBadge($flat['project_name'], $flat['project_id']) ?></td>
-                                <td><span class="flat-pill"><?= htmlspecialchars($flat['flat_no']) ?></span></td>
-                                <td class="al-c"><span class="floor-val"><?= $flat['floor'] ?></span></td>
-                                <td class="al-c"><span class="bhk-pill"><?= $bhkLabel ?></span></td>
-                                <td class="al-r"><span class="num-cell"><?= number_format($flat['area_sqft'],2) ?></span></td>
-                                <td class="al-r">
-                                    <?php if (!empty($flat['booked_rate'])): ?>
-                                        <span class="num-cell"><?= formatCurrency($flat['booked_rate']) ?></span>
-                                    <?php else: ?>
-                                        <span class="rate-est"><?= formatCurrency($flat['rate_per_sqft']) ?></span>
-                                    <?php endif; ?>
-                                </td>
-                                <td class="al-r">
-                                    <?php if (!empty($flat['booked_amount'])): ?>
-                                        <span class="num-cell green"><?= formatCurrency($flat['booked_amount']) ?></span>
-                                    <?php else: ?>
-                                        <span class="num-cell muted"><?= formatCurrency($flat['total_value']) ?></span>
-                                    <?php endif; ?>
-                                </td>
-                                <td class="al-c"><span class="status-pill <?= $statusClass ?>"><?= ucfirst($flat['status']) ?></span></td>
-                                <td>
-                                    <div class="act-grp">
-                                        <button type="button" class="act-btn" onclick="fViewFlat(<?= $flat['id'] ?>)" title="View"><i class="fas fa-eye"></i></button>
-                                        <button type="button" class="act-btn" onclick="fEditFlat(<?= htmlspecialchars(json_encode($flat)) ?>)" title="Edit"><i class="fas fa-pencil-alt"></i></button>
-                                        <?php if ($flat['status']==='available'): ?>
-                                            <button type="button" class="act-btn del" onclick="fDelFlat(<?= $flat['id'] ?>,'<?= htmlspecialchars($flat['flat_no']) ?>')" title="Delete"><i class="fas fa-trash-alt"></i></button>
-                                        <?php endif; ?>
-                                    </div>
-                                </td>
-                            </tr>
-                        <?php endforeach; endif; ?>
-                    </tbody>
-                </table>
-            </form>
-        </div>
+        <!-- Grouped Accordion -->
+        <form id="bulkForm" method="POST">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="bulk_delete">
+            <input type="hidden" name="ids" id="bulkIds">
+            
+            <?php if (empty($groupedFlats)): ?>
+                <div class="empty-state">
+                    <span class="es-icon"><i class="fas fa-building"></i></span>
+                    <h4>No units found</h4>
+                    <p>Start by adding units to your projects.</p>
+                </div>
+            <?php else:
+                $projectIndex = 0;
+                foreach ($groupedFlats as $pid => $group): 
+                    $projectIndex++;
+                    $isOpen = ($projectIndex === 1) || !empty($filters['project_id']) || !empty($filters['search']);
+            ?>
+                <div class="proj-accordion <?= $isOpen ? 'open' : '' ?>">
+                    <div class="pa-header" onclick="fToggleAccordion(this)">
+                        <div class="pa-title">
+                            <?= renderProjectBadge($group['project_name'], $pid) ?>
+                            <span class="pa-count" title="Total Units"><?= count($group['flats']) ?> Total</span>
+                            <?php if ($group['count_flat'] > 0): ?>
+                            <span class="pa-count" style="background:var(--accent-lt);border-color:var(--accent-md);color:var(--accent);"><i class="fas fa-building" style="margin-right:3px;"></i><?= $group['count_flat'] ?> Flats</span>
+                            <?php endif; ?>
+                            <?php if ($group['count_shop'] > 0): ?>
+                            <span class="pa-count" style="background:var(--green-lt);border-color:#6ee7b7;color:var(--green);"><i class="fas fa-store" style="margin-right:3px;"></i><?= $group['count_shop'] ?> Shops</span>
+                            <?php endif; ?>
+                            <?php if ($group['count_office'] > 0): ?>
+                            <span class="pa-count" style="background:var(--purple-lt);border-color:#c4b5fd;color:var(--purple);"><i class="fas fa-briefcase" style="margin-right:3px;"></i><?= $group['count_office'] ?> Offices</span>
+                            <?php endif; ?>
+                        </div>
+                        <div class="pa-icon"><i class="fas fa-chevron-down"></i></div>
+                    </div>
+                    <div class="pa-body-wrapper">
+                        <div class="pa-body">
+                            <div style="overflow-x:auto;">
+                                <table class="flat-table" style="border-top:1px solid var(--border-lt);">
+                                    <thead>
+                                        <tr>
+                                            <th style="width:36px;"><input type="checkbox" class="chk pa-sel-all" onclick="fToggleProjectAll(this, <?= $pid ?>)" data-pid="<?= $pid ?>"></th>
+                                            <th class="al-c">Unit No</th>
+                                            <th class="al-c">Floor</th>
+                                            <th class="al-c">BHK / Type</th>
+                                            <th class="al-c">Area (sqft)</th>
+                                            <th class="al-c">Rate / sqft</th>
+                                            <th class="al-c">Ag. Amount</th>
+                                            <th class="al-c">Status</th>
+                                            <th class="al-c">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($group['flats'] as $i => $flat):
+                                            $statusClass = $flat['status'] === 'available' ? 'available' : ($flat['status'] === 'booked' ? 'booked' : 'sold');
+                                            $bhkLabel = !empty($flat['bhk']) ? htmlspecialchars(str_replace('BHK',' BHK',$flat['bhk'])) : (!empty($flat['unit_type']) && strtolower($flat['unit_type']) !== 'flat' ? ucfirst(htmlspecialchars($flat['unit_type'])) : '—');
+                                        ?>
+                                            <tr class="row-in" style="animation-delay:<?= min($i*15, 300) ?>ms;">
+                                                <td class="al-c">
+                                                    <?php if ($flat['status'] === 'available'): ?>
+                                                        <input type="checkbox" class="chk flat-chk proj-chk-<?= $pid ?>" value="<?= $flat['id'] ?>" onclick="fUpdateBulk(<?= $pid ?>)">
+                                                    <?php else: ?>
+                                                        <i class="fas fa-lock lock-ic"></i>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td class="al-c"><span class="flat-pill"><?= htmlspecialchars($flat['flat_no']) ?></span></td>
+                                                <td class="al-c"><span class="floor-val"><?= $flat['floor'] ?></span></td>
+                                                <td class="al-c"><span class="bhk-pill"><?= $bhkLabel ?></span></td>
+                                                <td class="al-c"><span class="num-cell"><?= number_format($flat['area_sqft'],2) ?></span></td>
+                                                <td class="al-c">
+                                                    <?php if (!empty($flat['booked_rate'])): ?>
+                                                        <span class="num-cell"><?= formatCurrency($flat['booked_rate']) ?></span>
+                                                    <?php else: ?>
+                                                        <span class="rate-est"><?= formatCurrency($flat['rate_per_sqft']) ?></span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td class="al-c">
+                                                    <?php if (!empty($flat['booked_amount'])): ?>
+                                                        <span class="num-cell green"><?= formatCurrency($flat['booked_amount']) ?></span>
+                                                    <?php else: ?>
+                                                        <span class="num-cell muted"><?= formatCurrency($flat['total_value']) ?></span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td class="al-c"><span class="status-pill <?= $statusClass ?>"><?= ucfirst($flat['status']) ?></span></td>
+                                                <td>
+                                                    <div class="act-grp">
+                                                        <button type="button" class="act-btn" onclick="fViewFlat(<?= $flat['id'] ?>)" title="View"><i class="fas fa-eye"></i></button>
+                                                        <button type="button" class="act-btn" onclick="fEditFlat(<?= htmlspecialchars(json_encode($flat)) ?>)" title="Edit"><i class="fas fa-pencil-alt"></i></button>
+                                                        <?php if ($flat['status']==='available'): ?>
+                                                            <button type="button" class="act-btn del" onclick="fDelFlat(<?= $flat['id'] ?>,'<?= htmlspecialchars($flat['flat_no']) ?>')" title="Delete"><i class="fas fa-trash-alt"></i></button>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <?php endforeach; endif; ?>
+        </form>
     </div>
 </div>
 
@@ -820,9 +880,27 @@ function fViewFlat(id){
     fetch('<?= BASE_URL ?>modules/projects/flats/get_flat_details.php?id='+id).then(r=>r.text()).then(h=>c.innerHTML=h).catch(()=>{c.innerHTML='<div style="text-align:center;padding:2rem;color:var(--red);">Failed to load.</div>';});
 }
 
+/* ── Accordion Toggle ──────────────── */
+function fToggleAccordion(hdr) {
+    const acc = hdr.closest('.proj-accordion');
+    acc.classList.toggle('open');
+}
+
 /* ── Bulk delete ───────────────────── */
-function fToggleAll(src){ document.querySelectorAll('.flat-chk').forEach(cb=>cb.checked=src.checked); fUpdateBulk(); }
-function fUpdateBulk(){
+function fToggleProjectAll(src, pid) {
+    document.querySelectorAll('.proj-chk-'+pid).forEach(cb=>{
+        if(!cb.disabled) cb.checked=src.checked;
+    });
+    fUpdateBulkAll();
+}
+function fUpdateBulk(pid) {
+    const projChks = document.querySelectorAll('.proj-chk-'+pid);
+    const checked = document.querySelectorAll('.proj-chk-'+pid+':checked');
+    const selAll = document.querySelector('.pa-sel-all[data-pid="'+pid+'"]');
+    if (selAll) selAll.checked = projChks.length > 0 && projChks.length === checked.length;
+    fUpdateBulkAll();
+}
+function fUpdateBulkAll() {
     const chks=document.querySelectorAll('.flat-chk:checked');
     const btn=document.getElementById('bulkDelBtn');
     document.getElementById('selCount').textContent=chks.length;
@@ -830,9 +908,16 @@ function fUpdateBulk(){
 }
 function fConfirmBulkDel(){
     const chks=document.querySelectorAll('.flat-chk:checked'); if(!chks.length) return;
-    if(!confirm('Delete '+chks.length+' flats?')) return;
-    document.getElementById('bulkIds').value=JSON.stringify(Array.from(chks).map(cb=>cb.value));
-    document.getElementById('bulkForm').submit();
+    
+    window.customConfirm({
+        title: 'Delete Flats?',
+        text: 'Delete ' + chks.length + ' flats?',
+        icon: '<i class="fas fa-trash-alt"></i>',
+        confirmText: 'Yes, Delete'
+    }, function() {
+        document.getElementById('bulkIds').value=JSON.stringify(Array.from(chks).map(cb=>cb.value));
+        document.getElementById('bulkForm').submit();
+    });
 }
 
 /* ── Tabs ──────────────────────────── */

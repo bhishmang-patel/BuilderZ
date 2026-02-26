@@ -20,7 +20,9 @@ class MasterService {
         
         // Generate Auto WO Number if not provided
         if (empty($data['work_order_no'])) {
-            $data['work_order_no'] = 'WO-' . date('Ymd') . '-' . rand(1000, 9999);
+            $stmt = $this->db->query("SELECT setting_value FROM settings WHERE setting_key = 'work_order_prefix'");
+            $wo_prefix = $stmt ? ($stmt->fetchColumn() ?: 'WO') : 'WO';
+            $data['work_order_no'] = $wo_prefix . '-' . date('Ymd') . '-' . rand(1000, 9999);
         }
 
         try {

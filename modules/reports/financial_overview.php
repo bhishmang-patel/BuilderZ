@@ -177,7 +177,7 @@ include __DIR__ . '/../../includes/header.php';
     .ico-gray { background: #f8fafc; color: #64748b; }
 
     .stat-value {
-        font-family: 'Fraunces', serif; font-size: 1.5rem; font-weight: 700;
+        font-family: 'Fraunces', serif; font-size: 1.2rem; font-weight: 700;
         color: var(--ink); line-height: 1; font-variant-numeric: tabular-nums;
         margin-bottom: 0.4rem;
     }

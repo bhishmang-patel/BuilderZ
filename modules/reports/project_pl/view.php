@@ -28,6 +28,54 @@ if (!$data || !$data['summary']) {
 $project = $data['summary'];
 $expenses = $data['expense_breakdown'];
 
+// --- NEW QUERIES FOR CATEGORY BREAKDOWNS ---
+$db = Database::getInstance();
+
+// 1. Vendor Payments Breakdown (by Vendor & Material)
+// Matching ReportService logic: amount from payments linked through challans or bills
+$vendor_query = "
+    SELECT 
+        pt.name as vendor_name,
+        COALESCE((
+            SELECT m.material_name 
+            FROM challan_items ci 
+            JOIN materials m ON ci.material_id = m.id 
+            WHERE ci.challan_id = c.id OR ci.challan_id IN (SELECT id FROM challans WHERE bill_id = b.id)
+            LIMIT 1
+        ), 'Various Materials') as material_name,
+        SUM(pay.amount) as total_amount
+    FROM payments pay
+    JOIN parties pt ON pay.party_id = pt.id
+    LEFT JOIN challans c ON pay.reference_type = 'challan' AND pay.reference_id = c.id
+    LEFT JOIN bills b ON pay.reference_type = 'bill' AND pay.reference_id = b.id
+    WHERE (c.project_id = ? OR b.id IN (SELECT DISTINCT bill_id FROM challans WHERE project_id = ? AND bill_id IS NOT NULL))
+    AND pay.payment_type IN ('vendor_payment', 'vendor_bill_payment')
+    AND pt.party_type = 'vendor'
+    GROUP BY pt.id
+    ORDER BY total_amount DESC
+";
+$vendor_expenses = $db->query($vendor_query, [$project_id, $project_id])->fetchAll();
+
+
+// 2. Contractor Payments Breakdown (by contractor_type)
+// Matching ReportService logic: amount from payments linked through contractor_bills or challans
+$contractor_query = "
+    SELECT 
+        COALESCE(pt.contractor_type, 'Uncategorized') as category_name,
+        SUM(pay.amount) as total_amount
+    FROM payments pay
+    JOIN parties pt ON pay.party_id = pt.id
+    LEFT JOIN contractor_bills cb ON pay.reference_type = 'contractor_bill' AND pay.reference_id = cb.id
+    LEFT JOIN challans c ON pay.reference_type = 'challan' AND pay.reference_id = c.id
+    WHERE (cb.project_id = ? OR (c.project_id = ? AND pay.payment_type = 'contractor_payment'))
+    AND pay.payment_type = 'contractor_payment'
+    AND pt.party_type = 'contractor'
+    GROUP BY pt.contractor_type
+    ORDER BY total_amount DESC
+";
+$contractor_expenses = $db->query($contractor_query, [$project_id, $project_id])->fetchAll();
+// ---------------------------------------------
+
 $page_title = 'Project P&L: ' . $project['project_name'];
 $current_page = 'project_pl';
 
@@ -243,6 +291,72 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
                 ?>
                 <tr>
                     <td><?= htmlspecialchars($exp['category_name']) ?></td>
+                    <td class="amount"><?= formatCurrency($exp['total_amount']) ?></td>
+                    <td class="amount" style="color:var(--ink-mute); font-size:0.85rem;"><?= number_format($pct, 1) ?>%</td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+    <?php endif; ?>
+
+    <!-- VENDOR EXPENSES BREAKDOWN -->
+    <?php if (!empty($vendor_expenses)): ?>
+    <div class="panel" style="margin-top:1.5rem;">
+        <div class="panel-head">
+            <div class="panel-title">Vendor Breakdown (Materials)</div>
+            <div class="panel-icon"><i class="fas fa-truck-loading"></i></div>
+        </div>
+        <table class="alloc-table">
+            <thead>
+                <tr>
+                    <th>Vendor Details</th>
+                    <th style="text-align:right;">Amount</th>
+                    <th style="text-align:right;">% of Vendor Exp.</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($vendor_expenses as $exp): 
+                    $pct = ($project['vendor_payments'] > 0) ? ($exp['total_amount'] / $project['vendor_payments']) * 100 : 0;
+                ?>
+                <tr>
+                    <td>
+                        <div style="font-weight:600; color:var(--ink);"><?= htmlspecialchars($exp['vendor_name']) ?></div>
+                        <div style="font-size:0.75rem; color:var(--ink-mute); margin-top:2px;">
+                            <i class="fas fa-box" style="margin-right:4px;"></i><?= htmlspecialchars($exp['material_name']) ?>
+                        </div>
+                    </td>
+                    <td class="amount"><?= formatCurrency($exp['total_amount']) ?></td>
+                    <td class="amount" style="color:var(--ink-mute); font-size:0.85rem;"><?= number_format($pct, 1) ?>%</td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+    <?php endif; ?>
+
+    <!-- CONTRACTOR EXPENSES BREAKDOWN -->
+    <?php if (!empty($contractor_expenses)): ?>
+    <div class="panel" style="margin-top:1.5rem;">
+        <div class="panel-head">
+            <div class="panel-title">Contractor Expenses (Category-wise)</div>
+            <div class="panel-icon"><i class="fas fa-hard-hat"></i></div>
+        </div>
+        <table class="alloc-table">
+            <thead>
+                <tr>
+                    <th>Contractor Category</th>
+                    <th style="text-align:right;">Amount</th>
+                    <th style="text-align:right;">% of Contractor Exp.</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($contractor_expenses as $exp): 
+                    $pct = ($project['contractor_payments'] > 0) ? ($exp['total_amount'] / $project['contractor_payments']) * 100 : 0;
+                    $catName = ucwords(str_replace('_', ' ', $exp['category_name']));
+                ?>
+                <tr>
+                    <td><?= htmlspecialchars($catName) ?></td>
                     <td class="amount"><?= formatCurrency($exp['total_amount']) ?></td>
                     <td class="amount" style="color:var(--ink-mute); font-size:0.85rem;"><?= number_format($pct, 1) ?>%</td>
                 </tr>

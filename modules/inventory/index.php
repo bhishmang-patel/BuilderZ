@@ -13,6 +13,28 @@ $db           = Database::getInstance();
 $page_title   = 'Stock Status';
 $current_page = 'stock';
 
+// Get filters
+$filter_project  = $_GET['project_id'] ?? '';
+$filter_material = $_GET['material_id'] ?? '';
+
+// Fetch for dropdowns
+$projects_list  = $db->query("SELECT id, project_name FROM projects ORDER BY project_name")->fetchAll();
+$materials_list = $db->query("SELECT id, material_name FROM materials ORDER BY material_name")->fetchAll();
+
+$where_clauses = [];
+$params = [];
+
+if (!empty($filter_project)) {
+    $where_clauses[] = "p.id = ?";
+    $params[] = $filter_project;
+}
+if (!empty($filter_material)) {
+    $where_clauses[] = "m.id = ?";
+    $params[] = $filter_material;
+}
+
+$where_sql = $where_clauses ? " WHERE " . implode(" AND ", $where_clauses) : "";
+
 // Updated SQL to group by Material AND Project
 $sql = "SELECT 
             m.id as material_id,
@@ -49,11 +71,12 @@ $sql = "SELECT
         ) t
         JOIN materials m ON t.material_id = m.id
         JOIN projects p ON t.project_id = p.id
+        $where_sql
         GROUP BY m.id, p.id
         HAVING SUM(t.in_qty) > 0 OR SUM(t.out_qty) > 0
         ORDER BY m.material_name, p.project_name";
 
-$stock_data = $db->query($sql)->fetchAll();
+$stock_data = $db->query($sql, $params)->fetchAll();
 
 $total_items     = count($stock_data);
 $total_value     = 0;
@@ -214,6 +237,30 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
     font-family: 'DM Sans', sans-serif;
 }
 
+/* ── Filter Section ──────────────────────── */
+.filter-section { padding: 1.25rem 1.5rem; border-bottom: 1.5px solid var(--border-lt); background: #fdfcfa; }
+.filter-form { display: flex; align-items: flex-end; gap: 0.65rem; flex-wrap: wrap; }
+.f-group { flex: 1; min-width: 180px; }
+.f-label { display: block; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 0.4rem; }
+.f-select {
+    width: 100%; height: 42px; padding: 0 0.85rem;
+    border: 1.5px solid var(--border); border-radius: 8px;
+    font-size: 0.875rem; color: var(--ink); background: white;
+    outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+    -webkit-appearance: none; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%236b6560' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 0.8rem center;
+    padding-right: 2.2rem;
+}
+.f-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(42,88,181,0.1); }
+.btn-filter {
+    height: 42px; padding: 0 1.4rem; border: none; border-radius: 8px;
+    display: flex; align-items: center; gap: 0.4rem;
+    font-size: 0.875rem; font-weight: 600; cursor: pointer;
+    transition: all 0.18s; background: var(--ink); color: white;
+}
+.btn-filter:hover { background: var(--accent); }
+
 /* ── Stock table ──────────────────── */
 .stock-table { width: 100%; border-collapse: collapse; font-size: 0.855rem; }
 .stock-table thead tr { background: #eef2fb; border-bottom: 1.5px solid var(--border); }
@@ -357,6 +404,39 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
                 <span class="count-tag"><?= $total_items ?> items</span>
             </div>
             <span style="font-size:0.75rem;color:var(--ink-mute);margin-left:auto;">Real-time inventory levels &amp; valuation</span>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-section">
+            <form method="GET" class="filter-form">
+                <div class="f-group">
+                    <label class="f-label">Project</label>
+                    <select name="project_id" class="f-select">
+                        <option value="">All Projects</option>
+                        <?php foreach ($projects_list as $proj): ?>
+                            <option value="<?= $proj['id'] ?>" <?= $filter_project == $proj['id'] ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($proj['project_name']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                
+                <div class="f-group">
+                    <label class="f-label">Material</label>
+                    <select name="material_id" class="f-select">
+                        <option value="">All Materials</option>
+                        <?php foreach ($materials_list as $mat): ?>
+                            <option value="<?= $mat['id'] ?>" <?= $filter_material == $mat['id'] ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($mat['material_name']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-filter">
+                    <i class="fas fa-filter"></i> Apply Filter
+                </button>
+            </form>
         </div>
 
         <!-- Table -->

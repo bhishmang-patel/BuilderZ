@@ -52,9 +52,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $order = 1;
             foreach ($stages as $stage) {
+                $newName = trim($stage['name']);
+                $oldName = trim($stage['old_name'] ?? '');
+
                 $db->query("INSERT INTO stage_of_work_items (stage_of_work_id, stage_name, percentage, stage_order, stage_type) VALUES (?, ?, ?, ?, ?)", [
-                    $planId, trim($stage['name']), floatval($stage['percentage']), $order++, $stage['type']
+                    $planId, $newName, floatval($stage['percentage']), $order++, $stage['type']
                 ]);
+
+                // If updating and the name was changed, sync to existing historical demands so the new name reflects
+                if ($action === 'update' && !empty($oldName) && $oldName !== $newName) {
+                    $updateDemands = "
+                        UPDATE booking_demands bd
+                        JOIN bookings b ON bd.booking_id = b.id
+                        SET bd.stage_name = ?
+                        WHERE b.stage_of_work_id = ? AND bd.stage_name = ?
+                    ";
+                    $db->query($updateDemands, [$newName, $planId, $oldName]);
+
+                    $updateProjStages = "
+                        UPDATE project_completed_stages pcs
+                        JOIN bookings b ON pcs.project_id = b.project_id
+                        SET pcs.stage_name = ?
+                        WHERE b.stage_of_work_id = ? AND pcs.stage_name = ?
+                    ";
+                    $db->query($updateProjStages, [$newName, $planId, $oldName]);
+                }
             }
 
             $db->commit();
@@ -628,7 +650,7 @@ body {
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
 }
-.view-row-name { font-weight: 600; color: var(--ink); font-size: 0.875rem; }
+.view-row-name { font-weight: 600; color: var(--ink); font-size: 0.875rem; text-align: left; }
 .view-row-type { font-size: 0.67rem; color: var(--ink-mute); margin-top: 2px; display: flex; align-items: center; gap: 3px; }
 .view-row-pct {
     font-family: 'Fraunces', serif;
@@ -920,6 +942,7 @@ function addStage(boxId, scope, name='', pct='', type='construction_linked') {
                    name="stages[${id}][name]" value="${esc(name)}"
                    placeholder="Stage name" required>
             <input type="hidden" name="stages[${id}][type]" value="${esc(type)}">
+            <input type="hidden" name="stages[${id}][old_name]" value="${esc(name)}">
             <div class="s-type-hint">${typeLabel}</div>
         </div>
         <input class="s-pct-input pct-field" type="number"

@@ -65,7 +65,7 @@ include __DIR__ . '/../../includes/header.php';
 
     /* Date Filter Form */
     .date-filter {
-        display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;
+        display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; width: 20%;
     }
     .date-filter input {
         height: 40px; padding: 0 0.85rem;
@@ -119,7 +119,7 @@ include __DIR__ . '/../../includes/header.php';
     }
 
     .stat-value {
-        font-family: 'Fraunces', serif; font-size: 1.8rem; font-weight: 700;
+        font-family: 'Fraunces', serif; font-size: 1.4rem; font-weight: 700;
         color: var(--ink); line-height: 1; font-variant-numeric: tabular-nums;
         margin-bottom: 0.3rem;
     }

@@ -87,10 +87,10 @@ include __DIR__ . '/../../includes/header.php';
         </div>
         
         <!-- Month Filter -->
-        <form method="GET" style="display:flex; align-items:center; gap:0.5rem; background:white; padding:0.5rem; border-radius:8px; border:1px solid var(--border);">
-            <label for="month" style="font-size:0.8rem; font-weight:600; color:var(--ink-soft); padding-left:0.5rem;">Period:</label>
+        <form method="GET" style="display:flex; align-items:center; gap:0.5rem; background:white; padding:0.4rem 0.5rem; border-radius:8px; border:1px solid var(--border);">
+            <label for="month" style="font-size:0.85rem; font-weight:600; color:var(--ink-soft); padding-left:0.25rem; margin:0; transform: translateY(1px);">Period:</label>
             <input type="month" id="month" name="month" value="<?= $selected_month ?>" 
-                   style="border:none; outline:none; font-family:'DM Sans'; font-weight:600; color:var(--ink); cursor:pointer;"
+                   style="border:none; outline:none; font-family:'DM Sans'; font-size:0.95rem; font-weight:600; color:var(--ink); cursor:pointer; background:transparent; padding:0; margin:0;"
                    onchange="this.form.submit()">
         </form>
     </div>

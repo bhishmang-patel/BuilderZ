@@ -231,13 +231,13 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
     font-size: 0.63rem; font-weight: 700; letter-spacing: 0.1em;
     text-transform: uppercase; color: var(--ink-soft); text-align: left; white-space: nowrap;
 }
-.ch-table thead th.al-r { text-align: right; }
+.ch-table thead th.al-c { text-align: center; }
 .ch-table tbody tr { border-bottom: 1px solid var(--border-lt); transition: background 0.12s; }
 .ch-table tbody tr:last-child { border-bottom: none; }
 .ch-table tbody tr:hover { background: #f4f7fd; }
 .ch-table tbody tr.row-in { animation: rowIn 0.26s cubic-bezier(0.22,1,0.36,1) forwards; }
 .ch-table td { padding: 0.78rem 1rem; vertical-align: middle; color: var(--ink-soft); }
-.ch-table td.al-r { text-align: right; }
+.ch-table td.al-c { text-align: center; }
 
 .challan-no { font-weight: 700; color: var(--ink); font-size: 0.875rem; }
 .challan-pill {
@@ -468,14 +468,14 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
                     <table class="ch-table">
                         <thead>
                             <tr>
-                                <th>Challan No</th>
-                                <th>Date</th>
-                                <th>Project</th>
-                                <th>Material</th>
-                                <th>Unit</th>
-                                <th class="al-r">Qty</th>
-                                <th class="al-r">Rate</th>
-                                <th class="al-r">Amount</th>
+                                <th class="al-c">Challan No</th>
+                                <th class="al-c">Date</th>
+                                <th class="al-c">Project</th>
+                                <th class="al-c">Material</th>
+                                <th class="al-c">Unit</th>
+                                <th class="al-c">Qty</th>
+                                <th class="al-c">Rate</th>
+                                <th class="al-c">Amount</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -483,11 +483,11 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
                                 $amount = $item['quantity'] * $item['rate'];
                             ?>
                             <tr class="row-in" style="animation-delay: <?= $i * 35 ?>ms;">
-                                <td>
+                                <td class="al-c">
                                     <span class="challan-pill"><?= htmlspecialchars($item['challan_no']) ?></span>
                                 </td>
-                                <td style="color:var(--ink-soft);"><?= formatDate($item['challan_date']) ?></td>
-                                <td>
+                                <td class="al-c" style="color:var(--ink-soft);"><?= formatDate($item['challan_date']) ?></td>
+                                <td class="al-c">
                                     <?php if (!empty($item['project_name'])): ?>
                                         <span class="proj-pill">
                                             <i class="fas fa-building" style="font-size:0.58rem;"></i>
@@ -497,13 +497,13 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
                                         <span style="color:var(--ink-mute);">—</span>
                                     <?php endif; ?>
                                 </td>
-                                <td style="font-weight:600; color:var(--ink);">
+                                <td class="al-c" style="font-weight:600; color:var(--ink);">
                                     <?= htmlspecialchars($item['material_name']) ?>
                                 </td>
-                                <td style="font-size:0.8rem; text-transform:uppercase;"><?= htmlspecialchars($item['unit']) ?></td>
-                                <td class="al-r num-cell"><?= floatval($item['quantity']) ?></td>
-                                <td class="al-r num-cell"><?= floatval($item['rate']) ?></td>
-                                <td class="al-r num-cell"><?= formatCurrency($amount) ?></td>
+                                <td class="al-c" style="font-size:0.8rem; text-transform:uppercase;"><?= htmlspecialchars($item['unit']) ?></td>
+                                <td class="al-c num-cell"><?= floatval($item['quantity']) ?></td>
+                                <td class="al-c num-cell"><?= floatval($item['rate']) ?></td>
+                                <td class="al-c num-cell"><?= formatCurrency($amount) ?></td>
                             </tr>
                             <?php endforeach; ?>
                         </tbody>

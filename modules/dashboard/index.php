@@ -139,7 +139,7 @@ include __DIR__ . '/../../includes/header.php';
         text-transform: uppercase; color: var(--ink-soft); margin-bottom: 0.4rem;
     }
     .stat-value {
-        font-family: 'Fraunces', serif; font-size: 1.75rem; font-weight: 700;
+        font-family: 'Fraunces', serif; font-size: 1.2rem; font-weight: 700;
         color: var(--ink); line-height: 1; font-variant-numeric: tabular-nums;
     }
     

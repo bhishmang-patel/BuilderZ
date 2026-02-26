@@ -180,15 +180,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     .wm-badge {
         width: 36px; height: 36px; border-radius: 8px;
-        background: rgba(255,255,255,.08);
+        background: rgba(255, 255, 255, 0.89);
         border: 1px solid rgba(255,255,255,.14);
         display: flex; align-items: center; justify-content: center;
         overflow: hidden;
     }
-    .wm-badge img { width: 22px; height: 22px; object-fit: contain; }
+    .wm-badge img { width: 32px; height: 32px; object-fit: contain; }
     .wm-name {
         font-family: 'Fraunces', serif;
-        font-size: 1rem; font-weight: 700;
+        font-size: 1.5rem; font-weight: 700;
         color: rgba(255,255,255,.85); letter-spacing: -.01em;
     }
 
@@ -255,6 +255,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         padding: 3rem 2rem;
         background: var(--cream);
         position: relative;
+        overflow: hidden;
     }
 
     /* Faint noise overlay */

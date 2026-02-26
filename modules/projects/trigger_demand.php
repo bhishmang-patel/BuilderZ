@@ -6,6 +6,7 @@ require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/functions.php';
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../includes/EmailService.php';
+require_once __DIR__ . '/../../includes/pdf_excel_helpers.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -38,10 +39,12 @@ $db = Database::getInstance();
 // - Must have this specific stage_name in their plan
 // - Must NOT already have a demand generated for this stage (prevent duplicates)
 
-$sql = "SELECT b.id as booking_id, b.customer_id, b.agreement_value, swi.percentage, swi.stage_name, b.flat_id
+$sql = "SELECT b.id as booking_id, b.customer_id, b.agreement_value, swi.percentage, swi.stage_name, b.flat_id, f.flat_no, p.project_name
         FROM bookings b
         JOIN stage_of_work sw ON b.stage_of_work_id = sw.id
         JOIN stage_of_work_items swi ON sw.id = swi.stage_of_work_id
+        JOIN flats f ON b.flat_id = f.id
+        JOIN projects p ON b.project_id = p.id
         WHERE b.project_id = ? 
         AND b.status = 'active'
         AND swi.stage_name = ?
@@ -78,14 +81,45 @@ try {
             'notes' => 'Auto-generated via Project Progress'
         ];
         
-        $db->insert('booking_demands', $demand_data);
+        $demand_id = $db->insert('booking_demands', $demand_data);
         
         $custQuery = $db->query("SELECT p.name, p.email FROM parties p JOIN bookings b ON b.customer_id = p.id WHERE b.id = ?", [$booking['booking_id']])->fetch();
         if ($custQuery && !empty($custQuery['email'])) {
-            EmailService::sendDemandGeneration($custQuery['email'], $custQuery['name'], [
+            // Calculate arrears
+            $arrears = 0;
+            $prev_demands = $db->query(
+                "SELECT demand_amount, paid_amount FROM booking_demands WHERE booking_id = ? AND id != ?", 
+                [$booking['booking_id'], $demand_id]
+            )->fetchAll();
+            
+            foreach ($prev_demands as $pd) {
+                $pending = round($pd['demand_amount'] - $pd['paid_amount'], 2);
+                if ($pending > 0) {
+                    $arrears += $pending;
+                }
+            }
+            
+            $total_payable = round($amount + $arrears, 2);
+            
+            $emailDetails = [
                 'stage_name' => $demand_data['stage_name'],
-                'amount' => $demand_data['demand_amount']
-            ]);
+                'amount' => $amount,
+                'paid_amount' => 0,
+                'arrears' => $arrears,
+                'total_payable' => $total_payable,
+                'flat_no' => $booking['flat_no'] ?? '',
+                'project_name' => $booking['project_name'] ?? ''
+            ];
+
+            $pdfResult = generateDemandPDF($demand_id);
+            $pdfContent = null;
+            $pdfFilename = null;
+            if ($pdfResult && $pdfResult['success']) {
+                $pdfContent = $pdfResult['content'];
+                $pdfFilename = $pdfResult['filename'];
+            }
+
+            EmailService::sendDemandGeneration($custQuery['email'], $custQuery['name'], $emailDetails, $pdfContent, $pdfFilename);
         }
         
         // Optional: Log Audit Trail (skipped for brevity, but recommended)

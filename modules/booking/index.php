@@ -176,7 +176,7 @@ include __DIR__ . '/../../includes/header.php';
     }
 
     .stat-value {
-        font-family: 'Fraunces', serif; font-size: 1.4rem; font-weight: 700;
+        font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 700;
         color: var(--ink); line-height: 1; font-variant-numeric: tabular-nums;
         position: relative;
     }
@@ -285,8 +285,8 @@ include __DIR__ . '/../../includes/header.php';
     .bk-table tbody tr:hover { background: #fdfcfa; }
 
     .bk-table td { padding: 0.8rem 1rem; vertical-align: middle; }
-    .bk-table td.td-c { text-align: center; }
-    .bk-table td.td-r { text-align: right; }
+    .bk-table td.td-c { text-align: center; white-space: nowrap; }
+    .bk-table td.td-r { text-align: right; white-space: nowrap;}
 
     /* New Cell Styles */
     .cust-flat-cell { display: flex; flex-direction: column; line-height: 1.3; }
@@ -597,16 +597,15 @@ include __DIR__ . '/../../includes/header.php';
                     <tr>
                         <th>Date</th>
                         <th>Customer / Flat</th>
-                        <th>Mobile</th>
-                        <th class="th-r">Area</th>
-                        <th>Referred By</th>
-                        <th class="th-r">Rate</th>
-                        <th class="th-r">Agreement</th>
-                        <th class="th-r">Received</th>
-                        <th class="th-r">Pending</th>
+                        <th class="th-c">Mobile</th>
+                        <th class="th-c">Area</th>
+                        <th class="th-c">Referred By</th>
+                        <th class="th-c">Rate</th>
+                        <th class="th-c">Agreement</th>
+                        <th class="th-c">Received</th>
+                        <th class="th-c">Pending</th>
                         <th class="th-c">Status</th>
-                        
-                        <th class="th-r">Actions</th>
+                        <th class="th-c">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -642,8 +641,8 @@ include __DIR__ . '/../../includes/header.php';
                             <td>
                                 <span class="mobile-cell"><?= htmlspecialchars($booking['customer_mobile']) ?></span>
                             </td>
-                            <td class="td-r"><span style="font-weight:600;color:var(--ink-soft);font-size:0.82rem"><?= number_format($booking['area_sqft'], 0) ?> sqft</span></td>
-                            <td>
+                            <td class="td-c"><span style="font-weight:600;color:var(--ink-soft);font-size:0.82rem"><?= number_format($booking['area_sqft'], 0) ?> sqft</span></td>
+                            <td class="td-c">
                                 <?php if(!empty($booking['referred_by'])): ?>
                                     <span style="font-size:0.8rem;color:var(--ink-soft)"><i class="fas fa-user-tag" style="color:var(--ink-mute);margin-right:3px"></i> <?= htmlspecialchars($booking['referred_by']) ?></span>
                                 <?php else: ?>

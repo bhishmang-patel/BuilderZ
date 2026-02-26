@@ -969,13 +969,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 <thead>
                     <tr>
                         <th class="th-c">Date</th>
-                        <th>Project</th>
+                        <th class="th-c">Project</th>
                         <th class="th-c">Investor</th>
                         <th class="th-c">Type</th>
-                        <th class="th-r">Amount</th>
-                        <th class="th-r">Returned</th>
-                        <th class="th-r">Balance</th>
-                        <th class="th-r">Actions</th>
+                        <th class="th-c">Amount</th>
+                        <th class="th-c">Returned</th>
+                        <th class="th-c">Balance</th>
+                        <th class="th-c">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -996,7 +996,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     ?>
                     <tr>
                         <td class="td-c"><span style="font-weight:600;color:var(--ink-soft);font-size:0.82rem"><?= formatDate($inv['investment_date']) ?></span></td>
-                        <td>
+                        <td class="td-c">
                             <?= renderProjectBadge($inv['project_name'], $inv['project_id']) ?>
                         </td>
                         <td class="td-c"><span style="font-weight:600;color:var(--ink)"><?= htmlspecialchars($inv['investor_name']) ?></span></td>
@@ -1012,10 +1012,10 @@ document.addEventListener('DOMContentLoaded', function () {
                                 </div>
                             <?php endif; ?>
                         </td>
-                        <td class="td-r"><strong style="font-weight:700;color:var(--ink)"><?= formatCurrency($inv['amount']) ?></strong></td>
-                        <td class="td-r"><span style="color:#059669"><?= formatCurrency($inv['total_returned']) ?></span></td>
-                        <td class="td-r"><strong style="font-weight:700;color:<?= $inv['balance'] > 0 ? '#dc2626' : '#059669' ?>"><?= formatCurrency($inv['balance']) ?></strong></td>
-                        <td class="td-r">
+                        <td class="td-c"><strong style="font-weight:700;color:var(--ink)"><?= formatCurrency($inv['amount']) ?></strong></td>
+                        <td class="td-c"><span style="color:#059669"><?= formatCurrency($inv['total_returned']) ?></span></td>
+                        <td class="td-c"><strong style="font-weight:700;color:<?= $inv['balance'] > 0 ? '#dc2626' : '#059669' ?>"><?= formatCurrency($inv['balance']) ?></strong></td>
+                        <td class="td-c">
                             <div class="act-group">
                                 <a href="returns.php?id=<?= $inv['id'] ?>" class="act-btn" title="Manage Returns" style="color:var(--accent);">
                                     <i class="fas fa-hand-holding-usd"></i>

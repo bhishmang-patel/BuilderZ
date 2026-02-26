@@ -157,14 +157,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $ns = new NotificationService();
         $notifTitle = "New Material Challan";
         $notifMsg   = "Challan #{$challan_no} created for Vendor: {$vendor_name}";
-        $notifLink  = BASE_URL . "modules/vendors/challans/material.php";
+        $notifLink  = BASE_URL . "modules/vendors/challans/index.php";
 
         // Notify Admins + Purchasing team
         $ns->notifyUsersWithPermission('purchasing', $notifTitle, $notifMsg . " (Created by " . $_SESSION['username'] . ")", 'info', $notifLink);
 
         $db->commit();
         setFlashMessage('success', "Delivery Challan $challan_no created successfully");
-        redirect('modules/vendors/challans/material.php');
+        redirect('modules/vendors/challans/index.php');
 
     } catch (Exception $e) {
         $db->rollback();
@@ -694,7 +694,7 @@ include __DIR__ . '/../../../includes/header.php';
             <div class="eyebrow">Material Challans</div>
             <h1>Create Delivery <em>Challan</em></h1>
         </div>
-        <a href="material.php" class="back-link"><i class="fas fa-arrow-left"></i> Back to List</a>
+        <a href="index.php" class="back-link"><i class="fas fa-arrow-left"></i> Back to List</a>
     </div>
 
     <form method="POST" id="challanForm">
@@ -857,7 +857,7 @@ include __DIR__ . '/../../../includes/header.php';
             </div>
 
             <div class="ch-action-bar">
-                <a href="material.php" class="btn-cancel"><i class="fas fa-times"></i> Cancel</a>
+                <a href="index.php" class="btn-cancel"><i class="fas fa-times"></i> Cancel</a>
                 <button type="button" id="btn-save-challan" class="btn-save"><i class="fas fa-check"></i> Save Challan</button>
             </div>
         </div>
@@ -1022,55 +1022,67 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!poId) {
             toggleVendorFields(false);
             return;
-        } // ... rest of loadPOItems logic is large, let's keep it simple for this fix or re-implement if needed. 
-          // Re-implementing simplified version to ensure it works
+        } 
         
-        if (window.materialsData.length > 0 && !confirm('This will replace current items and vendor details. Continue?')) {
-            document.getElementById('po_id').value = '';
-            return;
-        }
+        const executePOFetch = function() {
+            fetch(`../../api/get_po_details.php?po_id=${poId}`)
+                .then(r => r.json())
+                .then(data => {
+                    const po = data.po;
+                    const items = data.items;
 
-        fetch(`../../api/get_po_details.php?po_id=${poId}`)
-            .then(r => r.json())
-            .then(data => {
-                const po = data.po;
-                const items = data.items;
+                    if (po) {
+                        document.getElementById('vendor_id').value      = po.vendor_id;
+                        document.getElementById('vendor_name').value    = po.vendor_name;
+                        document.getElementById('vendor_mobile').value  = po.vendor_mobile || '';
+                        document.getElementById('vendor_email').value   = po.vendor_email || '';
+                        document.getElementById('vendor_address').value = po.vendor_address || '';
+                        document.getElementById('vendor_gst').value     = po.vendor_gst || '';
+                        toggleVendorFields(true);
+                        showToast('Vendor details auto-filled from PO.', 'success');
+                    }
 
-                if (po) {
-                    document.getElementById('vendor_id').value      = po.vendor_id;
-                    document.getElementById('vendor_name').value    = po.vendor_name;
-                    document.getElementById('vendor_mobile').value  = po.vendor_mobile || '';
-                    document.getElementById('vendor_email').value   = po.vendor_email || '';
-                    document.getElementById('vendor_address').value = po.vendor_address || '';
-                    document.getElementById('vendor_gst').value     = po.vendor_gst || '';
-                    toggleVendorFields(true);
-                    showToast('Vendor details auto-filled from PO.', 'success');
+                    window.materialsData = [];
+                    if (items && items.length > 0) {
+                        items.forEach(item => {
+                            const pendingQty = parseFloat(item.quantity) - parseFloat(item.received_qty);
+                            if (pendingQty > 0) {
+                                window.materialsData.push({
+                                    material_id:   item.material_id,
+                                    material_name: item.material_name,
+                                    unit:          item.unit,
+                                    quantity:      pendingQty, 
+                                    rate:          parseFloat(item.rate),
+                                    total:         pendingQty * parseFloat(item.rate)
+                                });
+                            }
+                        });
+                        renderMaterials();
+                    } else {
+                        showToast('No items found in this PO', 'warning');
+                    }
+                })
+                .catch((e) => {
+                    console.error(e);
+                    showToast('Failed to load PO items.', 'error');
+                });
+        };
+
+        if (window.materialsData.length > 0) {
+            window.customConfirm({
+                title: 'Replace Items?',
+                text: 'This will replace current items and vendor details. Continue?',
+                icon: '<i class="fas fa-exclamation-triangle"></i>',
+                confirmText: 'Yes, Continue',
+                onCancel: function() {
+                    document.getElementById('po_id').value = '';
                 }
-
-                window.materialsData = [];
-                if (items && items.length > 0) {
-                    items.forEach(item => {
-                        const pendingQty = parseFloat(item.quantity) - parseFloat(item.received_qty);
-                        if (pendingQty > 0) {
-                            window.materialsData.push({
-                                material_id:   item.material_id,
-                                material_name: item.material_name,
-                                unit:          item.unit,
-                                quantity:      pendingQty, 
-                                rate:          parseFloat(item.rate),
-                                total:         pendingQty * parseFloat(item.rate)
-                            });
-                        }
-                    });
-                    renderMaterials();
-                } else {
-                    showToast('No items found in this PO', 'warning');
-                }
-            })
-            .catch((e) => {
-                console.error(e);
-                showToast('Failed to load PO items.', 'error');
+            }, function() {
+                executePOFetch();
             });
+        } else {
+            executePOFetch();
+        }
     };
 
     window.toggleVendorFields = function(readonly) {

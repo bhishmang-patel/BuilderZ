@@ -134,7 +134,7 @@ include __DIR__ . '/../../includes/header.php';
         text-transform: uppercase; letter-spacing: 0.05em;
     }
     .stat-value {
-        font-size: 1.6rem; font-weight: 700; color: var(--ink);
+        font-size: 1.2rem; font-weight: 700; color: var(--ink);
         font-family: 'Fraunces', serif; line-height: 1.1;
     }
     

@@ -497,9 +497,9 @@ include __DIR__ . '/../../includes/header.php';
                                     <a href="add.php?id=<?= $expense['id'] ?>" class="act-btn" title="Edit">
                                         <i class="fas fa-pencil-alt"></i>
                                     </a>
-                                    <form method="POST" action="list.php" onsubmit="return confirm('Delete this expense?');" style="margin:0">
+                                    <form method="POST" action="list.php" id="del-expense-<?= $expense['id'] ?>" style="margin:0">
                                         <input type="hidden" name="delete_id" value="<?= $expense['id'] ?>">
-                                        <button type="submit" class="act-btn del" title="Delete">
+                                        <button type="button" onclick="confirmExpenseDelete(<?= $expense['id'] ?>)" class="act-btn del" title="Delete">
                                             <i class="fas fa-trash-alt"></i>
                                         </button>
                                     </form>
@@ -523,6 +523,17 @@ include __DIR__ . '/../../includes/header.php';
 <!-- Chart Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 <script>
+    function confirmExpenseDelete(id) {
+        window.customConfirm({
+            title: 'Delete Expense?',
+            text: 'Are you sure you want to delete this expense?',
+            icon: '<i class="fas fa-trash-alt"></i>',
+            confirmText: 'Yes, Delete'
+        }, function() {
+            document.getElementById('del-expense-' + id).submit();
+        });
+    }
+
     Chart.defaults.color = 'var(--ink-mute)';
     Chart.defaults.font.family = "'DM Sans', sans-serif";
 

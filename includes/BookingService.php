@@ -212,15 +212,48 @@ class BookingService {
                     'notes' => 'Auto-generated catch-up for completed project milestone'
                 ];
                 
-                $this->db->insert('booking_demands', $demandData);
+                $demandId = $this->db->insert('booking_demands', $demandData);
                 
                 if ($customerId) {
                     $custQuery = $this->db->query("SELECT name, email FROM parties WHERE id = ?", [$customerId])->fetch();
+                    $flatQuery = $this->db->query("SELECT f.flat_no, p.project_name FROM flats f JOIN projects p ON f.project_id = p.id WHERE f.id = (SELECT flat_id FROM bookings WHERE id = ?)", [$bookingId])->fetch();
+
                     if ($custQuery && !empty($custQuery['email'])) {
-                        EmailService::sendDemandGeneration($custQuery['email'], $custQuery['name'], [
+                        // Calculate arrears
+                        $arrears = 0;
+                        $prev_demands = $this->db->query(
+                            "SELECT demand_amount, paid_amount FROM booking_demands WHERE booking_id = ? AND id != ?", 
+                            [$bookingId, $demandId]
+                        )->fetchAll();
+                        
+                        foreach ($prev_demands as $pd) {
+                            $pending = round($pd['demand_amount'] - $pd['paid_amount'], 2);
+                            if ($pending > 0) {
+                                $arrears += $pending;
+                            }
+                        }
+                        
+                        $total_payable = round($amount + $arrears, 2);
+
+                        $emailDetails = [
                             'stage_name' => $item['stage_name'],
-                            'amount' => $amount
-                        ]);
+                            'amount' => $amount,
+                            'paid_amount' => 0,
+                            'arrears' => $arrears,
+                            'total_payable' => $total_payable,
+                            'flat_no' => $flatQuery['flat_no'] ?? '',
+                            'project_name' => $flatQuery['project_name'] ?? ''
+                        ];
+
+                        $pdfResult = generateDemandPDF($demandId);
+                        $pdfContent = null;
+                        $pdfFilename = null;
+                        if ($pdfResult && $pdfResult['success']) {
+                            $pdfContent = $pdfResult['content'];
+                            $pdfFilename = $pdfResult['filename'];
+                        }
+
+                        EmailService::sendDemandGeneration($custQuery['email'], $custQuery['name'], $emailDetails, $pdfContent, $pdfFilename);
                     }
                 }
             }

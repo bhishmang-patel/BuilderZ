@@ -47,18 +47,11 @@ function formatCurrencyShort($amount) {
     return '₹ ' . number_format($amount, 0);
 }
 
-function formatCurrencyIndian($amount) {
+function formatNumberIndian($amount) {
     $amount = (float)$amount;
     $is_negative = $amount < 0;
     $amount = abs($amount);
     
-    $decimal = round($amount - ($no = floor($amount)), 2) * 100;
-    $hundred = null;
-    $digits_length = strlen($no);
-    $i = 0;
-    $str = array();
-    
-    // Simplified logic for Indian Number format (1,50,000.00)
     $decimalPart = number_format($amount - floor($amount), 2);
     $decimalPart = substr($decimalPart, -3); // Get .00
     
@@ -82,18 +75,30 @@ function formatCurrencyIndian($amount) {
         $thecash = $num;
     }
     
-    $result = '₹ ' . $thecash . $decimalPart;
+    $result = $thecash . $decimalPart;
     if ($is_negative) {
         return '-' . $result;
     }
     return $result;
 }
 
+function formatCurrencyIndian($amount) {
+    return '₹ ' . formatNumberIndian($amount);
+}
+
 function generateChallanNo($type, $db) {
+    // Fetch settings for dynamic prefixes
+    $stmt = $db->query("SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('delivery_challan_prefix')");
+    $settings = [];
+    if ($stmt) {
+        $settings = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+    }
+    
     $prefix = '';
     switch ($type) {
         case 'material':
-            $prefix = 'MAT';
+            // "Material" is officially treated/named as Delivery Challans
+            $prefix = $settings['delivery_challan_prefix'] ?? 'DC';
             break;
         case 'labour':
             $prefix = 'LAB';

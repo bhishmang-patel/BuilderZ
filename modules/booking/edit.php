@@ -17,7 +17,7 @@ $booking_id = intval($_GET['id'] ?? 0);
 
 // Fetch booking details
 $sql = "SELECT b.*, 
-               f.flat_no, f.area_sqft,
+               f.flat_no, f.area_sqft, f.total_value, f.unit_type,
                p.name as customer_name,
                p.mobile as customer_mobile,
                p.email as customer_email,
@@ -51,7 +51,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     try {
+        $db->beginTransaction();
+
         $customer_id = intval($_POST['customer_id']);
+        $new_flat_id = intval($_POST['flat_id']);
         $agreement_value = floatval($_POST['agreement_value']);
         $booking_date = $_POST['booking_date'];
         $referred_by = sanitize($_POST['referred_by']);
@@ -71,8 +74,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new Exception("Customer is required");
         }
 
+        if (empty($new_flat_id)) {
+            throw new Exception("Flat is required");
+        }
+
+        // Handle Customer Updates (Mobile & Email)
+        $mobile = sanitize($_POST['mobile'] ?? '');
+        $email = sanitize($_POST['email'] ?? '');
+        $db->update('parties', [
+            'mobile' => $mobile,
+            'email' => $email
+        ], 'id = ?', [$customer_id]);
+
+        // Handle Flat Updates
+        $old_flat_id = $booking['flat_id'];
+        $flat_changed = ($old_flat_id != $new_flat_id);
+
+        if ($flat_changed) {
+            // Verify new flat is available and in same project
+            $new_flat = $db->query("SELECT status, project_id FROM flats WHERE id = ? FOR UPDATE", [$new_flat_id])->fetch();
+            if (!$new_flat || $new_flat['status'] !== 'available' || $new_flat['project_id'] !== $booking['project_id']) {
+                throw new Exception("Selected flat is not available or does not belong to this project.");
+            }
+
+            // Release old flat
+            $db->update('flats', ['status' => 'available'], 'id = ?', [$old_flat_id]);
+            // Book new flat
+            $db->update('flats', ['status' => 'booked'], 'id = ?', [$new_flat_id]);
+        }
+
         $update_data = [
             'customer_id' => $customer_id,
+            'flat_id' => $new_flat_id,
             'agreement_value' => $agreement_value,
             'booking_date' => $booking_date,
             'referred_by' => $referred_by,
@@ -86,20 +119,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'stage_of_work_id' => !empty($_POST['stage_of_work_id']) ? intval($_POST['stage_of_work_id']) : null
         ];
 
+        // Adjust total_pending safely without letting it go negative incorrectly if received is very high
+        $update_data['total_pending'] = max(0, $agreement_value - $booking['total_received']);
+
         $db->update('bookings', $update_data, 'id = ?', ['id' => $booking_id]);
 
         logAudit('update', 'bookings', $booking_id, $booking, $update_data);
 
+        $db->commit();
         setFlashMessage('success', 'Booking updated successfully');
         redirect('modules/booking/view.php?id=' . $booking_id);
 
     } catch (Exception $e) {
+        $db->rollBack();
         setFlashMessage('error', $e->getMessage());
     }
 }
 
 $customers = $db->query("SELECT id, name, mobile, email, address FROM parties WHERE party_type = 'customer' ORDER BY name")->fetchAll();
 $stage_of_works = $db->query("SELECT * FROM stage_of_work ORDER BY name ASC")->fetchAll();
+
+// Fetch available flats for this project PLUS the currently booked one
+$available_flats = $db->query(
+    "SELECT id, flat_no, area_sqft, total_value, unit_type 
+     FROM flats 
+     WHERE project_id = ? AND (status = 'available' OR id = ?) 
+     ORDER BY flat_no ASC",
+    [$booking['project_id'], $booking['flat_id']]
+)->fetchAll();
 
 include __DIR__ . '/../../includes/header.php';
 ?>
@@ -354,11 +401,11 @@ include __DIR__ . '/../../includes/header.php';
                         <div class="field-row">
                             <div class="field">
                                 <label>Mobile Number</label>
-                                <input type="text" id="cust_mobile" readonly value="<?= htmlspecialchars($booking['customer_mobile']) ?>">
+                                <input type="text" name="mobile" id="cust_mobile" value="<?= htmlspecialchars($booking['customer_mobile']) ?>">
                             </div>
                             <div class="field">
                                 <label>Email Address</label>
-                                <input type="text" id="cust_email" readonly value="<?= htmlspecialchars($booking['customer_email']) ?>">
+                                <input type="email" name="email" id="cust_email" value="<?= htmlspecialchars($booking['customer_email']) ?>">
                             </div>
                         </div>
 
@@ -378,8 +425,18 @@ include __DIR__ . '/../../includes/header.php';
                                 <input type="text" value="<?= htmlspecialchars($booking['project_name']) ?>" readonly>
                             </div>
                             <div class="field">
-                                <label>Flat No</label>
-                                <input type="text" value="<?= htmlspecialchars($booking['flat_no']) ?>" readonly>
+                                <label>Flat No *</label>
+                                <select name="flat_id" id="flat_select" required onchange="updateFlatDetails()">
+                                    <?php foreach ($available_flats as $f): ?>
+                                        <option value="<?= $f['id'] ?>" 
+                                            data-area="<?= $f['area_sqft'] ?>"
+                                            data-value="<?= $f['total_value'] ?>"
+                                            data-flat-no="<?= $f['flat_no'] ?>"
+                                            <?= $f['id'] == $booking['flat_id'] ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($f['flat_no']) ?><?= $f['unit_type'] ? ' (' . htmlspecialchars($f['unit_type']) . ')' : '' ?> — <?= number_format($f['area_sqft'], 0) ?> sqft
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
                         </div>
 
@@ -462,7 +519,7 @@ include __DIR__ . '/../../includes/header.php';
                 <div class="sum-card">
                     <div class="sum-head">
                         <div class="sp"><?= htmlspecialchars($booking['project_name']) ?></div>
-                        <div class="sn"><?= htmlspecialchars($booking['flat_no']) ?></div>
+                        <div class="sn" id="display_flat_no"><?= htmlspecialchars($booking['flat_no']) ?></div>
                     </div>
                     <div class="sum-body">
                         <div class="sum-row">
@@ -574,6 +631,21 @@ setupAutocomplete('customer_name', 'customer_suggestions', customers, function(c
 document.getElementById('customer_name').addEventListener('input', function() {
     document.getElementById('customer_id').value = '';
 });
+
+function updateFlatDetails() {
+    const fs = document.getElementById('flat_select');
+    const o  = fs.options[fs.selectedIndex];
+    if (o.value) {
+        const area  = o.getAttribute('data-area');
+        const value = o.getAttribute('data-value');
+        const no    = o.getAttribute('data-flat-no');
+        document.getElementById('display_flat_no').textContent        = no;
+        document.getElementById('display_area').textContent           = parseFloat(area).toFixed(2) + ' sqft';
+        document.getElementById('display_area').setAttribute('data-area', area);
+        document.getElementById('agreement_value').value              = value;
+    }
+    calculateFinancials();
+}
 
 function calculateFinancials() {
     const agreementValue = parseFloat(document.getElementById('agreement_value').value) || 0;

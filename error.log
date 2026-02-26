@@ -172,3 +172,103 @@ Stack trace:
 [22-Feb-2026 20:29:39 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\Users\patel\Desktop\pr\BuilderZ\includes\functions.php on line 540
 [23-Feb-2026 00:42:10 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\Users\patel\Desktop\pr\BuilderZ\includes\pdf_excel_helpers.php on line 180
 [23-Feb-2026 00:45:08 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\Users\patel\Desktop\pr\BuilderZ\includes\pdf_excel_helpers.php on line 185
+[23-Feb-2026 09:34:28 Asia/Kolkata] PHP Warning:  require_once(C:\xampp\htdocs\builderz\includes/../vendor/PHPMailer/src/Exception.php): Failed to open stream: No such file or directory in C:\xampp\htdocs\builderz\includes\EmailService.php on line 3
+[23-Feb-2026 09:34:28 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Failed opening required 'C:\xampp\htdocs\builderz\includes/../vendor/PHPMailer/src/Exception.php' (include_path='C:\xampp\php\PEAR') in C:\xampp\htdocs\builderz\includes\EmailService.php:3
+Stack trace:
+#0 C:\xampp\htdocs\builderz\includes\BookingService.php(4): require_once()
+#1 C:\xampp\htdocs\builderz\modules\booking\index.php(17): require_once('C:\\xampp\\htdocs...')
+#2 {main}
+  thrown in C:\xampp\htdocs\builderz\includes\EmailService.php on line 3
+[23-Feb-2026 09:34:34 Asia/Kolkata] PHP Warning:  require_once(C:\xampp\htdocs\builderz\includes/../vendor/PHPMailer/src/Exception.php): Failed to open stream: No such file or directory in C:\xampp\htdocs\builderz\includes\EmailService.php on line 3
+[23-Feb-2026 09:34:34 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Failed opening required 'C:\xampp\htdocs\builderz\includes/../vendor/PHPMailer/src/Exception.php' (include_path='C:\xampp\php\PEAR') in C:\xampp\htdocs\builderz\includes\EmailService.php:3
+Stack trace:
+#0 C:\xampp\htdocs\builderz\includes\BookingService.php(4): require_once()
+#1 C:\xampp\htdocs\builderz\modules\booking\index.php(17): require_once('C:\\xampp\\htdocs...')
+#2 {main}
+  thrown in C:\xampp\htdocs\builderz\includes\EmailService.php on line 3
+[23-Feb-2026 09:34:40 Asia/Kolkata] PHP Warning:  require_once(C:\xampp\htdocs\builderz\includes/../vendor/PHPMailer/src/Exception.php): Failed to open stream: No such file or directory in C:\xampp\htdocs\builderz\includes\EmailService.php on line 3
+[23-Feb-2026 09:34:40 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Failed opening required 'C:\xampp\htdocs\builderz\includes/../vendor/PHPMailer/src/Exception.php' (include_path='C:\xampp\php\PEAR') in C:\xampp\htdocs\builderz\includes\EmailService.php:3
+Stack trace:
+#0 C:\xampp\htdocs\builderz\includes\BookingService.php(4): require_once()
+#1 C:\xampp\htdocs\builderz\modules\booking\index.php(17): require_once('C:\\xampp\\htdocs...')
+#2 {main}
+  thrown in C:\xampp\htdocs\builderz\includes\EmailService.php on line 3
+[23-Feb-2026 09:34:48 Asia/Kolkata] PHP Warning:  require_once(C:\xampp\htdocs\builderz\includes/../vendor/PHPMailer/src/Exception.php): Failed to open stream: No such file or directory in C:\xampp\htdocs\builderz\includes\EmailService.php on line 3
+[23-Feb-2026 09:34:48 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Failed opening required 'C:\xampp\htdocs\builderz\includes/../vendor/PHPMailer/src/Exception.php' (include_path='C:\xampp\php\PEAR') in C:\xampp\htdocs\builderz\includes\EmailService.php:3
+Stack trace:
+#0 C:\xampp\htdocs\builderz\modules\payments\index.php(7): require_once()
+#1 {main}
+  thrown in C:\xampp\htdocs\builderz\includes\EmailService.php on line 3
+[23-Feb-2026 09:35:02 Asia/Kolkata] PHP Warning:  require_once(C:\xampp\htdocs\builderz\includes/../vendor/PHPMailer/src/Exception.php): Failed to open stream: No such file or directory in C:\xampp\htdocs\builderz\includes\EmailService.php on line 3
+[23-Feb-2026 09:35:02 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Failed opening required 'C:\xampp\htdocs\builderz\includes/../vendor/PHPMailer/src/Exception.php' (include_path='C:\xampp\php\PEAR') in C:\xampp\htdocs\builderz\includes\EmailService.php:3
+Stack trace:
+#0 C:\xampp\htdocs\builderz\modules\payments\index.php(7): require_once()
+#1 {main}
+  thrown in C:\xampp\htdocs\builderz\includes\EmailService.php on line 3
+[23-Feb-2026 09:35:22 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\builderz\includes\functions.php on line 540
+[23-Feb-2026 09:37:36 Asia/Kolkata] PHP Warning:  require_once(C:\xampp\htdocs\builderz\includes/../vendor/PHPMailer/src/Exception.php): Failed to open stream: No such file or directory in C:\xampp\htdocs\builderz\includes\EmailService.php on line 3
+[23-Feb-2026 09:37:36 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Failed opening required 'C:\xampp\htdocs\builderz\includes/../vendor/PHPMailer/src/Exception.php' (include_path='C:\xampp\php\PEAR') in C:\xampp\htdocs\builderz\includes\EmailService.php:3
+Stack trace:
+#0 C:\xampp\htdocs\builderz\includes\BookingService.php(4): require_once()
+#1 C:\xampp\htdocs\builderz\modules\booking\index.php(17): require_once('C:\\xampp\\htdocs...')
+#2 {main}
+  thrown in C:\xampp\htdocs\builderz\includes\EmailService.php on line 3
+[23-Feb-2026 09:37:41 Asia/Kolkata] PHP Warning:  require_once(C:\xampp\htdocs\builderz\includes/../vendor/PHPMailer/src/Exception.php): Failed to open stream: No such file or directory in C:\xampp\htdocs\builderz\includes\EmailService.php on line 3
+[23-Feb-2026 09:37:41 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Failed opening required 'C:\xampp\htdocs\builderz\includes/../vendor/PHPMailer/src/Exception.php' (include_path='C:\xampp\php\PEAR') in C:\xampp\htdocs\builderz\includes\EmailService.php:3
+Stack trace:
+#0 C:\xampp\htdocs\builderz\includes\BookingService.php(4): require_once()
+#1 C:\xampp\htdocs\builderz\modules\booking\index.php(17): require_once('C:\\xampp\\htdocs...')
+#2 {main}
+  thrown in C:\xampp\htdocs\builderz\includes\EmailService.php on line 3
+[23-Feb-2026 10:00:29 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\builderz\includes\functions.php on line 540
+[23-Feb-2026 12:16:47 Asia/Kolkata] Unauthorized access attempt by user ID 4 (accountant) to /modules/vendors/procurement/index.php
+[23-Feb-2026 12:17:09 Asia/Kolkata] Unauthorized access attempt by user ID 4 (accountant) to /modules/vendors/procurement/index.php
+[23-Feb-2026 12:18:10 Asia/Kolkata] Unauthorized access attempt by user ID 4 (accountant) to /modules/vendors/procurement/index.php
+[23-Feb-2026 12:18:16 Asia/Kolkata] Unauthorized access attempt by user ID 4 (accountant) to /modules/vendors/procurement/index.php
+[23-Feb-2026 12:19:37 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\builderz\includes\functions.php on line 545
+[23-Feb-2026 12:19:41 Asia/Kolkata] Unauthorized access attempt by user ID 4 (accountant) to /modules/reports/roi_report.php
+[23-Feb-2026 12:19:44 Asia/Kolkata] Unauthorized access attempt by user ID 4 (accountant) to /modules/reports/roi_report.php
+[23-Feb-2026 12:19:51 Asia/Kolkata] Unauthorized access attempt by user ID 4 (accountant) to /modules/reports/roi_report.php
+[23-Feb-2026 12:19:56 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\builderz\includes\functions.php on line 545
+[23-Feb-2026 12:34:01 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\builderz\includes\functions.php on line 545
+[23-Feb-2026 12:34:23 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\builderz\includes\functions.php on line 545
+[23-Feb-2026 13:34:03 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\builderz\includes\functions.php on line 545
+[23-Feb-2026 13:53:35 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\includes\pdf_excel_helpers.php on line 205
+[23-Feb-2026 13:53:46 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\includes\pdf_excel_helpers.php on line 205
+[23-Feb-2026 13:53:47 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\includes\pdf_excel_helpers.php on line 205
+[23-Feb-2026 13:55:45 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\includes\pdf_excel_helpers.php on line 205
+[23-Feb-2026 13:55:45 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\includes\pdf_excel_helpers.php on line 205
+[23-Feb-2026 13:58:00 Asia/Kolkata] PHP Fatal error:  Uncaught Error: Call to a member function query() on null in C:\xampp\htdocs\builderz\includes\pdf_excel_helpers.php:771
+Stack trace:
+#0 C:\xampp\htdocs\builderz\modules\booking\print_demand.php(20): generateDemandPDF('25')
+#1 {main}
+  thrown in C:\xampp\htdocs\builderz\includes\pdf_excel_helpers.php on line 771
+[23-Feb-2026 14:08:11 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\builderz\includes\functions.php on line 545
+[23-Feb-2026 14:09:10 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\builderz\includes\functions.php on line 545
+[24-Feb-2026 13:32:32 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\builderz\includes\functions.php on line 545
+[24-Feb-2026 14:11:08 Asia/Kolkata] PHP Warning:  include(C:\xampp\htdocs\builderz\modules\vendors\challans/../../includes/footer.php): Failed to open stream: No such file or directory in C:\xampp\htdocs\builderz\modules\vendors\challans\edit.php on line 1149
+[24-Feb-2026 14:11:08 Asia/Kolkata] PHP Warning:  include(): Failed opening 'C:\xampp\htdocs\builderz\modules\vendors\challans/../../includes/footer.php' for inclusion (include_path='C:\xampp\php\PEAR') in C:\xampp\htdocs\builderz\modules\vendors\challans\edit.php on line 1149
+[24-Feb-2026 14:15:41 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\builderz\includes\functions.php on line 545
+[25-Feb-2026 21:16:07 Asia/Kolkata] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\builderz\includes\functions.php on line 545
+[26-Feb-2026 12:09:45 Asia/Kolkata] Database query error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'b.total_amount' in 'field list'
+[26-Feb-2026 12:09:45 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'b.total_amount' in 'field list' in C:\xampp\htdocs\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\config\database.php(38): PDO->prepare('\n    SELECT \n  ...')
+#1 C:\xampp\htdocs\builderz\modules\reports\project_pl\view.php(47): Database->query('\n    SELECT \n  ...', Array)
+#2 {main}
+  thrown in C:\xampp\htdocs\builderz\config\database.php on line 38
+[26-Feb-2026 12:09:57 Asia/Kolkata] Database query error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'b.total_amount' in 'field list'
+[26-Feb-2026 12:09:57 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'b.total_amount' in 'field list' in C:\xampp\htdocs\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\config\database.php(38): PDO->prepare('\n    SELECT \n  ...')
+#1 C:\xampp\htdocs\builderz\modules\reports\project_pl\view.php(47): Database->query('\n    SELECT \n  ...', Array)
+#2 {main}
+  thrown in C:\xampp\htdocs\builderz\config\database.php on line 38
+[26-Feb-2026 12:10:19 Asia/Kolkata] Database query error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'b.total_amount' in 'field list'
+[26-Feb-2026 12:10:19 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'b.total_amount' in 'field list' in C:\xampp\htdocs\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\config\database.php(38): PDO->prepare('\n    SELECT \n  ...')
+#1 C:\xampp\htdocs\builderz\modules\reports\project_pl\view.php(47): Database->query('\n    SELECT \n  ...', Array)
+#2 {main}
+  thrown in C:\xampp\htdocs\builderz\config\database.php on line 38
+[26-Feb-2026 12:47:15 Asia/Kolkata] PHP Warning:  Undefined array key "id" in C:\xampp\htdocs\builderz\get_admin.php on line 7

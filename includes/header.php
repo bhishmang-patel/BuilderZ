@@ -777,7 +777,7 @@ $headerLogoUrl = !empty($companySettings['company_logo']) ? BASE_URL . $companyS
                     </a>
                 </li>
                 <li>
-                    <a href="<?= BASE_URL ?>modules/vendors/challans/material.php" class="<?= ($current_page ?? '') === 'material_challan' ? 'active' : '' ?>">
+                    <a href="<?= BASE_URL ?>modules/vendors/challans/index.php" class="<?= ($current_page ?? '') === 'material_challan' ? 'active' : '' ?>">
                         <i class="fas fa-file-invoice"></i> <span>Delivery Challans</span>
                     </a>
                 </li>
@@ -951,15 +951,15 @@ $headerLogoUrl = !empty($companySettings['company_logo']) ? BASE_URL . $companyS
                     </div>
                 <?php endif; ?>
 
-            <!-- Modal Structure -->
-            <div class="custom-modal" id="clearNotifModal">
+            <!-- Global Confirm Modal Structure -->
+            <div class="custom-modal" id="globalConfirmModal">
                 <div class="modal-box">
-                    <div class="modal-icon"><i class="fas fa-trash-alt"></i></div>
-                    <div class="modal-title">Clear All Notifications?</div>
-                    <p class="modal-text">Are you sure you want to remove all notifications?<br>This action cannot be undone.</p>
+                    <div class="modal-icon" id="globalConfirmIcon"><i class="fas fa-exclamation-triangle"></i></div>
+                    <div class="modal-title" id="globalConfirmTitle">Confirm Action</div>
+                    <p class="modal-text" id="globalConfirmText">Are you sure you want to proceed?</p>
                     <div class="modal-actions">
-                        <button class="btn-modal-cancel" id="cancelClearBtn">Cancel</button>
-                        <button class="btn-modal-confirm" id="confirmClearBtn">Yes, Clear All</button>
+                        <button class="btn-modal-cancel" id="globalCancelBtn">Cancel</button>
+                        <button class="btn-modal-confirm" id="globalConfirmBtn">Confirm</button>
                     </div>
                 </div>
             </div>
@@ -1075,25 +1075,54 @@ document.getElementById('markAllRead').addEventListener('click', function(e) {
     });
 });
 
+window.customConfirm = function(options, onConfirm) {
+    document.getElementById('globalConfirmIcon').innerHTML = options.icon || '<i class="fas fa-exclamation-triangle"></i>';
+    document.getElementById('globalConfirmTitle').innerHTML = options.title || 'Confirm Action';
+    document.getElementById('globalConfirmText').innerHTML = options.text || 'Are you sure you want to proceed?';
+    
+    // Reset listeners by cloning buttons
+    const confirmBtn = document.getElementById('globalConfirmBtn');
+    const cancelBtn = document.getElementById('globalCancelBtn');
+    const modal = document.getElementById('globalConfirmModal');
+    
+    const newConfirm = confirmBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newConfirm, confirmBtn);
+    
+    const newCancel = cancelBtn.cloneNode(true);
+    cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
+    
+    newConfirm.innerHTML = options.confirmText || 'Yes, Confirm';
+    newCancel.innerHTML = options.cancelText || 'Cancel';
+    
+    newCancel.addEventListener('click', function() {
+        modal.classList.remove('active');
+        if (options.onCancel) options.onCancel();
+    });
+    
+    newConfirm.addEventListener('click', function() {
+        modal.classList.remove('active');
+        if (onConfirm) onConfirm();
+    });
+    
+    modal.classList.add('active');
+};
+
 document.getElementById('clearAllNotifs').addEventListener('click', function(e) {
     e.stopPropagation();
     if (!user_id) return;
-    document.getElementById('clearNotifModal').classList.add('active');
-});
-
-document.getElementById('cancelClearBtn').addEventListener('click', function() {
-    document.getElementById('clearNotifModal').classList.remove('active');
-});
-
-document.getElementById('confirmClearBtn').addEventListener('click', function() {
-    fetch('<?= BASE_URL ?>modules/api/notifications.php?action=clear_all', {
-        method: 'POST'
-    }).then(() => {
-        fetchNotifications();
-        document.getElementById('clearNotifModal').classList.remove('active');
+    window.customConfirm({
+        icon: '<i class="fas fa-trash-alt"></i>',
+        title: 'Clear All Notifications?',
+        text: 'Are you sure you want to remove all notifications?<br>This action cannot be undone.',
+        confirmText: 'Yes, Clear All'
+    }, function() {
+        fetch('<?= BASE_URL ?>modules/api/notifications.php?action=clear_all', {
+            method: 'POST'
+        }).then(() => {
+            fetchNotifications();
+        });
     });
 });
-
 document.getElementById('notificationTrigger').addEventListener('click', function(e) {
     e.stopPropagation();
     document.getElementById('notificationDropdown').classList.toggle('active');

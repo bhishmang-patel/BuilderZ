@@ -33,7 +33,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'gst_number' => sanitize($_POST['gst_number']),
             'financial_year_start' => $_POST['financial_year_start'],
             'po_prefix' => sanitize($_POST['po_prefix']),
-            'po_terms' => $_POST['po_terms']
+            'delivery_challan_prefix' => sanitize($_POST['delivery_challan_prefix']),
+            'demand_prefix' => sanitize($_POST['demand_prefix']),
+            'booking_ref_prefix' => sanitize($_POST['booking_ref_prefix']),
+            'work_order_prefix' => sanitize($_POST['work_order_prefix']),
+            'receipt_prefix' => sanitize($_POST['receipt_prefix']),
+            'po_terms' => $_POST['po_terms'],
+            'demand_terms' => $_POST['demand_terms'],
+            'receipt_terms' => $_POST['receipt_terms'],
+            'work_order_terms' => $_POST['work_order_terms']
         ];
         
         // Handle Logo Upload
@@ -54,10 +62,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (move_uploaded_file($_FILES['company_logo']['tmp_name'], $targetPath)) {
                     $settings['company_logo'] = 'uploads/settings/' . $fileName;
                 } else {
-                    $error = "Failed to move uploaded file.";
+                    $error = "Failed to move uploaded logo file.";
                 }
             } else {
-                $error = "Invalid file type. Only JPG, PNG, and WebP are allowed.";
+                $error = "Invalid file type. Only JPG, PNG, and WebP are allowed for logos.";
+            }
+        }
+
+        // Handle Signature Upload
+        if (isset($_FILES['auth_signature']) && $_FILES['auth_signature']['error'] === UPLOAD_ERR_OK) {
+            $uploadDir = __DIR__ . '/../../uploads/settings/';
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0777, true);
+            }
+            
+            $fileInfo = pathinfo($_FILES['auth_signature']['name']);
+            $extension = strtolower($fileInfo['extension']);
+            $allowedExtensions = ['png', 'webp']; // typically want transparent backgrounds
+            
+            if (in_array($extension, $allowedExtensions)) {
+                $fileName = 'sig_' . time() . '.' . $extension;
+                $targetPath = $uploadDir . $fileName;
+                
+                if (move_uploaded_file($_FILES['auth_signature']['tmp_name'], $targetPath)) {
+                    $settings['auth_signature'] = 'uploads/settings/' . $fileName;
+                } else {
+                    $error = "Failed to move uploaded signature file.";
+                }
+            } else {
+                $error = "Invalid file type. Only transparent PNG and WebP are recommended for signatures.";
             }
         }
 
@@ -413,25 +446,96 @@ include __DIR__ . '/../../includes/header.php';
                         </div>
 
                         <!-- Section Divider -->
-                        <div class="sec-divider">Document Settings</div>
+                        <div class="sec-divider">Document Sequence Prefixes</div>
 
-                        <!-- PO Prefix -->
+                        <!-- Prefixes -->
                         <div class="field-row">
                             <div class="field">
-                                <label>PO Number Prefix</label>
+                                <label>PO Prefix</label>
                                 <input type="text" name="po_prefix"
                                        value="<?= htmlspecialchars($settingsData['po_prefix'] ?? 'PO') ?>"
                                        placeholder="e.g. PO">
-                                <small>Format: PREFIX/YEAR/SEQUENCE (e.g. PO/2024/001)</small>
+                            </div>
+                            <div class="field">
+                                <label>Work Order Prefix</label>
+                                <input type="text" name="work_order_prefix"
+                                       value="<?= htmlspecialchars($settingsData['work_order_prefix'] ?? 'WO') ?>"
+                                       placeholder="e.g. WO">
+                            </div>
+                        </div>
+                        <div class="field-row">
+                            <div class="field">
+                                <label>Delivery Challan Prefix</label>
+                                <input type="text" name="delivery_challan_prefix"
+                                       value="<?= htmlspecialchars($settingsData['delivery_challan_prefix'] ?? 'DC') ?>"
+                                       placeholder="e.g. DC">
+                            </div>
+                            <div class="field">
+                                <label>Booking Ref Prefix</label>
+                                <input type="text" name="booking_ref_prefix"
+                                       value="<?= htmlspecialchars($settingsData['booking_ref_prefix'] ?? 'BOK') ?>"
+                                       placeholder="e.g. BOK">
+                            </div>
+                        </div>
+                        <div class="field-row">
+                            <div class="field">
+                                <label>Demand Prefix</label>
+                                <input type="text" name="demand_prefix"
+                                       value="<?= htmlspecialchars($settingsData['demand_prefix'] ?? 'DEM') ?>"
+                                       placeholder="e.g. DEM">
+                            </div>
+                            <div class="field">
+                                <label>Receipt Prefix</label>
+                                <input type="text" name="receipt_prefix"
+                                       value="<?= htmlspecialchars($settingsData['receipt_prefix'] ?? 'RCP') ?>"
+                                       placeholder="e.g. RCP">
                             </div>
                         </div>
 
+                        <!-- Section Divider -->
+                        <div class="sec-divider">Terms & Conditions</div>
+
                         <!-- PO Terms -->
                         <div class="field">
-                            <label>Purchase Order Terms & Conditions</label>
-                            <textarea name="po_terms" rows="5"
-                                      placeholder="Enter standard terms and conditions..."><?= htmlspecialchars($settingsData['po_terms'] ?? '') ?></textarea>
-                            <small>These will appear on all printed Purchase Orders</small>
+                            <label>Purchase Order Terms</label>
+                            <textarea name="po_terms" rows="3"
+                                      placeholder="Standard terms..."><?= htmlspecialchars($settingsData['po_terms'] ?? '') ?></textarea>
+                        </div>
+                        <div class="field">
+                            <label>Work Order Terms</label>
+                            <textarea name="work_order_terms" rows="3"
+                                      placeholder="Standard terms..."><?= htmlspecialchars($settingsData['work_order_terms'] ?? '') ?></textarea>
+                        </div>
+                        <div class="field">
+                            <label>Demand Letter Terms</label>
+                            <textarea name="demand_terms" rows="3"
+                                      placeholder="Standard terms..."><?= htmlspecialchars($settingsData['demand_terms'] ?? '') ?></textarea>
+                        </div>
+                        <div class="field">
+                            <label>Payment Receipt Terms</label>
+                            <textarea name="receipt_terms" rows="3"
+                                      placeholder="Standard terms..."><?= htmlspecialchars($settingsData['receipt_terms'] ?? '') ?></textarea>
+                        </div>
+
+                        <!-- Section Divider -->
+                        <div class="sec-divider">Digital Signature</div>
+
+                        <!-- Signature Upload -->
+                        <div class="field">
+                            <label>Authorized Signatory Output</label>
+                            <div class="logo-upload">
+                                <div class="logo-preview" style="background:transparent; border-style:dashed;">
+                                    <?php if (!empty($settingsData['auth_signature'])): ?>
+                                        <img src="<?= BASE_URL . htmlspecialchars($settingsData['auth_signature']) ?>" alt="Signature">
+                                    <?php else: ?>
+                                        <span>No Signature</span>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="logo-input">
+                                    <input type="file" name="auth_signature" accept="image/png, image/webp">
+                                    <small>Transparent PNG recommended. Removes the need to manually sign PDFs.</small>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Submit -->

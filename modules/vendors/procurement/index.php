@@ -414,7 +414,7 @@ include __DIR__ . '/../../../includes/header.php';
     .cell-sub { font-size: 0.75rem; color: var(--ink-mute); margin-top: 2px; }
 
     /* Ref */
-    .cell-ref { color: var(--ink-mute); font-size: 0.82rem; font-variant-numeric: tabular-nums; }
+    .cell-ref { color: var(--ink-mute); font-size: 0.82rem; font-variant-numeric: tabular-nums; text-align: center;}
 
     /* Amount */
     .cell-amount {
@@ -625,7 +625,7 @@ include __DIR__ . '/../../../includes/header.php';
                         <th>PO Number</th>
                         <th>Date</th>
                         <th>Vendor/Project</th>
-                        <th>Ref No</th>
+                        <th class="th-c">Ref No</th>
                         <th class="th-c">Status</th>
                         <th class="th-c">Amount</th>
                         <th class="th-c">Actions</th>

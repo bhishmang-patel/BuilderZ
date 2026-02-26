@@ -15,14 +15,14 @@ $id = intval($_GET['id'] ?? 0);
 
 if (!$id) {
     setFlashMessage('error', 'Invalid Challan ID');
-    redirect('modules/vendors/challans/material.php');
+    redirect('modules/vendors/challans/index.php');
 }
 
 // Fetch existing data
 $challan = $db->query("SELECT * FROM challans WHERE id = ? AND challan_type = 'material'", [$id])->fetch();
 if (!$challan) {
     setFlashMessage('error', 'Challan not found');
-    redirect('modules/vendors/challans/material.php');
+    redirect('modules/vendors/challans/index.php');
 }
 
 // Fetch existing items
@@ -188,7 +188,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         logAudit('update', 'challans', $id, $challan, $update_data);
         $db->commit();
         setFlashMessage('success', "Challan updated successfully");
-        redirect('modules/vendors/challans/material.php');
+        redirect('modules/vendors/challans/index.php');
 
     } catch (Exception $e) {
         $db->rollback();
@@ -761,7 +761,7 @@ include __DIR__ . '/../../../includes/header.php';
                 <span class="dot"></span>
                 <?= ucfirst($challan['status']) ?>
             </span>
-            <a href="material.php" class="back-link"><i class="fas fa-arrow-left"></i> Back to List</a>
+            <a href="index.php" class="back-link"><i class="fas fa-arrow-left"></i> Back to List</a>
         </div>
     </div>
 
@@ -931,7 +931,7 @@ include __DIR__ . '/../../../includes/header.php';
             </div>
 
             <div class="ch-action-bar">
-                <a href="material.php" class="btn-cancel"><i class="fas fa-times"></i> Cancel</a>
+                <a href="index.php" class="btn-cancel"><i class="fas fa-times"></i> Cancel</a>
                 <button type="submit" class="btn-save"><i class="fas fa-check"></i> Update Challan</button>
             </div>
         </div>

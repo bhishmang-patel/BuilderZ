@@ -42,8 +42,14 @@ try {
 
 $totalVendors = count($parties);
 
-$stmt = $db->query("SELECT SUM(amount - paid_amount) as total_pending FROM bills WHERE status != 'rejected' AND payment_status != 'paid'");
-$totalPending = $stmt->fetch()['total_pending'] ?? 0;
+$totalPending = 0;
+if (!empty($parties)) {
+    $vendorIds = array_column($parties, 'id');
+    $placeholders = str_repeat('?,', count($vendorIds) - 1) . '?';
+    $sql = "SELECT SUM(amount - paid_amount) as total_pending FROM bills WHERE status != 'rejected' AND payment_status != 'paid' AND party_id IN ($placeholders)";
+    $stmt = $db->query($sql, $vendorIds);
+    $totalPending = $stmt->fetch()['total_pending'] ?? 0;
+}
 
 include __DIR__ . '/../../includes/header.php';
 ?>

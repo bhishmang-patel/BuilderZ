@@ -127,7 +127,7 @@ include __DIR__ . '/../../includes/header.php';
     }
 
     .stat-value {
-        font-family: 'Fraunces', serif; font-size: 1.6rem; font-weight: 700;
+        font-family: 'Fraunces', serif; font-size: 1.2rem; font-weight: 700;
         color: var(--ink); line-height: 1; font-variant-numeric: tabular-nums;
         margin-bottom: 0.4rem;
     }
@@ -234,8 +234,8 @@ include __DIR__ . '/../../includes/header.php';
     .reg-table tbody tr:hover { background: #fdfcfa; }
 
     .reg-table td { padding: 0.8rem 1rem; vertical-align: middle; }
-    .reg-table td.td-c { text-align: center; }
-    .reg-table td.td-r { text-align: right; }
+    .reg-table td.td-c { text-align: center; white-space: nowrap;}
+    .reg-table td.td-r { text-align: right; white-space: nowrap;}
 
     .reg-table tfoot {
         background: #fdfcfa; border-top: 1.5px solid var(--border);

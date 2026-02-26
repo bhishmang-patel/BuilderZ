@@ -448,10 +448,15 @@ function openModal(mode, data = null) {
 function closeModal() { modal.classList.remove('open'); }
 
 function confirmDelete(id) {
-    if (confirm('Are you sure you want to delete this bank account?')) {
+    window.customConfirm({
+        title: 'Delete Bank Account?',
+        text: 'Are you sure you want to delete this bank account?',
+        icon: '<i class="fas fa-trash-alt"></i>',
+        confirmText: 'Yes, Delete'
+    }, function() {
         document.getElementById('deleteId').value = id;
         document.getElementById('deleteForm').submit();
-    }
+    });
 }
 
 // ── Validation Logic ───────────────────

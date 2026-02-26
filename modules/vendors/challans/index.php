@@ -19,7 +19,7 @@ $current_page = 'material_challan';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
          setFlashMessage('error', 'Security token expired. Please try again.');
-         redirect('modules/vendors/challans/material.php');
+         redirect('modules/vendors/challans/index.php');
     }
 
     $action = $_POST['action'] ?? '';
@@ -71,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             setFlashMessage('warning', 'Challan already approved or invalid.');
         }
-        redirect('modules/vendors/challans/material.php');
+        redirect('modules/vendors/challans/index.php');
     }
 
     if ($action === 'delete_challan' && $_SESSION['user_role'] === 'admin') {
@@ -89,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $db->rollback();
             setFlashMessage('error', 'Error deleting challan: ' . $e->getMessage());
         }
-        redirect('modules/vendors/challans/material.php');
+        redirect('modules/vendors/challans/index.php');
     }
 
     if ($action === 'bulk_delete_challans' && $_SESSION['user_role'] === 'admin') {
@@ -115,7 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $db->rollback();
             setFlashMessage('error', 'Error deleting challans: ' . $e->getMessage());
         }
-        redirect('modules/vendors/challans/material.php');
+        redirect('modules/vendors/challans/index.php');
     }
 }
 
@@ -560,7 +560,7 @@ include __DIR__ . '/../../../includes/header.php';
                 <button type="submit" class="btn-go" title="Apply filters"><i class="fas fa-search"></i></button>
 
                 <?php if ($vendor_filter || $project_filter || $status_filter): ?>
-                    <a href="material.php" class="btn-clear" title="Clear filters"><i class="fas fa-times"></i></a>
+                    <a href="index.php" class="btn-clear" title="Clear filters"><i class="fas fa-times"></i></a>
                 <?php endif; ?>
             </form>
         </div>
@@ -591,7 +591,7 @@ include __DIR__ . '/../../../includes/header.php';
                                     <span class="ei"><i class="fas fa-folder-open"></i></span>
                                     <p>No challans found<?= ($vendor_filter || $project_filter || $status_filter) ? ' matching your filters' : '' ?>.</p>
                                     <?php if ($vendor_filter || $project_filter || $status_filter): ?>
-                                        <a href="material.php">Clear filters</a>
+                                        <a href="index.php">Clear filters</a>
                                     <?php else: ?>
                                         <a href="create.php">Create your first challan</a>
                                     <?php endif; ?>
@@ -806,10 +806,16 @@ function confirmBulkDeleteChallans() {
     const checked = document.querySelectorAll('.row-check:checked');
     if (!checked.length) return;
     const ids = Array.from(checked).map(cb => cb.value);
-    if (confirm(`Delete ${ids.length} selected challan(s)? Stock will be reverted.`)) {
+    
+    window.customConfirm({
+        title: 'Delete Selected Challans?',
+        text: `Delete ${ids.length} selected challan(s)? Stock will be reverted.`,
+        icon: '<i class="fas fa-trash-alt"></i>',
+        confirmText: 'Yes, Delete'
+    }, function() {
         document.getElementById('bulkIds').value = JSON.stringify(ids);
         document.getElementById('bulkForm').submit();
-    }
+    });
 }
 </script>
 

@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../vendor/PHPMailer/src/Exception.php';
 require_once __DIR__ . '/../vendor/PHPMailer/src/PHPMailer.php';
 require_once __DIR__ . '/../vendor/PHPMailer/src/SMTP.php';
+require_once __DIR__ . '/functions.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
@@ -23,7 +24,7 @@ class EmailService {
         } catch (\Exception $e) {
             // ignore if table/etc doesn't exist
         }
-        return 'Estate Exis';
+        return 'EstateAxis';
     }
 
     // Core function to send HTML email using PHPMailer
@@ -50,6 +51,7 @@ class EmailService {
             $mail->addReplyTo('info.deployx@gmail.com', $companyName . ' Support');
 
             // Content
+            $mail->CharSet = 'UTF-8';
             $mail->isHTML(true);                                        // Set email format to HTML
             $mail->Subject = $subject;
             $mail->Body    = $body;
@@ -78,7 +80,7 @@ class EmailService {
         $body .= "<h2>Dear {$customerName},</h2>";
         $body .= "<p>Greetings from {$companyName}!</p>";
         $body .= "<p>Your booking for <strong>Flat {$bookingDetails['flat_no']}</strong> in <strong>{$bookingDetails['project_name']}</strong> has been successfully confirmed.</p>";
-        $body .= "<p><strong>Agreement Value:</strong> ₹" . number_format($bookingDetails['agreement_value'], 2) . "</p>";
+        $body .= "<p><strong>Agreement Value:</strong> ₹" . formatNumberIndian($bookingDetails['agreement_value']) . "</p>";
         $body .= "<p>We will notify you for your upcoming installments automatically based on the progress of the construction. Thank you for choosing us.</p>";
         $body .= "<br><p>Best Regards,<br><strong>{$companyName} Team</strong></p>";
         $body .= "</div>";
@@ -95,10 +97,10 @@ class EmailService {
         $body = "<div style='font-family: Arial, sans-serif; color: #333; line-height: 1.6;'>";
         $body .= "<h2>Dear {$customerName},</h2>";
         $body .= "<p>Greetings from {$companyName}!</p>";
-        $body .= "<p>We have successfully received your payment of <strong>₹" . number_format($paymentDetails['amount'], 2) . "</strong>.</p>";
+        $body .= "<p>We have successfully received your payment of <strong>₹" . formatNumberIndian($paymentDetails['amount']) . "</strong>.</p>";
         
         if (isset($paymentDetails['remaining_balance']) && $paymentDetails['remaining_balance'] > 0) {
-            $body .= "<p>Your pending balance is <strong>₹" . number_format($paymentDetails['remaining_balance'], 2) . "</strong>.</p>";
+            $body .= "<p>Your pending balance is <strong>₹" . formatNumberIndian($paymentDetails['remaining_balance']) . "</strong>.</p>";
             $body .= "<p>We will notify you for the next installments as per the construction progress.</p>";
         } else {
             $body .= "<p>This was your last installment! Your total balance is now fully paid. Congratulations!</p>";
@@ -109,21 +111,49 @@ class EmailService {
         return self::sendEmail($customerEmail, $subject, $body, $pdfContent, $pdfFilename);
     }
     
-    public static function sendDemandGeneration($customerEmail, $customerName, $demandDetails) {
+    public static function sendDemandGeneration($customerEmail, $customerName, $demandDetails, $pdfContent = null, $pdfFilename = null) {
         if (empty($customerEmail)) return false;
 
         $companyName = self::getCompanyName();
 
-        $subject = "Payment Demand Generated";
-        $body = "<div style='font-family: Arial, sans-serif; color: #333; line-height: 1.6;'>";
+        $subject = "Payment Demand Generated - Unit " . ($demandDetails['flat_no'] ?? '');
+        
+        $body = "<div style='font-family: Arial, sans-serif; color: #333; line-height: 1.6; max-width: 600px;'>";
         $body .= "<h2>Dear {$customerName},</h2>";
-        $body .= "<p>A new payment demand has been generated for your booking.</p>";
-        $body .= "<p><strong>Construction Stage:</strong> {$demandDetails['stage_name']}</p>";
-        $body .= "<p><strong>Amount Demanded:</strong> ₹" . number_format($demandDetails['amount'], 2) . "</p>";
-        $body .= "<p>Please process the payment at your earliest convenience to avoid any delays.</p>\n        <p><em>(If you have already paid this amount, please ignore this email.)</em></p>";
+        $body .= "<p>A new payment demand has been generated for your booking of <strong>Unit " . ($demandDetails['flat_no'] ?? 'N/A') . "</strong> in <strong>" . ($demandDetails['project_name'] ?? 'N/A') . "</strong>.</p>";
+        
+        $body .= "<table style='width:100%; border-collapse: collapse; margin: 20px 0;'>";
+        
+        // Arrears
+        if (isset($demandDetails['arrears']) && $demandDetails['arrears'] > 0) {
+            $body .= "<tr><td style='padding: 8px; border: 1px solid #ddd; color: #ea580c;'>Arrears (Previous Dues)</td>";
+            $body .= "<td style='padding: 8px; border: 1px solid #ddd; text-align: right; color: #ea580c;'>₹" . formatNumberIndian($demandDetails['arrears']) . "</td></tr>";
+        }
+        
+        // Current Demand
+        $body .= "<tr><td style='padding: 8px; border: 1px solid #ddd;'><strong>Current Demand:</strong> {$demandDetails['stage_name']}</td>";
+        $body .= "<td style='padding: 8px; border: 1px solid #ddd; text-align: right;'>₹" . formatNumberIndian($demandDetails['amount']) . "</td></tr>";
+        
+        // Less Paid (If partial payment already made)
+        if (isset($demandDetails['paid_amount']) && $demandDetails['paid_amount'] > 0) {
+            $body .= "<tr><td style='padding: 8px; border: 1px solid #ddd;'>Less: Already Paid for this stage</td>";
+            $body .= "<td style='padding: 8px; border: 1px solid #ddd; text-align: right; color:#ef4444;'>- ₹" . formatNumberIndian($demandDetails['paid_amount']) . "</td></tr>";
+        }
+
+        // Total Payable
+        if (isset($demandDetails['total_payable'])) {
+            $body .= "<tr style='background-color: #f8fafc;'><td style='padding: 8px; border: 1px solid #ddd;'><strong>Total Amount Payable Now</strong></td>";
+            $body .= "<td style='padding: 8px; border: 1px solid #ddd; text-align: right; font-size: 16px; color:#0f172a;'><strong>₹" . formatNumberIndian($demandDetails['total_payable']) . "</strong></td></tr>";
+        }
+        
+        $body .= "</table>";
+        
+        $body .= "<p>Please find the detailed Demand Letter attached to this email.</p>";
+        $body .= "<p>Kindly process the payment at your earliest convenience to avoid any delays.</p>";
+        $body .= "<p><em>(If you have already paid this amount, please ignore this email.)</em></p>";
         $body .= "<br><p>Best Regards,<br><strong>{$companyName} Team</strong></p>";
         $body .= "</div>";
         
-        return self::sendEmail($customerEmail, $subject, $body);
+        return self::sendEmail($customerEmail, $subject, $body, $pdfContent, $pdfFilename);
     }
 }
