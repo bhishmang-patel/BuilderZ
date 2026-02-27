@@ -17,30 +17,46 @@ require_once __DIR__ . '/../../includes/ReportService.php';
 require_once __DIR__ . '/../../includes/ColorHelper.php';
 $reportService = new ReportService();
 
-$data = $reportService->getDashboardMetrics();
+$project_filter = isset($_GET['project_id']) && is_numeric($_GET['project_id']) ? (int)$_GET['project_id'] : null;
 
-$total_sales     = $data['total_sales'];
-$total_received  = $data['total_received'];
-$total_pending   = $data['total_pending'];
-$total_cancelled = $data['total_cancelled'];
-$total_expenses  = $data['total_expenses'];
-$total_invested  = $data['total_invested'] ?? 0;
-$net_profit      = $data['net_profit'];
-$monthly_stats   = $data['monthly_stats'];
-$project_stats   = $data['project_stats'];
-$recent_bookings = $data['recent_bookings'];
-$pending_approvals = $data['pending_approvals'];
+$data = $reportService->getDashboardMetrics($project_filter);
 
-$sales_growth    = $data['sales_growth'] ?? 0;
-$received_growth = $data['received_growth'] ?? 0;
-$expense_growth  = $data['expense_growth'] ?? 0;
-$profit_growth   = $data['profit_growth'] ?? 0;
-$pending_growth  = $data['pending_growth'] ?? 0;
+// ── NEW ERP DATA MAPPING ──────────────────────────────
+$total_sales        = $data['total_sales'];
+$total_received     = $data['total_received'];
+$total_receivables  = $data['total_receivables'];
+$total_payables     = $data['total_payables'];
 
-$approvals_today = $data['approvals_today'] ?? 0;
+$total_units        = $data['total_units'];
+$sold_units         = $data['sold_units'];
+$available_units    = $data['available_units'];
+
+$total_cash         = $data['total_cash'];
+$total_expenses     = $data['total_expenses'];
+$net_profit         = $data['net_profit'];
+
+$monthly_stats      = $data['monthly_stats'];
+$project_stats      = $data['project_stats'];
+$recent_bookings    = $data['recent_bookings'];
+$pending_approvals  = $data['pending_approvals'];
+$project_cash_flow  = $data['project_cash_flow'] ?? [];
+
+$sales_growth       = $data['sales_growth'] ?? 0;
+$received_growth    = $data['received_growth'] ?? 0;
+$expense_growth     = $data['expense_growth'] ?? 0;
+$profit_growth      = $data['profit_growth'] ?? 0;
+$pending_growth     = $data['pending_growth'] ?? 0;
+
+$approvals_today    = $data['approvals_today'] ?? 0;
+
+// Fetch all projects for the global dropdown
+$all_projects = $db->query("SELECT id, project_name FROM projects WHERE status = 'active' ORDER BY project_name")->fetchAll();
 
 function getTrendClass($val) { return $val >= 0 ? 'positive' : 'negative'; }
 function formatTrend($val) { return ($val > 0 ? '+' : '') . number_format($val, 1) . '%'; }
+
+// Calculate Net Cash Position dynamically: Current Bank Balances + Expected Receivables - Pending Payables
+$net_cash_position = $total_cash + $total_receivables - $total_payables;
 
 $total_income_yr  = array_sum(array_column($monthly_stats, 'income'));
 $total_expense_yr = array_sum(array_column($monthly_stats, 'expense'));
@@ -291,119 +307,136 @@ include __DIR__ . '/../../includes/header.php';
 <div class="dash-wrap">
 
     <!-- ── Page Header ──────────────────────── -->
-    <div class="dash-header">
-        <div class="eyebrow">Overview</div>
-        <h1>Welcome back, <em><?= htmlspecialchars($_SESSION['full_name'] ?? $_SESSION['username'] ?? 'User') ?></em></h1>
-        <div class="dash-subtitle">Here's what's happening with your projects today</div>
+    <div class="dash-header" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <div class="eyebrow">Overview</div>
+            <h1>Welcome back, <em><?= htmlspecialchars($_SESSION['full_name'] ?? $_SESSION['username'] ?? 'User') ?></em></h1>
+            <div class="dash-subtitle">Here's what's happening with your projects today</div>
+        </div>
+        
+        <!-- Global Project Filter -->
+        <form method="GET" class="filter-form" style="display:flex; align-items:center; gap:0.5rem;">
+            <label for="project_id" style="font-size:0.75rem; font-weight:700; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.05em;">Project Filter:</label>
+            <select name="project_id" id="project_id" onchange="this.form.submit()" style="padding:0.5rem 2rem 0.5rem 1rem; border:1.5px solid var(--border); border-radius:8px; font-family:'DM Sans'; font-size:0.85rem; font-weight:600; outline:none; cursor:pointer;">
+                <option value="">All Projects (Company View)</option>
+                <?php foreach ($all_projects as $p): ?>
+                    <option value="<?= $p['id'] ?>" <?= $project_filter == $p['id'] ? 'selected' : '' ?>>
+                        <?= htmlspecialchars($p['project_name']) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </form>
     </div>
 
-    <!-- ── Top Stats Grid ───────────────────── -->
+    <!-- ── Top Stats Grid (ERP View) ────────────── -->
     <div class="stats-grid">
-        <div class="stat-card" title="Total: <?= formatCurrencyShort($data['total_invested'], false) ?> | Returned: <?= formatCurrencyShort($data['total_returned'], false) ?>">
+        <div class="stat-card">
             <div class="stat-top">
-                <div class="s-icon ico-orange"><i class="fas fa-hand-holding-usd"></i></div>
+                <div class="s-icon ico-blue" style="background:#eff6ff; color:#3b82f6;"><i class="fas fa-wallet"></i></div>
             </div>
-            <div class="stat-label">Net Invested</div>
+            <div class="stat-label">Net Cash Position</div>
             <div class="stat-value">
-                <span class="short-val"><?= formatCurrencyShort($data['net_invested']) ?></span>
-                <span class="full-val"><?= formatCurrency($data['net_invested']) ?></span>
+                <span class="short-val"><?= formatCurrencyShort($net_cash_position) ?></span>
+                <span class="full-val"><?= formatCurrency($net_cash_position) ?></span>
             </div>
+            <div style="font-size:0.7rem; color:var(--ink-mute); margin-top:0.3rem;">Cash + Receivables - Payables</div>
         </div>
 
         <div class="stat-card">
             <div class="stat-top">
-                <div class="s-icon ico-purple"><i class="fas fa-file-invoice"></i></div>
-                <span class="trend-pill <?= getTrendClass($expense_growth) ?>">
-                    <?= $expense_growth >= 0 ? '↑' : '↓' ?> <?= formatTrend($expense_growth) ?>
-                </span>
+                <div class="s-icon ico-teal" style="background:#ecfdf5; color:#10b981;"><i class="fas fa-hand-holding-usd"></i></div>
             </div>
-            <div class="stat-label">Total Expenses</div>
+            <div class="stat-label">Outstanding Receivables</div>
             <div class="stat-value">
-                <span class="short-val"><?= formatCurrencyShort($total_expenses) ?></span>
-                <span class="full-val"><?= formatCurrency($total_expenses) ?></span>
+                <span class="short-val"><?= formatCurrencyShort($total_receivables) ?></span>
+                <span class="full-val"><?= formatCurrency($total_receivables) ?></span>
             </div>
+            <div style="font-size:0.7rem; color:var(--ink-mute); margin-top:0.3rem;">Pending from Customers</div>
         </div>
 
         <div class="stat-card">
             <div class="stat-top">
-                <div class="s-icon ico-blue"><i class="fas fa-indian-rupee-sign"></i></div>
-                <span class="trend-pill <?= getTrendClass($sales_growth) ?>">
-                    <?= $sales_growth >= 0 ? '↑' : '↓' ?> <?= formatTrend($sales_growth) ?>
-                </span>
+                <div class="s-icon ico-orange" style="background:#fef2f2; color:#ef4444;"><i class="fas fa-file-invoice-dollar"></i></div>
             </div>
-            <div class="stat-label">Total Sales</div>
+            <div class="stat-label">Total Payables</div>
             <div class="stat-value">
-                <span class="short-val"><?= formatCurrencyShort($total_sales) ?></span>
-                <span class="full-val"><?= formatCurrency($total_sales) ?></span>
+                <span class="short-val"><?= formatCurrencyShort($total_payables) ?></span>
+                <span class="full-val"><?= formatCurrency($total_payables) ?></span>
             </div>
+            <div style="font-size:0.7rem; color:var(--ink-mute); margin-top:0.3rem;">Pending Vendor/Contractor Bills</div>
         </div>
 
         <div class="stat-card">
             <div class="stat-top">
-                <div class="s-icon ico-teal"><i class="fas fa-chart-bar"></i></div>
-                <span class="trend-pill <?= getTrendClass($profit_growth) ?>">
-                    <?= $profit_growth >= 0 ? '↑' : '↓' ?> <?= formatTrend($profit_growth) ?>
-                </span>
+                <div class="s-icon ico-purple" style="background:#f3e8ff; color:#a855f7;"><i class="fas fa-building"></i></div>
             </div>
-            <div class="stat-label">Net Profit</div>
+            <div class="stat-label">Available Inventory</div>
             <div class="stat-value">
-                <span class="short-val"><?= formatCurrencyShort($net_profit) ?></span>
-                <span class="full-val"><?= formatCurrency($net_profit) ?></span>
+                <span class="short-val"><?= $available_units ?> Unsold</span>
+                <span class="full-val"><?= $available_units ?> Unsold</span>
             </div>
+            <div style="font-size:0.7rem; color:var(--ink-mute); margin-top:0.3rem;">Out of <?= $total_units ?> total units</div>
         </div>
     </div>
-
     <!-- ── Chart Row ────────────────────────── -->
     <div class="chart-row">
 
-        <!-- Cash Flow Chart -->
+        <!-- Project Cash Flow Chart -->
         <div class="chart-card">
             <div class="chart-head">
                 <div class="ch-title-block">
                     <div class="ch-icon chi-blue"><i class="fas fa-chart-simple"></i></div>
-                    <h2 class="ch-title">Monthly Cash Flow</h2>
-                    <div class="ch-sub">Financial year <?= date('Y') ?></div>
+                    <h2 class="ch-title">Project Cash Flow</h2>
+                    <div class="ch-sub">Collections vs Expenditures</div>
                 </div>
                 <div class="chart-legend">
                     <div class="legend-item">
                         <span class="leg-dot" style="background:#10b981"></span>
-                        Income <span class="leg-val"><?= formatCurrencyShort($total_income_yr) ?></span>
+                        Collected
                     </div>
                     <div class="legend-item">
                         <span class="leg-dot" style="background:#ef4444"></span>
-                        Expense <span class="leg-val"><?= formatCurrencyShort($total_expense_yr) ?></span>
+                        Spent
                     </div>
                 </div>
             </div>
             <div class="chart-body">
                 <div class="chart-canvas-wrap">
-                    <canvas id="cashFlowChart"></canvas>
+                    <canvas id="projectCashFlowChart"></canvas>
                 </div>
-
+                
+                <?php
+                $tot_coll = array_sum(array_column($project_cash_flow, 'total_collected'));
+                $tot_spent = array_sum(array_column($project_cash_flow, 'total_expenses'));
+                $net_flow = $tot_coll - $tot_spent;
+                $p_count = count($project_cash_flow);
+                $p_margin = $tot_coll > 0 ? ($net_flow / $tot_coll) * 100 : 0;
+                $avg_flow = $p_count > 0 ? $tot_coll / $p_count : 0;
+                ?>
                 <div class="chart-footer-stats">
                     <div class="cfs-cell green">
-                        <span class="cfs-label">Net Income</span>
-                        <span class="cfs-value"><?= formatCurrencyShort($net_income_yr) ?></span>
+                        <span class="cfs-label">Net Balance</span>
+                        <span class="cfs-value"><?= formatCurrencyShort($net_flow) ?></span>
                         <span class="cfs-hint">
-                            <?php if ($profit_growth >= 0): ?>
-                                <i class="fas fa-arrow-up"></i> +<?= number_format($profit_growth, 1) ?>% growth
+                            <?php if ($net_flow >= 0): ?>
+                                <i class="fas fa-arrow-up"></i> Positive Flow
                             <?php else: ?>
-                                <i class="fas fa-arrow-down"></i> <?= number_format($profit_growth, 1) ?>% decline
+                                <i class="fas fa-arrow-down"></i> Deficit
                             <?php endif; ?>
                         </span>
                     </div>
                     <div class="cfs-cell blue">
-                        <span class="cfs-label">Avg Monthly</span>
-                        <span class="cfs-value"><?= formatCurrencyShort($avg_monthly) ?></span>
-                        <span class="cfs-hint">Per month average</span>
+                        <span class="cfs-label">Avg Collected</span>
+                        <span class="cfs-value"><?= formatCurrencyShort($avg_flow) ?></span>
+                        <span class="cfs-hint">Per project average</span>
                     </div>
                     <div class="cfs-cell purple">
-                        <span class="cfs-label">Profit Margin</span>
-                        <span class="cfs-value"><?= number_format($profit_margin, 1) ?>%</span>
+                        <span class="cfs-label">Flow Margin</span>
+                        <span class="cfs-value"><?= number_format($p_margin, 1) ?>%</span>
                         <span class="cfs-hint">
                             <?php
-                                if ($profit_margin >= 20) echo 'Excellent margin';
-                                elseif ($profit_margin >= 10) echo 'Good margin';
+                                if ($p_margin >= 20) echo 'Excellent margin';
+                                elseif ($p_margin >= 10) echo 'Good margin';
                                 else echo 'Average margin';
                             ?>
                         </span>
@@ -412,65 +445,69 @@ include __DIR__ . '/../../includes/header.php';
             </div>
         </div>
 
-        <!-- Sales by Project -->
+        <!-- Inventory & Alerts -->
         <div class="chart-card">
             <div class="chart-head">
                 <div class="ch-title-block">
-                    <div class="ch-icon chi-purple"><i class="fas fa-chart-pie"></i></div>
-                    <h2 class="ch-title">Sales by Project</h2>
-                    <div class="ch-sub">Distribution overview</div>
+                    <div class="ch-icon chi-purple"><i class="fas fa-building"></i></div>
+                    <h2 class="ch-title">Inventory Status</h2>
+                    <div class="ch-sub">Sold vs Available Units</div>
                 </div>
             </div>
             <div class="chart-body">
                 <div class="doughnut-wrap">
-                    <canvas id="projectChart"></canvas>
+                    <canvas id="inventoryChart"></canvas>
                     <div class="doughnut-center">
-                        <span class="dc-val"><?= formatCurrencyShort($total_project_sales_calc) ?></span>
-                        <span class="dc-label">Total Sales</span>
+                        <span class="dc-val"><?= $total_units ?></span>
+                        <span class="dc-label">Total Units</span>
                     </div>
                 </div>
 
-                <div class="project-list">
-                    <?php
-                    $projLabels = []; $projValues = []; $projColors = [];
-                    $idx = 0;
-                    foreach ($project_stats as $proj):
-                        $perc  = $total_project_sales_calc > 0 ? ($proj['total_sales'] / $total_project_sales_calc) * 100 : 0;
-                        $color = ColorHelper::getProjectColor($proj['project_id']);
-                        $projLabels[] = addslashes($proj['project_name']);
-                        $projValues[] = $proj['total_sales'];
-                        $projColors[] = $color;
-                        $cat = ($idx == 0) ? 'Primary project' : 'Secondary project';
-                        $idx++;
-                    ?>
-                    <div class="proj-item">
-                        <div class="proj-dot" style="background:<?= $color ?>"></div>
-                        <div class="proj-info">
-                            <div class="proj-name"><?= htmlspecialchars($proj['project_name']) ?></div>
-                            <div class="proj-cat"><?= $cat ?></div>
+                <div class="project-list" style="margin-top: 1.5rem;">
+                    <h3 style="font-size:0.85rem; font-weight:700; margin-bottom:0.8rem; color:var(--ink);">Actionable Alerts</h3>
+                    <?php if (empty($pending_approvals)): ?>
+                        <div style="font-size:0.8rem; color:var(--ink-mute); text-align:center; padding:1rem 0;">No pending approvals! You are all caught up.</div>
+                    <?php else: ?>
+                        <?php foreach ($pending_approvals as $pa): 
+                            $icon = $pa['type'] === 'challan' ? 'file-invoice' : 'hard-hat';
+                            $color = $pa['type'] === 'challan' ? '#f59e0b' : '#3b82f6';
+                            $link = $pa['type'] === 'challan' ? "/builderz/modules/inventory/challans/edit.php?id={$pa['id']}" : "#";
+                        ?>
+                        <div class="proj-item">
+                            <div class="proj-dot" style="background:<?= $color ?>; display:flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:6px; color:white; font-size:0.6rem;">
+                                <i class="fas fa-<?= $icon ?>"></i>
+                            </div>
+                            <div class="proj-info">
+                                <div class="proj-name">
+                                    <a href="<?= $link ?>" style="color:var(--ink); text-decoration:none;"><?= htmlspecialchars($pa['challan_no']) ?></a>
+                                </div>
+                                <div class="proj-cat"><?= htmlspecialchars($pa['party_name']) ?></div>
+                            </div>
+                            <div class="proj-stats">
+                                <span class="pst-amount"><?= formatCurrencyShort($pa['total_amount']) ?></span>
+                                <span class="pst-perc" style="color:#ef4444; font-weight:600;">Pending</span>
+                            </div>
                         </div>
-                        <div class="proj-stats">
-                            <span class="pst-amount"><?= formatCurrencyShort($proj['total_sales']) ?></span>
-                            <span class="pst-perc"><?= number_format($perc, 0) ?>%</span>
-                        </div>
-                    </div>
-                    <?php endforeach; ?>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
 
                 <div class="mini-stats">
                     <div class="mini-stat">
-                        <span class="ms-val"><?= count($project_stats) ?></span>
-                        <span class="ms-lbl">Active Projects</span>
+                        <span class="ms-val" style="color:#10b981;"><?= $sold_units ?></span>
+                        <span class="ms-lbl">Units Sold</span>
                     </div>
                     <div class="mini-stat">
-                        <span class="ms-val"><?= count($recent_bookings) ?></span>
-                        <span class="ms-lbl">Total Bookings</span>
+                        <span class="ms-val" style="color:#ef4444;"><?= $available_units ?></span>
+                        <span class="ms-lbl">Units Available</span>
                     </div>
                 </div>
             </div>
         </div>
 
     </div><!-- /.chart-row -->
+
+
 
 </div><!-- /.dash-wrap -->
 
@@ -486,82 +523,96 @@ document.addEventListener('DOMContentLoaded', function() {
         return num.toFixed(0);
     };
 
-    // ── Cash Flow Chart ──────────────────────────────
-    const ctxFlow = document.getElementById('cashFlowChart').getContext('2d');
-    new Chart(ctxFlow, {
-        type: 'bar',
-        data: {
-            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-            datasets: [
-                {
-                    label: 'Income',
-                    data: [<?= implode(',', array_column($monthly_stats, 'income')) ?>],
-                    backgroundColor: '#10b981',
-                    borderRadius: 6,
-                    barPercentage: 0.55,
-                    categoryPercentage: 0.8,
-                    hoverBackgroundColor: '#059669'
-                },
-                {
-                    label: 'Expense',
-                    data: [<?= implode(',', array_column($monthly_stats, 'expense')) ?>],
-                    backgroundColor: '#ef4444',
-                    borderRadius: 6,
-                    barPercentage: 0.55,
-                    categoryPercentage: 0.8,
-                    hoverBackgroundColor: '#dc2626'
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: '#1a1714',
-                    padding: 12,
-                    cornerRadius: 8,
-                    titleFont: { size: 13, weight: 600 },
-                    bodyFont: { size: 13 },
-                    callbacks: {
-                        label: ctx => {
-                            let l = ctx.dataset.label || '';
-                            if (l) l += ': ';
-                            return l + '₹ ' + formatIndianShort(ctx.raw);
+    // ── Project Cash Flow Chart ──────────────────────────────
+    <?php
+    $pcf_labels = [];
+    $pcf_collected = [];
+    $pcf_spent = [];
+    foreach ($project_cash_flow as $pcf) {
+        $pcf_labels[] = addslashes($pcf['project_name']);
+        $pcf_collected[] = $pcf['total_collected'];
+        $pcf_spent[] = $pcf['total_expenses'];
+    }
+    ?>
+    const ctxPCF = document.getElementById('projectCashFlowChart')?.getContext('2d');
+    if (ctxPCF) {
+        new Chart(ctxPCF, {
+            type: 'bar',
+            data: {
+                labels: [<?= "'" . implode("','", $pcf_labels) . "'" ?>],
+                datasets: [
+                    {
+                        label: 'Collected',
+                        data: [<?= implode(',', $pcf_collected) ?>],
+                        backgroundColor: '#10b981',
+                        borderRadius: 6,
+                        barPercentage: 0.55,
+                        categoryPercentage: 0.8,
+                        hoverBackgroundColor: '#059669',
+                        maxBarThickness: 10
+                    },
+                    {
+                        label: 'Spent',
+                        data: [<?= implode(',', $pcf_spent) ?>],
+                        backgroundColor: '#ef4444',
+                        borderRadius: 6,
+                        barPercentage: 0.55,
+                        categoryPercentage: 0.8,
+                        hoverBackgroundColor: '#dc2626',
+                        maxBarThickness: 10
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#1a1714',
+                        padding: 12,
+                        cornerRadius: 8,
+                        titleFont: { size: 13, weight: 600 },
+                        bodyFont: { size: 13 },
+                        callbacks: {
+                            label: ctx => {
+                                let l = ctx.dataset.label || '';
+                                if (l) l += ': ';
+                                return l + '₹ ' + formatIndianShort(ctx.raw);
+                            }
                         }
                     }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: { color: '#f0ece5', drawBorder: false },
-                    ticks: {
-                        color: '#9e9690',
-                        font: { size: 11, weight: 500 },
-                        callback: v => v === 0 ? '0' : formatIndianShort(v)
-                    },
-                    border: { display: false }
                 },
-                x: {
-                    grid: { display: false },
-                    ticks: { color: '#9e9690', font: { size: 11, weight: 500 } },
-                    border: { display: false }
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#f0ece5', drawBorder: false },
+                        ticks: {
+                            color: '#9e9690',
+                            font: { size: 11, weight: 500 },
+                            callback: v => v === 0 ? '0' : formatIndianShort(v)
+                        },
+                        border: { display: false }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#9e9690', font: { size: 11, weight: 500 } },
+                        border: { display: false }
+                    }
                 }
             }
-        }
-    });
+        });
+    }
 
-    // ── Project Doughnut ─────────────────────────────
-    const ctxProj = document.getElementById('projectChart').getContext('2d');
-    new Chart(ctxProj, {
+    // ── Inventory Doughnut ─────────────────────────────
+    const ctxInv = document.getElementById('inventoryChart').getContext('2d');
+    new Chart(ctxInv, {
         type: 'doughnut',
         data: {
-            labels: [<?= "'" . implode("','", $projLabels) . "'" ?>],
+            labels: ['Sold Units', 'Available Units'],
             datasets: [{
-                data: [<?= implode(',', $projValues) ?>],
-                backgroundColor: [<?= "'" . implode("','", $projColors) . "'" ?>],
+                data: [<?= $sold_units ?>, <?= $available_units ?>],
+                backgroundColor: ['#10b981', '#ef4444'],
                 borderWidth: 0,
                 hoverOffset: 6,
                 cutout: '72%'
@@ -570,7 +621,7 @@ document.addEventListener('DOMContentLoaded', function() {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { display: false }, tooltip: { enabled: false } },
+            plugins: { legend: { display: false }, tooltip: { enabled: true } },
             layout: { padding: 10 }
         }
     });

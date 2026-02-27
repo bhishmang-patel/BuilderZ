@@ -272,3 +272,14 @@ Stack trace:
 #2 {main}
   thrown in C:\xampp\htdocs\builderz\config\database.php on line 38
 [26-Feb-2026 12:47:15 Asia/Kolkata] PHP Warning:  Undefined array key "id" in C:\xampp\htdocs\builderz\get_admin.php on line 7
+[26-Feb-2026 18:27:11 Asia/Kolkata] Database query error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.bank_accounts' doesn't exist
+[26-Feb-2026 18:27:11 Asia/Kolkata] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.bank_accounts' doesn't exist in C:\xampp\htdocs\builderz\config\database.php:38
+Stack trace:
+#0 C:\xampp\htdocs\builderz\config\database.php(38): PDO->prepare('SELECT COALESCE...')
+#1 C:\xampp\htdocs\builderz\includes\ReportService.php(809): Database->query('SELECT COALESCE...')
+#2 C:\xampp\htdocs\builderz\modules\dashboard\index.php(22): ReportService->getDashboardMetrics(NULL)
+#3 {main}
+  thrown in C:\xampp\htdocs\builderz\config\database.php on line 38
+[26-Feb-2026 18:29:14 Asia/Kolkata] Database query error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'builderz_erp.bank_accounts' doesn't exist
+[27-Feb-2026 17:45:48 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\includes\pdf_excel_helpers.php on line 205
+[27-Feb-2026 17:45:48 Asia/Kolkata] PHP Deprecated:  Function utf8_decode() is deprecated in C:\xampp\htdocs\builderz\includes\pdf_excel_helpers.php on line 205
