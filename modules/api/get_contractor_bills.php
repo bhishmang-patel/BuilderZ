@@ -26,7 +26,7 @@ try {
     $db = Database::getInstance();
     
     $sql = "SELECT c.id, c.bill_no as challan_no, c.bill_date as challan_date, c.basic_amount, c.total_payable as final_payable_amount, c.paid_amount, c.status, c.payment_status,
-                   pr.project_name, wo.work_order_no
+                   pr.project_name, wo.work_order_no, wo.contract_amount
             FROM contractor_bills c
             LEFT JOIN projects pr ON c.project_id = pr.id
             LEFT JOIN work_orders wo ON c.work_order_id = wo.id
@@ -39,12 +39,21 @@ try {
     // Calculate stats
     $total_billed = 0;
     $total_paid   = 0;
+    $unique_wos   = [];
+    $total_contract_value = 0;
 
     // Format data for display
-    $formatted_bills = array_map(function($bill) use (&$total_billed, &$total_paid) {
+    $formatted_bills = array_map(function($bill) use (&$total_billed, &$total_paid, &$unique_wos, &$total_contract_value) {
         $payable = $bill['final_payable_amount']; // Already aliased or direct column
         $total_billed += $payable;
         $total_paid   += $bill['paid_amount'];
+        $outstanding  = $payable - $bill['paid_amount'];
+
+        // Aggregate unique Contract Value sums
+        if (!empty($bill['work_order_no']) && !in_array($bill['work_order_no'], $unique_wos)) {
+            $unique_wos[] = $bill['work_order_no'];
+            $total_contract_value += $bill['contract_amount'];
+        }
 
         return [
             'id' => $bill['id'],
@@ -53,6 +62,7 @@ try {
             'project_name' => $bill['project_name'],
             'work_order_no' => $bill['work_order_no'] ?? '-',
             'amount' => formatCurrency($payable),
+            'outstanding' => formatCurrency($outstanding),
             'status' => ucfirst($bill['status']),       // Approval Status (e.g., Approved)
             'status_class' => getStatusClass($bill['status']),
             'payment_status' => ucfirst($bill['payment_status']), // Payment Status (e.g., Paid)
@@ -61,6 +71,7 @@ try {
     }, $bills);
 
     $stats = [
+        'contract_value' => formatCurrency($total_contract_value),
         'total'   => formatCurrency($total_billed),
         'paid'    => formatCurrency($total_paid),
         'pending' => formatCurrency($total_billed - $total_paid)

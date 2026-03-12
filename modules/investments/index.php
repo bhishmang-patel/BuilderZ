@@ -434,13 +434,13 @@ include __DIR__ . '/../../includes/header.php';
     /* KPI Strip */
     .kpi-strip {
         display:grid; grid-template-columns:repeat(4,1fr);
-        gap:1px; background:var(--border);
-        border:1.5px solid var(--border); border-radius:14px;
-        overflow:hidden; margin-bottom:1.5rem;
+        gap:1px; border:1.5px solid var(--border);
+         border-radius:14px; overflow:hidden;
+         margin-bottom:1.5rem;
     }
     .kpi-cell {
         background:var(--surface); padding:1.25rem 1.4rem;
-        position:relative; transition:background 0.2s;
+        position:relative; animation: fadeUp 0.45s ease both;
     }
     .kpi-cell:hover { background:#fdfcfa; }
     .kpi-cell::after {
@@ -972,6 +972,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         <th class="th-c">Project</th>
                         <th class="th-c">Investor</th>
                         <th class="th-c">Type</th>
+                        <th class="th-c">Equity/Cap %</th>
                         <th class="th-c">Amount</th>
                         <th class="th-c">Returned</th>
                         <th class="th-c">Balance</th>
@@ -981,7 +982,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 <tbody>
                     <?php if (empty($investments)): ?>
                         <tr>
-                            <td colspan="6">
+                            <td colspan="9" class="text-center py-5">
                                 <div class="empty-state">
                                     <i class="fas fa-inbox"></i>
                                     <h4>No investments found</h4>
@@ -1002,15 +1003,12 @@ document.addEventListener('DOMContentLoaded', function () {
                         <td class="td-c"><span style="font-weight:600;color:var(--ink)"><?= htmlspecialchars($inv['investor_name']) ?></span></td>
                         <td class="td-c">
                             <span class="pill <?= $inv['investment_type'] ?>"><?= ucfirst($inv['investment_type']) ?></span>
-                            <?php if ($inv['is_equity']): ?>
-                                <div style="font-size:0.7rem; color:var(--ink-mute); margin-top:0.2rem; font-weight:600;">
-                                    <?= number_format($inv['share_percentage'], 1) ?>% Ownership
-                                </div>
-                            <?php else: ?>
-                                <div style="font-size:0.7rem; color:var(--ink-mute); margin-top:0.2rem;">
-                                    <?= number_format($inv['capital_mix_percentage'], 1) ?>% of Cap
-                                </div>
-                            <?php endif; ?>
+                            <div style="font-size:0.75rem; color:var(--ink-soft); margin-top:0.2rem; font-weight:500;">
+                                <?= htmlspecialchars($inv['source'] ?: 'N/A') ?>
+                            </div>
+                        </td>
+                        <td class="td-c">
+                            <span style="font-weight:600;color:var(--ink)"><?= number_format($inv['manual_equity_percentage'], 2) ?>%</span>
                         </td>
                         <td class="td-c"><strong style="font-weight:700;color:var(--ink)"><?= formatCurrency($inv['amount']) ?></strong></td>
                         <td class="td-c"><span style="color:#059669"><?= formatCurrency($inv['total_returned']) ?></span></td>
@@ -1020,9 +1018,9 @@ document.addEventListener('DOMContentLoaded', function () {
                                 <a href="returns.php?id=<?= $inv['id'] ?>" class="act-btn" title="Manage Returns" style="color:var(--accent);">
                                     <i class="fas fa-hand-holding-usd"></i>
                                 </a>
-                                <button class="act-btn" onclick="viewInvestment(<?= htmlspecialchars(json_encode($inv)) ?>)" title="View">
+                                <a href="view.php?id=<?= $inv['id'] ?>" class="act-btn" title="View">
                                     <i class="fas fa-eye"></i>
-                                </button>
+                                </a>
                                 <button class="act-btn" onclick="editInvestment(<?= htmlspecialchars(json_encode($inv)) ?>)" title="Edit">
                                     <i class="fas fa-pencil-alt"></i>
                                 </button>
@@ -1138,6 +1136,24 @@ document.addEventListener('DOMContentLoaded', function () {
                     </div>
                 </div>
 
+                <div class="field-row">
+                    <div class="field">
+                        <label>Source</label>
+                        <select name="source">
+                            <option value="">Select Source</option>
+                            <option value="Bank Transfer">Bank Transfer</option>
+                            <option value="UPI">UPI</option>
+                            <option value="Cash">Cash</option>
+                            <option value="Cheque">Cheque</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>Equity/Capital %</label>
+                        <input type="number" name="manual_equity_percentage" step="0.01" placeholder="0.00">
+                    </div>
+                </div>
+
                 <div class="field">
                     <label>Remarks</label>
                     <textarea name="remarks" rows="2" placeholder="Optional notes..."></textarea>
@@ -1203,6 +1219,24 @@ document.addEventListener('DOMContentLoaded', function () {
                     <div class="field">
                         <label>Date *</label>
                         <input type="date" name="investment_date" id="edit_investment_date" required>
+                    </div>
+                </div>
+
+                <div class="field-row">
+                    <div class="field">
+                        <label>Source</label>
+                        <select name="source" id="edit_source">
+                            <option value="">Select Source</option>
+                            <option value="Bank Transfer">Bank Transfer</option>
+                            <option value="UPI">UPI</option>
+                            <option value="Cash">Cash</option>
+                            <option value="Cheque">Cheque</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>Equity/Capital %</label>
+                        <input type="number" name="manual_equity_percentage" id="edit_manual_equity_percentage" step="0.01">
                     </div>
                 </div>
 
@@ -1283,6 +1317,8 @@ function editInvestment(inv) {
     document.getElementById('edit_amount').value = inv.amount;
     document.getElementById('edit_investment_date').value = inv.investment_date;
     document.getElementById('edit_remarks').value = inv.remarks || '';
+    document.getElementById('edit_source').value = inv.source || '';
+    document.getElementById('edit_manual_equity_percentage').value = inv.manual_equity_percentage || '';
     openModal('editModal');
 }
 

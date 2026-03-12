@@ -467,6 +467,7 @@ class MasterService {
 
         if ($joinChallans) {
              $sql .= ", GROUP_CONCAT(DISTINCT m.material_name SEPARATOR ', ') as supplied_materials,
+                       GROUP_CONCAT(DISTINCT ci.work_type SEPARATOR ', ') as supplied_types,
                        SUM(ci.quantity) as total_quantity";
         }
 

@@ -210,7 +210,7 @@ include __DIR__ . '/../../includes/header.php';
         color: white; font-size: 0.75rem;
     }
     .toolbar-title { font-family: 'Fraunces', serif; font-size: 0.95rem; font-weight: 600; color: var(--ink); white-space: nowrap; }
-    .toolbar-subtitle { font-size: 0.73rem; color: var(--ink-mute); margin-left: 0.4rem; }
+    .toolbar-subtitle { font-size: 0.73rem; color: var(--ink-mute); margin-left: 0rem; }
     .toolbar-div { width: 1.5px; height: 28px; background: var(--border); flex-shrink: 0; }
 
     .toolbar-actions { display: flex; align-items: center; gap: 0.5rem; flex: 1; justify-content: flex-end; flex-wrap: wrap; }
@@ -294,7 +294,60 @@ include __DIR__ . '/../../includes/header.php';
     .cust-sub  { font-size: 0.75rem; color: var(--ink-mute); margin-top: 2px; font-weight: 500; }
     .mobile-cell { font-family: 'DM Sans', sans-serif; font-weight: 500; color: var(--ink-soft); font-size: 0.85rem; letter-spacing: 0.02em; }
 
+    /* ── Accordion ────────────────────── */
+    .proj-accordion { border-bottom: 1.5px solid var(--border-lt); background: white; }
+    .proj-accordion:last-child { border-bottom: none; }
 
+    .pa-header {
+        padding: 1.25rem 1.5rem; display: flex; align-items: center;
+        justify-content: space-between; cursor: pointer;
+        transition: background .18s cubic-bezier(.22,1,.36,1); user-select: none;
+    }
+    .pa-header:hover { background: #fbfcfe; }
+    .proj-accordion.open .pa-header { background: #fafbff; }
+
+    .pa-title { display: flex; align-items: center; gap: 1rem; font-family: 'Fraunces', serif; font-size: 1.1rem; font-weight: 600; color: var(--ink); }
+    .pa-count { font-size: .7rem; font-weight: 700; color: var(--ink-mute); padding: .2rem .6rem; border-radius: 20px; background: var(--cream); font-family: 'DM Sans', sans-serif; letter-spacing: .05em; border: 1px solid var(--border); }
+
+    /* ── Chevron icon ── */
+    .pa-icon {
+        width: 28px; height: 28px; border-radius: 50%;
+        background: var(--cream); color: var(--ink-soft);
+        display: flex; align-items: center; justify-content: center;
+        font-size: .75rem;
+        transition: transform .4s cubic-bezier(.22,1,.36,1), background .2s, color .2s;
+    }
+    .proj-accordion.open .pa-icon {
+        transform: rotate(180deg);
+        background: var(--accent-lt); color: var(--accent);
+    }
+
+    /* ── Body wrapper: max-height driven by JS ── */
+    .pa-body-wrapper {
+        overflow: hidden;
+        max-height: 0;
+        transition: max-height 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    /* No .open rule needed here — JS sets max-height inline */
+
+    .pa-body { overflow: hidden; }
+
+    /* ── Staggered row animation ── */
+    .bk-table tbody tr {
+        opacity: 0;
+        transform: translateY(8px);
+        /* transition is added by JS per-row so delay can be dynamic */
+    }
+    /* Rows are made visible by JS adding .row-visible */
+    .bk-table tbody tr.row-visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    /* Rows that are already open on page load get instant visibility */
+    .proj-accordion.open .bk-table tbody tr.row-visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
 
     /* Pill badges */
     .pill {
@@ -338,7 +391,6 @@ include __DIR__ . '/../../includes/header.php';
         width: 100%; max-width: 1100px;
         box-shadow: 0 25px 50px rgba(26,23,20,0.2);
         animation: modalIn 0.25s ease;
-        /* Fix for layout break: contain height within viewport */
         max-height: 90vh;
         display: flex; flex-direction: column;
     }
@@ -352,7 +404,7 @@ include __DIR__ . '/../../includes/header.php';
         display: flex; align-items: center; justify-content: space-between;
         padding: 1.3rem 1.6rem; border-bottom: 1.5px solid var(--border-lt);
         background: #fdfcfa;
-        flex-shrink: 0; /* Header stays fixed */
+        flex-shrink: 0;
     }
     .modal-head h3 {
         font-family: 'Fraunces', serif; font-size: 1.1rem;
@@ -367,7 +419,7 @@ include __DIR__ . '/../../includes/header.php';
     }
     .modal-close:hover { background: var(--border); color: var(--ink); }
 
-    .modal-body { padding: 1.75rem 1.6rem 2.5rem; display: flex; gap: 2rem; overflow-y: auto; /* Enable scrolling */}
+    .modal-body { padding: 1.75rem 1.6rem 2.5rem; display: flex; gap: 2rem; overflow-y: auto; }
     .modal-left { flex: 1; }
     .modal-right { width: 340px; flex-shrink: 0; }
 
@@ -590,111 +642,135 @@ include __DIR__ . '/../../includes/header.php';
             </form>
         </div>
 
-        <!-- Table -->
-        <div style="overflow-x:auto">
-            <table class="bk-table">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Customer / Flat</th>
-                        <th class="th-c">Mobile</th>
-                        <th class="th-c">Area</th>
-                        <th class="th-c">Referred By</th>
-                        <th class="th-c">Rate</th>
-                        <th class="th-c">Agreement</th>
-                        <th class="th-c">Received</th>
-                        <th class="th-c">Pending</th>
-                        <th class="th-c">Status</th>
-                        <th class="th-c">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (empty($bookings)): ?>
-                        <tr>
-                            <td colspan="12">
-                                <div class="empty-state">
-                                    <span class="ei"><i class="fas fa-folder-open"></i></span>
-                                    <p>No bookings found<?= ($status_filter || $project_filter || $referrer_filter) ? ' matching your filters' : '' ?>.</p>
-                                </div>
-                            </td>
-                        </tr>
-                    <?php else: ?>
-                        <?php foreach ($bookings as $booking):
-                            $pillClass = match($booking['status']) {
-                                'active'    => 'blue',
-                                'completed' => 'green',
-                                'cancelled' => 'red',
-                                default     => 'orange'
-                            };
-                        ?>
-                        <tr>
-                            <td><span style="font-size:0.78rem;font-weight:600;color:var(--ink-soft)"><?= date('d M Y', strtotime($booking['booking_date'])) ?></span></td>
-                            <td>
-                                <div class="cust-flat-cell">
-                                    <span class="cust-name"><?= htmlspecialchars($booking['customer_name']) ?></span>
-                                    <div style="margin-top:4px; display:flex; align-items:center; gap:5px;">
-                                        <?= renderProjectBadge($booking['project_name'], $booking['project_id']) ?>
-                                        <span class="cust-sub" style="margin:0;">&ndash; <?= htmlspecialchars($booking['flat_no']) ?></span>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>
-                                <span class="mobile-cell"><?= htmlspecialchars($booking['customer_mobile']) ?></span>
-                            </td>
-                            <td class="td-c"><span style="font-weight:600;color:var(--ink-soft);font-size:0.82rem"><?= number_format($booking['area_sqft'], 0) ?> sqft</span></td>
-                            <td class="td-c">
-                                <?php if(!empty($booking['referred_by'])): ?>
-                                    <span style="font-size:0.8rem;color:var(--ink-soft)"><i class="fas fa-user-tag" style="color:var(--ink-mute);margin-right:3px"></i> <?= htmlspecialchars($booking['referred_by']) ?></span>
-                                <?php else: ?>
-                                    <span style="color:var(--border)">—</span>
-                                <?php endif; ?>
-                            </td>
-                            <td class="td-r">
-                                <?php if(!empty($booking['rate'])): ?>
-                                    <span style="font-weight:600;color:var(--ink)" title="<?= formatCurrency($booking['rate']) ?>"><?= formatCurrencyShort($booking['rate']) ?></span>
-                                <?php else: ?>
-                                    <span style="color:var(--border)">—</span>
-                                <?php endif; ?>
-                            </td>
-                            <td class="td-r"><span class="pill green" title="<?= formatCurrency($booking['agreement_value']) ?>"><?= formatCurrencyShort($booking['agreement_value']) ?></span></td>
-                            <td class="td-r"><span style="font-size:0.82rem;font-weight:600;color:#10b981" title="<?= formatCurrency($booking['total_received']) ?>"><?= formatCurrencyShort($booking['total_received']) ?></span></td>
-                            <td class="td-r">
-                                <?php if($booking['total_pending'] > 0): ?>
-                                    <span style="font-size:0.82rem;font-weight:600;color:#f59e0b" title="<?= formatCurrency($booking['total_pending']) ?>"><?= formatCurrencyShort($booking['total_pending']) ?></span>
-                                <?php else: ?>
-                                    <span class="pill green">Paid</span>
-                                <?php endif; ?>
-                            </td>
-                            <td class="td-c"><span class="pill <?= $pillClass ?>"><?= ucfirst($booking['status']) ?></span></td>
-                            
-                            <td class="td-r">
-                                <div class="act-group">
-                                    <a href="<?= BASE_URL ?>modules/booking/view.php?id=<?= $booking['id'] ?>" class="act-btn" title="View">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                    <?php if ($booking['status'] !== 'cancelled'): ?>
-                                        <a href="<?= BASE_URL ?>modules/booking/edit.php?id=<?= $booking['id'] ?>" class="act-btn edit" title="Edit">
-                                            <i class="fas fa-pencil-alt"></i>
-                                        </a>
-                                        <button class="act-btn del"
-                                            onclick="openCancelModal(<?= $booking['id'] ?>, '<?= htmlspecialchars(addslashes($booking['project_name'])) ?>', '<?= htmlspecialchars($booking['flat_no']) ?>')"
-                                            title="Cancel">
-                                            <i class="fas fa-times-circle"></i>
-                                        </button>
-                                    <?php endif; ?>
-                                </div>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </tbody>
-            </table>
+        <!-- Grouped Accordion -->
+        <div style="overflow-x:auto;">
+            <?php 
+            $groupedBookings = [];
+            foreach ($bookings as $booking) {
+                $pid = $booking['project_id'] ?? 0;
+                $pname = $booking['project_name'] ?? 'Unassigned Bookings';
+                if (!isset($groupedBookings[$pid])) {
+                    $groupedBookings[$pid] = [
+                        'project_name' => $pname,
+                        'bookings' => []
+                    ];
+                }
+                $groupedBookings[$pid]['bookings'][] = $booking;
+            }
+            
+            if (empty($groupedBookings)): ?>
+                <div class="empty-state">
+                    <span class="ei"><i class="fas fa-folder-open"></i></span>
+                    <p>No bookings found<?= ($status_filter || $project_filter || $referrer_filter) ? ' matching your filters' : '' ?>.</p>
+                </div>
+            <?php else:
+                $projectIndex = 0;
+                foreach ($groupedBookings as $pid => $group): 
+                    $projectIndex++;
+                    $isOpen = ($projectIndex === 1) || ($status_filter || $project_filter || $referrer_filter);
+            ?>
+                <div class="proj-accordion <?= $isOpen ? 'open' : '' ?>">
+                    <div class="pa-header" onclick="fToggleAccordion(this)">
+                        <div class="pa-title">
+                            <?= renderProjectBadge($group['project_name'], $pid) ?>
+                            <span class="pa-count" title="Total Bookings"><?= count($group['bookings']) ?> Bookings</span>
+                        </div>
+                        <div class="pa-icon"><i class="fas fa-chevron-down"></i></div>
+                    </div>
+                    <div class="pa-body-wrapper">
+                        <div class="pa-body">
+                            <table class="bk-table" style="border-top:1px solid var(--border-lt);">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Customer / Flat</th>
+                                        <th class="th-c">Mobile</th>
+                                        <th class="th-c">Area</th>
+                                        <th class="th-c">Referred By</th>
+                                        <th class="th-c">Rate</th>
+                                        <th class="th-c">Agreement</th>
+                                        <th class="th-c">Received</th>
+                                        <th class="th-c">Pending</th>
+                                        <th class="th-c">Status</th>
+                                        <th class="th-c">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($group['bookings'] as $booking):
+                                        $pillClass = match($booking['status']) {
+                                            'active'    => 'blue',
+                                            'completed' => 'green',
+                                            'cancelled' => 'red',
+                                            default     => 'orange'
+                                        };
+                                    ?>
+                                    <tr>
+                                        <td><span style="font-size:0.78rem;font-weight:600;color:var(--ink-soft)"><?= date('d M Y', strtotime($booking['booking_date'])) ?></span></td>
+                                        <td>
+                                            <div class="cust-flat-cell">
+                                                <span class="cust-name"><?= htmlspecialchars($booking['customer_name']) ?></span>
+                                                <div style="margin-top:4px; display:flex; align-items:center; gap:5px;">
+                                                    <span class="cust-sub" style="margin:0;">Flat <?= htmlspecialchars($booking['flat_no']) ?></span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="mobile-cell"><?= htmlspecialchars($booking['customer_mobile']) ?></span>
+                                        </td>
+                                        <td class="td-c"><span style="font-weight:600;color:var(--ink-soft);font-size:0.82rem"><?= number_format($booking['area_sqft'], 0) ?> sqft</span></td>
+                                        <td class="td-c">
+                                            <?php if(!empty($booking['referred_by'])): ?>
+                                                <span style="font-size:0.8rem;color:var(--ink-soft)"><i class="fas fa-user-tag" style="color:var(--ink-mute);margin-right:3px"></i> <?= htmlspecialchars($booking['referred_by']) ?></span>
+                                            <?php else: ?>
+                                                <span style="color:var(--border)">—</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="td-r">
+                                            <?php if(!empty($booking['rate'])): ?>
+                                                <span style="font-weight:600;color:var(--ink)" title="<?= formatCurrency($booking['rate']) ?>"><?= formatCurrencyShort($booking['rate']) ?></span>
+                                            <?php else: ?>
+                                                <span style="color:var(--border)">—</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="td-r"><span class="pill green" title="<?= formatCurrency($booking['agreement_value']) ?>"><?= formatCurrencyShort($booking['agreement_value']) ?></span></td>
+                                        <td class="td-r"><span style="font-size:0.82rem;font-weight:600;color:#10b981" title="<?= formatCurrency($booking['total_received']) ?>"><?= formatCurrencyShort($booking['total_received']) ?></span></td>
+                                        <td class="td-r">
+                                            <?php if($booking['total_pending'] > 0): ?>
+                                                <span style="font-size:0.82rem;font-weight:600;color:#f59e0b" title="<?= formatCurrency($booking['total_pending']) ?>"><?= formatCurrencyShort($booking['total_pending']) ?></span>
+                                            <?php else: ?>
+                                                <span class="pill green">Paid</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="td-c"><span class="pill <?= $pillClass ?>"><?= ucfirst($booking['status']) ?></span></td>
+                                        <td class="td-r">
+                                            <div class="act-group">
+                                                <a href="<?= BASE_URL ?>modules/booking/view.php?id=<?= $booking['id'] ?>" class="act-btn" title="View">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <?php if ($booking['status'] !== 'cancelled'): ?>
+                                                    <a href="<?= BASE_URL ?>modules/booking/edit.php?id=<?= $booking['id'] ?>" class="act-btn edit" title="Edit">
+                                                        <i class="fas fa-pencil-alt"></i>
+                                                    </a>
+                                                    <button class="act-btn del"
+                                                        onclick="openCancelModal(<?= $booking['id'] ?>, '<?= htmlspecialchars(addslashes($booking['project_name'])) ?>', '<?= htmlspecialchars($booking['flat_no']) ?>')"
+                                                        title="Cancel">
+                                                        <i class="fas fa-times-circle"></i>
+                                                    </button>
+                                                <?php endif; ?>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            <?php endforeach; endif; ?>
         </div>
 
     </div><!-- /.bk-panel -->
 </div><!-- /.bk-wrap -->
-
-
 
 
 <!-- ══════════ CANCEL MODAL ══════════ -->
@@ -733,33 +809,100 @@ include __DIR__ . '/../../includes/header.php';
 </div>
 
 <script>
+    // ── Filters toggle ──────────────────────────────────────────────────
     function toggleFilters() {
-        const filterSection = document.getElementById('filterSection');
-        filterSection.classList.toggle('show');
+        document.getElementById('filterSection').classList.toggle('show');
     }
 
+    // ── Staggered row animation helper ─────────────────────────────────
+    // Assigns per-row transition with increasing delay, then marks visible
+    function animateRowsIn(accordion) {
+        const rows = accordion.querySelectorAll('.bk-table tbody tr');
+        rows.forEach((row, i) => {
+            // Reset first so re-opening replays the animation
+            row.classList.remove('row-visible');
+            row.style.transition = '';
+        });
+        // Small timeout lets the reset paint before we add transitions
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                rows.forEach((row, i) => {
+                    const delay = 60 + (i * 45); // 60ms base, 45ms stagger per row
+                    row.style.transition = `opacity 0.32s ease ${delay}ms, transform 0.32s cubic-bezier(0.16,1,0.3,1) ${delay}ms`;
+                    row.classList.add('row-visible');
+                });
+            });
+        });
+    }
+
+    // ── Accordion toggle ───────────────────────────────────────────────
+    function fToggleAccordion(headerEl) {
+        const accordion = headerEl.parentElement;
+        const wrapper   = accordion.querySelector('.pa-body-wrapper');
+        const body      = accordion.querySelector('.pa-body');
+        const isOpen    = accordion.classList.contains('open');
+
+        if (isOpen) {
+            // Close: set explicit px first so transition has a start point, then collapse
+            wrapper.style.maxHeight = wrapper.scrollHeight + 'px';
+            requestAnimationFrame(() => {
+                wrapper.style.maxHeight = '0px';
+            });
+            accordion.classList.remove('open');
+        } else {
+            // Open: expand to content height
+            const targetHeight = body.scrollHeight;
+            wrapper.style.maxHeight = targetHeight + 'px';
+            accordion.classList.add('open');
+
+            // After transition ends, set to 'none' so content can resize freely
+            wrapper.addEventListener('transitionend', () => {
+                if (accordion.classList.contains('open')) {
+                    wrapper.style.maxHeight = 'none';
+                }
+            }, { once: true });
+
+            // Trigger staggered row animation
+            animateRowsIn(accordion);
+        }
+    }
+
+    // ── Init: set max-height for already-open accordions on page load ──
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.proj-accordion').forEach(accordion => {
+            const wrapper = accordion.querySelector('.pa-body-wrapper');
+            const body    = accordion.querySelector('.pa-body');
+
+            if (accordion.classList.contains('open')) {
+                // Already open: no animation, just make rows visible instantly
+                wrapper.style.maxHeight = 'none';
+                const rows = accordion.querySelectorAll('.bk-table tbody tr');
+                rows.forEach(row => {
+                    row.style.transition = 'none';
+                    row.classList.add('row-visible');
+                });
+            } else {
+                wrapper.style.maxHeight = '0px';
+            }
+        });
+    });
+
+    // ── Cancel Modal ───────────────────────────────────────────────────
     function openCancelModal(bookingId, projectName, flatNo) {
         document.getElementById('cancel_project_name').textContent = projectName;
         document.getElementById('cancel_flat_no').textContent = flatNo;
         document.getElementById('confirm_cancel_btn').href = 'cancel.php?id=' + bookingId;
-        
-        const modal = document.getElementById('cancelModal');
-        modal.classList.add('open');
+        document.getElementById('cancelModal').classList.add('open');
     }
 
     function closeModal(modalId) {
         const modal = document.getElementById(modalId);
-        if (modal) {
-            modal.classList.remove('open');
-        }
+        if (modal) modal.classList.remove('open');
     }
 
-    // Close modal when clicking outside
     window.onclick = function(event) {
         const modal = document.getElementById('cancelModal');
-        if (event.target == modal) {
-            closeModal('cancelModal');
-        }
+        if (event.target == modal) closeModal('cancelModal');
     }
 </script>
 

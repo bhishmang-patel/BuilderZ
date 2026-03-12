@@ -45,8 +45,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'contract_amount' => floatval($_POST['contract_amount']),
             'gst_rate'        => floatval($_POST['gst_rate']),
             'tds_percentage'  => floatval($_POST['tds_percentage']),
-            'status'          => sanitize($_POST['status'])
+            'status'          => sanitize($_POST['status']),
+            'quotation_text'  => sanitize($_POST['quotation_text'] ?? '')
         ];
+
+        // Handle Quotation File Upload
+        if (!empty($_FILES['quotation_file']['name'])) {
+            $upload_dir = __DIR__ . '/../../assets/documents/quotations/';
+            if (!is_dir($upload_dir)) {
+                mkdir($upload_dir, 0777, true);
+            }
+            $file_ext = strtolower(pathinfo($_FILES['quotation_file']['name'], PATHINFO_EXTENSION));
+            $allowed_exts = ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'];
+            
+            if (!in_array($file_ext, $allowed_exts)) {
+                throw new Exception("Invalid quotation file type. Allowed: PDF, JPG, PNG, DOC/DOCX.");
+            }
+            
+            $file_name = 'WO_Quote_' . time() . '_' . rand(100, 999) . '.' . $file_ext;
+            if (move_uploaded_file($_FILES['quotation_file']['tmp_name'], $upload_dir . $file_name)) {
+                $data['quotation_file'] = 'assets/documents/quotations/' . $file_name;
+            }
+        }
+
+        // Enforce Quotation Method constraint securely 
+        $q_method = $_POST['quotation_method'] ?? 'manual';
+        if ($q_method === 'manual') {
+            $data['quotation_file'] = null; // Blank the file cell in db
+        } else {
+            $data['quotation_text'] = '';   // Blank the text cell in db 
+        }
+
         $contractor_name = trim($_POST['contractor_name'] ?? '');
         if (empty($data['contractor_id']) && !empty($contractor_name)) {
             $existing = $db->query("SELECT id FROM parties WHERE name = ? AND party_type='contractor'", [$contractor_name])->fetch();
@@ -319,6 +348,146 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
     box-shadow: 0 4px 14px rgba(42,88,181,0.3);
 }
 .btn-submit:active { transform: translateY(0); }
+
+/* ── Upload Zone ── */
+.upload-zone {
+    position: relative; border: 2px dashed var(--border); border-radius: 10px;
+    background: #fdfcfa; padding: 2rem 1.5rem; text-align: center; cursor: pointer;
+    transition: border-color 0.22s, background 0.22s, box-shadow 0.22s, transform 0.22s;
+}
+.upload-zone:hover {
+    border-color: var(--accent); background: var(--accent-bg);
+    transform: translateY(-1px); box-shadow: 0 4px 16px rgba(42,88,181,0.08);
+}
+.upload-zone.drag-over {
+    border-color: var(--accent); background: var(--accent-bg);
+    transform: scale(1.015); box-shadow: 0 0 0 4px rgba(42,88,181,0.12);
+}
+.upload-zone.has-file {
+    border-style: solid; border-color: #10b981; background: #f0fdf4;
+    padding: 1.25rem 1.5rem; transform: none; box-shadow: none;
+}
+.upload-zone input[type="file"] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer;
+    width: 100%; height: 100%; z-index: 1;
+}
+
+/* ── Default idle state ── */
+.uz-default { transition: opacity 0.18s; }
+.uz-icon {
+    width: 48px; height: 48px; border-radius: 12px; background: var(--accent-bg);
+    border: 1.5px solid #c7d6f5; display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 1rem; font-size: 1.15rem; color: var(--accent);
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), background 0.2s, box-shadow 0.2s;
+}
+.upload-zone:hover .uz-icon, .upload-zone.drag-over .uz-icon {
+    transform: translateY(-4px) scale(1.1); background: #dce8fb; box-shadow: 0 6px 16px rgba(42,88,181,0.18);
+}
+.uz-title { font-size: 0.875rem; font-weight: 600; color: var(--ink); margin-bottom: 0.25rem; }
+.uz-title span { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+.uz-sub { font-size: 0.72rem; color: var(--ink-mute); line-height: 1.6; }
+.uz-types { display: flex; gap: 0.4rem; justify-content: center; flex-wrap: wrap; margin-top: 0.85rem; }
+.uz-type-badge {
+    font-size: 0.6rem; font-weight: 700; letter-spacing: 0.06em; padding: 0.2rem 0.55rem;
+    border-radius: 20px; background: white; border: 1.5px solid var(--border);
+    color: var(--ink-mute); text-transform: uppercase;
+}
+
+/* ── File chosen state ── */
+.uz-file { display: none; align-items: center; gap: 0.85rem; text-align: left; position: relative; z-index: 2; }
+.upload-zone.has-file .uz-default { display: none; }
+.upload-zone.has-file .uz-file { display: flex; animation: fileIn 0.35s cubic-bezier(0.16,1,0.3,1) both; }
+@keyframes fileIn {
+    from { opacity: 0; transform: translateY(8px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.uz-file-icon {
+    width: 42px; height: 42px; border-radius: 10px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
+}
+.uz-file-icon.pdf   { background: #fef2f2; border: 1.5px solid #fca5a5; color: #ef4444; }
+.uz-file-icon.img   { background: #eff6ff; border: 1.5px solid #bfdbfe; color: #3b82f6; }
+.uz-file-icon.doc   { background: #eff6ff; border: 1.5px solid #bfdbfe; color: #2563eb; }
+.uz-file-icon.other { background: #ecfdf5; border: 1.5px solid #a7f3d0; color: #10b981; }
+
+.uz-file-info { flex: 1; min-width: 0; }
+.uz-file-name {
+    font-size: 0.85rem; font-weight: 600; color: var(--ink);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.uz-file-meta { font-size: 0.7rem; color: var(--ink-mute); margin-top: 3px; display: flex; align-items: center; gap: 0.4rem; }
+.uz-file-meta .dot { width: 3px; height: 3px; border-radius: 50%; background: #a7f3d0; }
+
+.uz-file-remove {
+    width: 30px; height: 30px; border-radius: 7px; flex-shrink: 0; border: 1.5px solid #fca5a5;
+    background: #fef2f2; color: #ef4444; font-size: 0.72rem; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.18s; position: relative; z-index: 3;
+}
+.uz-file-remove:hover { background: #ef4444; border-color: #ef4444; color: white; transform: scale(1.1); }
+
+/* ── Progress bar ── */
+.uz-progress { height: 3px; background: #bbf7d0; border-radius: 2px; margin-top: 0.9rem; overflow: hidden; display: none; }
+.upload-zone.has-file .uz-progress { display: block; }
+.uz-progress-bar { height: 100%; background: #10b981; border-radius: 2px; width: 0%; transition: width 0.55s cubic-bezier(0.16,1,0.3,1); }
+
+/* ── Quotation Card ── */
+.qt-method-label {
+    font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--ink-mute); margin-bottom: 0.6rem;
+}
+.qt-toggle {
+    display: inline-flex; background: linear-gradient(135deg, #f5f3ef, #f0ece5);
+    padding: 4px; border-radius: 10px; border: 1.5px solid var(--border);
+    margin-bottom: 1.75rem; position: relative;
+}
+.qt-toggle label { cursor: pointer; margin: 0; }
+.qt-toggle input[type="radio"] { display: none; }
+.qt-tab {
+    padding: 0.55rem 1.4rem; font-size: 0.78rem; border-radius: 7px;
+    transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+    display: flex; align-items: center; gap: 0.45rem; white-space: nowrap;
+    font-weight: 500; color: var(--ink-mute); background: transparent;
+}
+.qt-tab.active {
+    font-weight: 600; color: var(--ink); background: white;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.02);
+}
+.qt-tab i { font-size: 0.65rem; }
+.qt-tab.active i { color: var(--accent); }
+
+.qt-field-label {
+    display: flex; align-items: center; gap: 0.35rem; margin-bottom: 0.1rem;
+}
+.qt-field-label i {
+    font-size: 0.55rem; color: var(--accent); opacity: 0.65;
+}
+.qt-textarea {
+    width: 100%; padding: 1rem 1.1rem; border: 1.5px solid var(--border);
+    border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 0.875rem;
+    color: var(--ink); background: #fdfcfa; outline: none; resize: vertical;
+    line-height: 1.7;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+.qt-textarea:focus {
+    border-color: var(--accent); background: white;
+    box-shadow: 0 0 0 3px rgba(42,88,181,0.08);
+}
+.qt-hint {
+    display: flex; align-items: center; gap: 0.35rem;
+    font-size: 0.68rem; color: var(--ink-mute); margin-top: 0.15rem;
+}
+.qt-hint i { font-size: 0.55rem; opacity: 0.45; }
+.qt-existing-file {
+    margin-bottom: 0.65rem; display: flex; align-items: center; gap: 0.5rem;
+    font-size: 0.82rem; color: var(--ink-soft); padding: 0.5rem 0.85rem;
+    background: #f0fdf4; border: 1.5px solid #bbf7d0; border-radius: 8px;
+}
+.qt-existing-file i.fa-check-circle { color: #10b981; font-size: 0.75rem; }
+.qt-existing-file a {
+    color: var(--accent); font-weight: 600; text-decoration: none;
+}
+.qt-existing-file a i { font-size: 0.55rem; }
 </style>
 
 <div class="page-wrap">
@@ -343,7 +512,7 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
         </div>
     </div>
 
-    <form method="POST">
+    <form method="POST" enctype="multipart/form-data">
         <?= csrf_field() ?>
 
         <!-- ── Card 1: Project & Contractor ─── -->
@@ -434,7 +603,199 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
             </div>
         </div>
 
-        <!-- ── Card 2: Contract Details ─────── -->
+        <!-- ── Card 2: Quotation & Scope ─────── -->
+        <div class="ch-card">
+            <div class="card-head">
+                <div class="card-icon" style="background:var(--accent-lt); color:var(--accent)"><i class="fas fa-file-signature"></i></div>
+                <h2>Quotation & Scope of Work</h2>
+                <span class="step-tag">Step 3 of 3</span>
+            </div>
+            <div class="card-body">
+                <?php 
+                    $hasFile = !empty($workOrder['quotation_file']);
+                    $hasText = !empty($workOrder['quotation_text']);
+                    $defaultMethod = $hasFile && !$hasText ? 'upload' : 'manual';
+                ?>
+
+                <!-- Method selector label -->
+                <div class="qt-method-label">Choose Input Method</div>
+
+                <!-- Segmented Toggle -->
+                <div class="qt-toggle">
+                    <label>
+                        <input type="radio" name="quotation_method" value="manual" <?= $defaultMethod === 'manual' ? 'checked' : '' ?> onchange="toggleQuoteMethod(this.value)">
+                        <div class="qt-tab <?= $defaultMethod === 'manual' ? 'active' : '' ?>" id="tab_manual">
+                            <i class="fas fa-pen-nib"></i> Manual Entry
+                        </div>
+                    </label>
+                    <label>
+                        <input type="radio" name="quotation_method" value="upload" <?= $defaultMethod === 'upload' ? 'checked' : '' ?> onchange="toggleQuoteMethod(this.value)">
+                        <div class="qt-tab <?= $defaultMethod === 'upload' ? 'active' : '' ?>" id="tab_upload">
+                            <i class="fas fa-cloud-arrow-up"></i> Upload File
+                        </div>
+                    </label>
+                </div>
+
+                <!-- Manual Entry Section -->
+                <div id="quote_manual_sec" class="field" style="margin-bottom: 0; display: <?= $defaultMethod === 'manual' ? 'flex' : 'none' ?>;">
+                    <label class="qt-field-label">
+                        <i class="fas fa-align-left"></i>
+                        Scope of Work / Quotation Text
+                    </label>
+                    <textarea name="quotation_text" rows="5" class="qt-textarea" placeholder="Describe the scope of work, terms & conditions, material specifications, or paste the full quotation text here..."><?= htmlspecialchars($workOrder['quotation_text'] ?? '') ?></textarea>
+                    <div class="qt-hint">
+                        <i class="fas fa-info-circle"></i>
+                        This will be included in the Work Order and can be referenced later.
+                    </div>
+                </div>
+                
+                <!-- File Upload Section -->
+                <div id="quote_upload_sec" class="field" style="margin-bottom: 0; display: <?= $defaultMethod === 'upload' ? 'flex' : 'none' ?>;">
+                    <label class="qt-field-label">
+                        <i class="fas fa-paperclip"></i>
+                        Quotation Document
+                    </label>
+                    <?php if (!empty($workOrder['quotation_file'])): ?>
+                        <div class="qt-existing-file">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Currently attached:</span>
+                            <a href="<?= BASE_URL . $workOrder['quotation_file'] ?>" target="_blank">View Quotation <i class="fas fa-external-link-alt"></i></a>
+                        </div>
+                    <?php endif; ?>
+                    
+                    <div class="upload-zone" id="uploadZone"
+                         ondragover="handleDragOver(event,'uploadZone')"
+                         ondragleave="handleDragLeave(event,'uploadZone')"
+                         ondrop="handleDrop(event,'uploadZone','fileInput')">
+
+                        <input type="file" id="fileInput" name="quotation_file"
+                               accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                               onchange="handleFileSelect(this,'uploadZone')">
+
+                        <!-- Default state -->
+                        <div class="uz-default">
+                          <div class="uz-icon"><i class="fas fa-cloud-arrow-up"></i></div>
+                          <div class="uz-title"><span>Click to upload</span> or drag &amp; drop</div>
+                          <div class="uz-sub">Max file size ~5 MB</div>
+                          <div class="uz-types">
+                            <span class="uz-type-badge">PDF</span>
+                            <span class="uz-type-badge">JPG</span>
+                            <span class="uz-type-badge">PNG</span>
+                            <span class="uz-type-badge">DOC</span>
+                          </div>
+                        </div>
+
+                        <!-- File chosen state -->
+                        <div class="uz-file">
+                          <div class="uz-file-icon other" id="uzFileIcon"><i class="fas fa-file"></i></div>
+                          <div class="uz-file-info">
+                            <div class="uz-file-name" id="uzFileName">—</div>
+                            <div class="uz-file-meta">
+                              <span id="uzFileSize">—</span>
+                              <span class="dot"></span>
+                              <span id="uzFileType">—</span>
+                            </div>
+                          </div>
+                          <!-- Use a button with specific z-index/click events to block bubble to input file -->
+                          <button type="button" class="uz-file-remove" onclick="removeFile(event, 'uploadZone', 'fileInput')" title="Remove file">
+                            <i class="fas fa-times"></i>
+                          </button>
+                        </div>
+
+                        <div class="uz-progress"><div class="uz-progress-bar" id="uzProgressBar"></div></div>
+                    </div>
+                </div>
+
+                <script>
+                function toggleQuoteMethod(method) {
+                    const tabManual = document.getElementById('tab_manual');
+                    const tabUpload = document.getElementById('tab_upload');
+                    const secManual = document.getElementById('quote_manual_sec');
+                    const secUpload = document.getElementById('quote_upload_sec');
+
+                    if (method === 'manual') {
+                        tabManual.classList.add('active');
+                        tabUpload.classList.remove('active');
+                        secManual.style.display = 'flex';
+                        secUpload.style.display = 'none';
+                    } else {
+                        tabUpload.classList.add('active');
+                        tabManual.classList.remove('active');
+                        secUpload.style.display = 'flex';
+                        secManual.style.display = 'none';
+                    }
+                }
+
+                function handleFileSelect(input, zoneId) {
+                    if (input.files && input.files[0]) showFile(input.files[0], zoneId);
+                }
+
+                function handleDragOver(e, zoneId) {
+                    e.preventDefault();
+                    document.getElementById(zoneId).classList.add('drag-over');
+                }
+
+                function handleDragLeave(e, zoneId) {
+                    document.getElementById(zoneId).classList.remove('drag-over');
+                }
+
+                function handleDrop(e, zoneId, inputId) {
+                    e.preventDefault();
+                    const zone = document.getElementById(zoneId);
+                    zone.classList.remove('drag-over');
+                    const file = e.dataTransfer.files[0];
+                    if (file) {
+                      const dt = new DataTransfer();
+                      dt.items.add(file);
+                      document.getElementById(inputId).files = dt.files;
+                      showFile(file, zoneId);
+                    }
+                }
+
+                function showFile(file, zoneId) {
+                    const zone = document.getElementById(zoneId);
+                    zone.querySelector('#uzFileName').textContent = file.name;
+                    const size = file.size < 1024 * 1024
+                      ? (file.size / 1024).toFixed(1) + ' KB'
+                      : (file.size / (1024*1024)).toFixed(2) + ' MB';
+                    zone.querySelector('#uzFileSize').textContent = size;
+                    const ext = file.name.split('.').pop().toLowerCase();
+                    zone.querySelector('#uzFileType').textContent = ext.toUpperCase();
+
+                    const iconEl = zone.querySelector('#uzFileIcon');
+                    iconEl.className = 'uz-file-icon';
+                    if (ext === 'pdf') {
+                      iconEl.classList.add('pdf'); iconEl.innerHTML = '<i class="fas fa-file-pdf"></i>';
+                    } else if (['jpg','jpeg','png','gif','webp'].includes(ext)) {
+                      iconEl.classList.add('img'); iconEl.innerHTML = '<i class="fas fa-file-image"></i>';
+                    } else if (['doc','docx'].includes(ext)) {
+                      iconEl.classList.add('doc'); iconEl.innerHTML = '<i class="fas fa-file-word"></i>';
+                    } else {
+                      iconEl.classList.add('other'); iconEl.innerHTML = '<i class="fas fa-file"></i>';
+                    }
+
+                    zone.classList.add('has-file');
+                    // Hide file input covering to allow remove button click securely
+                    document.getElementById('fileInput').style.display = 'none';
+
+                    const bar = zone.querySelector('#uzProgressBar');
+                    bar.style.width = '0%';
+                    setTimeout(() => { bar.style.width = '100%'; }, 60);
+                }
+
+                function removeFile(e, zoneId, inputId) {
+                    e.preventDefault(); e.stopPropagation();
+                    const zone = document.getElementById(zoneId);
+                    zone.classList.remove('has-file');
+                    document.getElementById('fileInput').style.display = 'block';
+                    document.getElementById(inputId).value = '';
+                    zone.querySelector('#uzProgressBar').style.width = '0%';
+                }
+                </script>
+            </div>
+        </div>
+
+        <!-- ── Card 3: Contract Details ─────── -->
         <div class="ch-card">
             <div class="card-head">
                 <div class="card-icon green"><i class="fas fa-clipboard-list"></i></div>
@@ -486,7 +847,6 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
                 </div>
 
             </div>
-
             <div class="action-bar">
                 <a href="work_orders.php" class="btn-ghost">
                     <i class="fas fa-times"></i> Cancel

@@ -29,7 +29,7 @@ if (!$bill) {
 }
 
 $items = $db->query("SELECT 
-                        ci.quantity, ci.rate, 
+                        ci.quantity, ci.rate, ci.size, ci.work_type,
                         m.material_name, m.unit, 
                         c.challan_no, c.challan_date, 
                         pr.project_name
@@ -73,7 +73,7 @@ include __DIR__ . '/../../includes/header.php';
 body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(--ink); }
 
 /* ── Wrapper ──────────────────────── */
-.pw { max-width: 900px; margin: 2.5rem auto; padding: 0 1.5rem 5rem; }
+.pw { max-width: 1000px; margin: 2.5rem auto; padding: 0 1.5rem 5rem; }
 
 /* ── Animations ───────────────────── */
 @keyframes hdrIn  { from { opacity:0; transform:translateY(-14px); } to { opacity:1; transform:translateY(0); } }
@@ -223,7 +223,7 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
 .attach-link:hover { background: var(--accent); color: white; text-decoration: none; }
 
 /* ── Challans table ───────────────── */
-.tbl-wrap { border: 1.5px solid var(--border); border-radius: 10px; overflow: hidden; }
+.tbl-wrap { border: 1.5px solid var(--border); border-radius: 10px; overflow-x: auto; overflow-y: hidden; }
 .ch-table { width: 100%; border-collapse: collapse; font-size: 0.855rem; }
 .ch-table thead tr { background: #eef2fb; border-bottom: 1.5px solid var(--border); }
 .ch-table thead th {
@@ -236,7 +236,7 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
 .ch-table tbody tr:last-child { border-bottom: none; }
 .ch-table tbody tr:hover { background: #f4f7fd; }
 .ch-table tbody tr.row-in { animation: rowIn 0.26s cubic-bezier(0.22,1,0.36,1) forwards; }
-.ch-table td { padding: 0.78rem 1rem; vertical-align: middle; color: var(--ink-soft); }
+.ch-table td { padding: 0.78rem 1rem; vertical-align: middle; color: var(--ink-soft); white-space: nowrap; }
 .ch-table td.al-c { text-align: center; }
 
 .challan-no { font-weight: 700; color: var(--ink); font-size: 0.875rem; }
@@ -298,13 +298,13 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
 
 /* ── Confirmation Modal ───────────── */
 .modal-overlay {
-    position: fixed; inset: 0; background: rgba(26,23,20,0.4); backdrop-filter: blur(4px); z-index: 999;
+    position: fixed; inset: 0; background: rgba(26,23,20,0.6); backdrop-filter: blur(4px); z-index: 9999;
     display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: opacity 0.25s ease;
 }
 
 .modal-overlay.active { opacity: 1; visibility: visible; }
 
-.conf-modal { background: white; border-radius: 18px; padding: 2rem 1.75rem; max-width: 600px; width: 90%;
+.conf-modal { background: white; border-radius: 18px; padding: 2rem 1.75rem; max-width: 600px; width: 90%; margin: 0 auto;
     box-shadow: 0 12px 40px rgba(0,0,0,0.12); opacity: 0; transform: translateY(18px); transition: 
         transform 0.35s cubic-bezier(0.22,1,0.36,1), opacity 0.25s ease;
 }
@@ -324,6 +324,7 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
 
 .cm-actions { display: flex; gap: 1rem; }
 .cm-btn { flex: 1; padding: 1rem; border-radius: 12px; font-weight: 700; font-size: 1rem; border: none; cursor: pointer; transition: transform 0.1s; }
+.cm-btn:hover { transform: translateY(-1px); }
 .cm-btn:active { transform: scale(0.98); }
 .cm-cancel { background: var(--border-lt); color: var(--ink); }
 .cm-confirm { color: white; }
@@ -366,8 +367,10 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
                     <span><?= formatDate($bill['bill_date']) ?></span>
                     <span class="dot"></span>
                     <span><strong>Ref</strong> #<?= $bill['id'] ?></span>
-                    <span class="dot"></span>
-                    <span><?= ucfirst(htmlspecialchars($bill['vendor_type'])) ?></span>
+                    <?php if (!empty($bill['vendor_type'])): ?>
+                        <span class="dot"></span>
+                        <span style="text-transform:capitalize;"><?= htmlspecialchars(str_replace('_', ' ', $bill['vendor_type'])) ?></span>
+                    <?php endif; ?>
                 </div>
             </div>
             <div class="hero-amount">
@@ -403,7 +406,9 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
                     </div>
                     <div class="ib-line">
                         <span class="il-key">Type</span>
-                        <span class="il-val"><?= ucfirst(htmlspecialchars($bill['vendor_type'])) ?></span>
+                        <span class="il-val <?= empty($bill['vendor_type']) ? 'mono' : '' ?>" <?= !empty($bill['vendor_type']) ? 'style="text-transform:capitalize;"' : '' ?>>
+                            <?= !empty($bill['vendor_type']) ? htmlspecialchars(str_replace('_', ' ', $bill['vendor_type'])) : 'N/A' ?>
+                        </span>
                     </div>
                 </div>
 
@@ -433,10 +438,20 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
                             </span>
                         </span>
                     </div>
-                    <?php if (!empty($bill['file_path'])): ?>
-                        <a href="<?= BASE_URL . htmlspecialchars($bill['file_path']) ?>" target="_blank" class="attach-link">
-                            <i class="fas fa-paperclip"></i> View Attachment
-                        </a>
+                    <?php if (!empty($bill['file_path'])): 
+                        $ext = strtolower(pathinfo($bill['file_path'], PATHINFO_EXTENSION));
+                        $is_image = in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg']);
+                        $file_url = BASE_URL . htmlspecialchars($bill['file_path']);
+                    ?>
+                        <?php if ($is_image): ?>
+                            <button type="button" onclick="viewAttachment('<?= $file_url ?>')" class="attach-link" style="background:none; border: 1px solid var(--accent-md); background: var(--accent-lt); cursor: pointer;">
+                                <i class="fas fa-image"></i> View Attachment
+                            </button>
+                        <?php else: ?>
+                            <a href="<?= $file_url ?>" target="_blank" class="attach-link">
+                                <i class="fas fa-file-pdf"></i> View Attachment
+                            </a>
+                        <?php endif; ?>
                     <?php endif; ?>
                 </div>
 
@@ -472,6 +487,7 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
                                 <th class="al-c">Date</th>
                                 <th class="al-c">Project</th>
                                 <th class="al-c">Material</th>
+                                <th class="al-c">Type</th>
                                 <th class="al-c">Unit</th>
                                 <th class="al-c">Qty</th>
                                 <th class="al-c">Rate</th>
@@ -497,12 +513,28 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
                                         <span style="color:var(--ink-mute);">—</span>
                                     <?php endif; ?>
                                 </td>
-                                <td class="al-c" style="font-weight:600; color:var(--ink);">
-                                    <?= htmlspecialchars($item['material_name']) ?>
+                                <td class="al-c">
+                                    <span style="font-weight:600; color:var(--ink);">
+                                        <?= htmlspecialchars($item['material_name']) ?>
+                                    </span>
+                                    <?php if (!empty($item['size'])): ?>
+                                        <span style="font-size:0.8rem; color:var(--ink-mute); font-weight:400; margin-left:4px;">
+                                            (<?= htmlspecialchars($item['size']) ?>)
+                                        </span>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="al-c">
+                                    <?php if (!empty($item['work_type'])): ?>
+                                        <span style="font-size:0.8rem; color:var(--ink-soft); font-weight:500;">
+                                            <?= htmlspecialchars($item['work_type']) ?>
+                                        </span>
+                                    <?php else: ?>
+                                        <span style="color:var(--ink-mute);">—</span>
+                                    <?php endif; ?>
                                 </td>
                                 <td class="al-c" style="font-size:0.8rem; text-transform:uppercase;"><?= htmlspecialchars($item['unit']) ?></td>
                                 <td class="al-c num-cell"><?= floatval($item['quantity']) ?></td>
-                                <td class="al-c num-cell"><?= floatval($item['rate']) ?></td>
+                                <td class="al-c num-cell">₹ <?= floatval($item['rate']) ?></td>
                                 <td class="al-c num-cell"><?= formatCurrency($amount) ?></td>
                             </tr>
                             <?php endforeach; ?>
@@ -562,6 +594,9 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
     <input type="hidden" name="status" id="statusInput">
 </form>
 
+
+<?php include __DIR__ . '/../../includes/footer.php'; ?> 
+
 <!-- Confirmation Modal -->
 <div class="modal-overlay" id="confModal">
     <div class="conf-modal">
@@ -572,6 +607,16 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
             <button class="cm-btn cm-cancel" onclick="closeModal()">Back</button>
             <button class="cm-btn cm-confirm" id="cmConfirmBtn">Confirm</button>
         </div>
+    </div>
+</div>
+
+<!-- Attachment Modal -->
+<div class="modal-overlay" id="attachModal" style="z-index: 99999;">
+    <div style="position: relative; max-width: 90vw; max-height: 90vh;">
+        <button onclick="closeAttachModal()" style="position: absolute; top: -15px; right: -15px; width: 34px; height: 34px; border-radius: 50%; border: 2px solid white; background: var(--ink); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 10;">
+            <i class="fas fa-times"></i>
+        </button>
+        <img id="attachImage" src="" alt="Attachment" style="display: block; max-width: 100%; max-height: 90vh; border-radius: 8px; box-shadow: 0 24px 60px rgba(0,0,0,0.4); background: white; object-fit: contain;">
     </div>
 </div>
 
@@ -622,6 +667,23 @@ document.getElementById('cmConfirmBtn').onclick = function() {
 document.getElementById('confModal').onclick = function(e) {
     if (e.target === this) closeModal();
 };
-</script>
 
-<?php include __DIR__ . '/../../includes/footer.php'; ?> 
+// Attachment Viewer
+function viewAttachment(url) {
+    const modal = document.getElementById('attachModal');
+    const img = document.getElementById('attachImage');
+    img.src = url;
+    modal.classList.add('active');
+}
+
+function closeAttachModal() {
+    const modal = document.getElementById('attachModal');
+    const img = document.getElementById('attachImage');
+    modal.classList.remove('active');
+    setTimeout(() => { img.src = ''; }, 300); // clear source after fade out
+}
+
+document.getElementById('attachModal').onclick = function(e) {
+    if (e.target === this) closeAttachModal();
+};
+</script>

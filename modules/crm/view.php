@@ -31,6 +31,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_followup'])) {
     exit;
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mark_complete'])) {
+    if (!$leadId) die("Lead ID missing");
+    
+    $crm->completeFollowup($_POST['followup_id']);
+    header("Location: view.php?id=$leadId");
+    exit;
+}
+
 require_once __DIR__ . '/../../includes/header.php';
 
 if (!$leadId) die("Lead ID not provided");
@@ -67,6 +75,8 @@ $wa_num  = preg_replace('/[^0-9]/', '', $lead['mobile']);
 ?>
 
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,600&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
 <style>
 *, *::before, *::after { box-sizing: border-box; }
@@ -81,7 +91,7 @@ $wa_num  = preg_replace('/[^0-9]/', '', $lead['mobile']);
     --teal:       #0891b2; --teal-lt:   #cffafe;
 }
 body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(--ink); }
-.pw  { max-width: 1180px; margin: 2.5rem auto; padding: 0 1.5rem 5rem; }
+.pw  { max-width: 1180px; margin: 2rem auto; padding: 0 1.5rem 5rem; }
 
 @keyframes hdrIn  { from { opacity:0; transform:translateY(-14px); } to { opacity:1; transform:translateY(0); } }
 @keyframes fadeUp { from { opacity:0; transform:translateY(16px);  } to { opacity:1; transform:translateY(0); } }
@@ -97,6 +107,8 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
 .page-header h1 { font-family:'Fraunces',serif; font-size:1.85rem; font-weight:700; color:var(--ink); margin:0; line-height:1.1; }
 .page-header h1 em { font-style:italic; color:var(--accent); }
 .hdr-right { display:flex; gap:.55rem; flex-wrap:wrap; align-items:center; }
+.btn-edit-lead { display:inline-flex; align-items:center; gap:.42rem; padding:.52rem 1rem; font-size:.82rem; font-weight:600; color:white; border:none; border-radius:7px; background:var(--ink); text-decoration:none; transition:all .18s; }
+.btn-edit-lead:hover { background:var(--accent); text-decoration:none; box-shadow:0 4px 12px rgba(42,88,181,.25); }
 .back-link { display:inline-flex; align-items:center; gap:.42rem; padding:.52rem 1rem; font-size:.82rem; font-weight:500; color:var(--ink-soft); border:1.5px solid var(--border); border-radius:7px; background:white; text-decoration:none; transition:all .18s; }
 .back-link:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-bg); text-decoration:none; }
 .btn-convert { display:inline-flex; align-items:center; gap:.42rem; padding:.55rem 1.2rem; font-size:.85rem; font-weight:700; color:white; background:var(--green); border:none; border-radius:8px; text-decoration:none; cursor:pointer; transition:all .18s; }
@@ -210,8 +222,102 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
 .empty-state h4 { font-family:'Fraunces',serif; font-size:1rem; font-weight:600; color:var(--ink-soft); margin:0 0 .3rem; }
 .empty-state p  { font-size:.8rem; color:var(--ink-mute); margin:0; }
 
+/* timeline complete */
+.btn-complete { display:inline-flex; align-items:center; gap:.32rem; margin-top:.45rem; margin-left:.5rem; padding:.18rem .65rem; border-radius:6px; font-size:.7rem; font-weight:700; background:white; color:var(--green); border:1px solid var(--green); cursor:pointer; transition:all .18s; }
+.btn-complete:hover { background:var(--green-lt); }
+.tl-completed-tag { display:inline-flex; align-items:center; gap:.32rem; margin-top:.45rem; margin-left:.5rem; padding:.18rem .65rem; border-radius:6px; font-size:.7rem; font-weight:700; background:var(--green-lt); color:var(--green); border:1px solid #6ee7b7; opacity:0.8; }
+.tl-item.completed { opacity: 0.7; }
+.tl-item.completed .tl-notes { text-decoration: line-through; }
+
 /* count tag */
 .count-tag { font-size:.62rem; font-weight:800; padding:.15rem .55rem; border-radius:20px; background:var(--cream); color:var(--ink-mute); border:1px solid var(--border); font-family:'DM Sans',sans-serif; }
+
+/* ── Flatpickr Custom Theme ──────── */
+.flatpickr-calendar {
+    font-family: 'DM Sans', sans-serif !important;
+    border: 1.5px solid var(--border) !important;
+    border-radius: 14px !important;
+    box-shadow: 0 12px 40px rgba(26,23,20,.12), 0 2px 8px rgba(26,23,20,.06) !important;
+    background: var(--surface) !important;
+    overflow: hidden;
+}
+.flatpickr-calendar::before, .flatpickr-calendar::after { display: none !important; }
+.flatpickr-months {
+    background: #fafbff !important;
+    border-bottom: 1.5px solid var(--border-lt) !important;
+    padding: .35rem 0 !important;
+    border-radius: 14px 14px 0 0 !important;
+}
+.flatpickr-months .flatpickr-month { height: 38px !important; }
+.flatpickr-current-month {
+    font-family: 'Fraunces', serif !important; font-size: .95rem !important;
+    font-weight: 600 !important; color: var(--ink) !important;
+    display: inline-flex !important; align-items: center !important;
+    gap: .25rem !important; padding: 0 !important;
+    width: auto !important; left: 50% !important; transform: translateX(-50%) !important;
+}
+.flatpickr-current-month .flatpickr-monthDropdown-months {
+    font-family: 'Fraunces', serif !important; font-weight: 600 !important;
+    background: transparent !important; border: none !important;
+    -webkit-appearance: none; appearance: none;
+}
+.flatpickr-current-month input.cur-year {
+    font-family: 'Fraunces', serif !important; font-weight: 600 !important; color: var(--ink) !important;
+}
+.flatpickr-months .flatpickr-prev-month, .flatpickr-months .flatpickr-next-month {
+    color: var(--ink-soft) !important; fill: var(--ink-soft) !important;
+    padding: 6px 10px !important; border-radius: 8px !important; transition: all .15s;
+}
+.flatpickr-months .flatpickr-prev-month:hover, .flatpickr-months .flatpickr-next-month:hover {
+    color: var(--accent) !important; fill: var(--accent) !important; background: var(--accent-lt) !important;
+}
+span.flatpickr-weekday {
+    font-family: 'DM Sans', sans-serif !important;
+    font-size: .62rem !important; font-weight: 800 !important;
+    letter-spacing: .08em !important; text-transform: uppercase !important;
+    color: var(--ink-mute) !important; background: transparent !important;
+}
+.flatpickr-day {
+    font-family: 'DM Sans', sans-serif !important;
+    font-size: .82rem !important; font-weight: 500 !important;
+    color: var(--ink) !important; border-radius: 8px !important;
+    border: none !important; transition: all .12s !important;
+    max-width: 36px !important; height: 36px !important; line-height: 36px !important;
+    margin: 1px !important;
+}
+.flatpickr-day:hover { background: var(--accent-lt) !important; color: var(--accent) !important; }
+.flatpickr-day.today {
+    background: var(--accent-lt) !important; color: var(--accent) !important;
+    font-weight: 800 !important; border: 1.5px solid var(--accent-md) !important;
+}
+.flatpickr-day.selected, .flatpickr-day.selected:hover {
+    background: var(--accent) !important; color: white !important;
+    font-weight: 700 !important; box-shadow: 0 2px 8px rgba(42,88,181,.3) !important;
+}
+.flatpickr-day.prevMonthDay, .flatpickr-day.nextMonthDay {
+    color: var(--ink-mute) !important; opacity: .45 !important;
+}
+.flatpickr-day.flatpickr-disabled { color: var(--border) !important; opacity: .35 !important; }
+
+/* Time picker */
+.flatpickr-time {
+    border-top: 1.5px solid var(--border-lt) !important;
+    background: #fafbff !important; max-height: 44px !important;
+    border-radius: 0 0 14px 14px !important;
+}
+.flatpickr-time input, .flatpickr-time .flatpickr-am-pm {
+    font-family: 'DM Sans', sans-serif !important;
+    font-size: .88rem !important; font-weight: 700 !important;
+    color: var(--ink) !important;
+}
+.flatpickr-time .flatpickr-am-pm {
+    border-radius: 6px !important; width: 42px !important;
+}
+.flatpickr-time .flatpickr-am-pm:hover { background: var(--accent-lt) !important; color: var(--accent) !important; }
+.flatpickr-time input:hover, .flatpickr-time input:focus { background: var(--accent-lt) !important; }
+.flatpickr-time .flatpickr-time-separator {
+    font-weight: 800 !important; color: var(--ink-mute) !important;
+}
 </style>
 
 <div class="pw">
@@ -220,11 +326,16 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
     <div class="page-header">
         <div>
             <div class="eyebrow">CRM &rsaquo; Leads</div>
-            <h1><em><?= htmlspecialchars($lead['full_name']) ?></em></h1>
+            <h1>Lead <em>Details</em></h1>
         </div>
         <div class="hdr-right">
-            <a href="index.php" class="back-link"><i class="fas fa-arrow-left"></i> All Leads</a>
-            <?php if ($lead['status'] !== 'Booked'): ?>
+            <a href="index.php" class="back-link">
+                <i class="fas fa-arrow-left"></i> Back to Leads
+            </a>
+            <a href="edit.php?id=<?= $lead['id'] ?>" class="btn-edit-lead">
+                <i class="fas fa-edit"></i> Edit Lead
+            </a>
+            <?php if (!in_array($lead['status'], ['Booked','Lost'])): ?>
                 <a href="<?= BASE_URL ?>modules/booking/create.php?lead_id=<?= $lead['id'] ?>" class="btn-convert">
                     <i class="fas fa-check-circle"></i> Convert to Booking
                 </a>
@@ -341,7 +452,7 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
                             </div>
                             <div class="mf">
                                 <label>Next Follow-up</label>
-                                <input type="datetime-local" name="followup_date">
+                                <input type="text" name="followup_date" id="followupDatePicker" placeholder="Select date & time" autocomplete="off">
                             </div>
                         </div>
                         <div class="mf" style="margin-bottom:0;">
@@ -379,7 +490,7 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
                             $im = getViewInteractionMeta($fp['interaction_type']);
                             $d  = date_create($fp['created_at']);
                         ?>
-                            <div class="tl-item" style="animation-delay:<?= $i*30 ?>ms;">
+                            <div class="tl-item <?= $fp['is_completed'] ? 'completed' : '' ?>" style="animation-delay:<?= $i*30 ?>ms;">
                                 <div class="tl-ic-col">
                                     <div class="tl-ic <?= $im['cls'] ?>">
                                         <i class="fas <?= $im['icon'] ?>"></i>
@@ -392,12 +503,39 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
                                         <span class="tl-time"><?= date_format($d,'d M Y, h:i A') ?></span>
                                     </div>
                                     <p class="tl-notes"><?= nl2br(htmlspecialchars($fp['notes'])) ?></p>
-                                    <?php if (!empty($fp['followup_date'])): ?>
-                                        <div class="tl-next">
-                                            <i class="fas fa-clock" style="font-size:.6rem;"></i>
-                                            Next: <?= date('d M Y, h:i A', strtotime($fp['followup_date'])) ?>
-                                        </div>
-                                    <?php endif; ?>
+                                    
+                                    <div style="display:flex; align-items:center; flex-wrap:wrap;">
+                                        <?php if (!empty($fp['followup_date'])): ?>
+                                            <div class="tl-next" <?= $fp['is_completed'] ? 'style="background:var(--cream);color:var(--ink-soft);border-color:var(--border);"' : '' ?>>
+                                                <i class="fas fa-clock" style="font-size:.6rem;"></i>
+                                                Next: <?= date('d M Y, h:i A', strtotime($fp['followup_date'])) ?>
+                                            </div>
+                                        <?php endif; ?>
+                                        
+                                        <?php if ($fp['is_completed']): ?>
+                                            <div class="tl-completed-tag">
+                                                <i class="fas fa-check"></i> Completed
+                                            </div>
+                                        <?php else: ?>
+                                            <?php
+                                            // Only show the mark complete button if there is no follow-up date OR the date has passed
+                                            $canComplete = empty($fp['followup_date']) || strtotime($fp['followup_date']) <= time();
+                                            if ($canComplete):
+                                            ?>
+                                                <form method="POST" style="display:inline;" id="form_complete_<?= $fp['id'] ?>">
+                                                    <input type="hidden" name="mark_complete" value="1">
+                                                    <input type="hidden" name="followup_id" value="<?= $fp['id'] ?>">
+                                                    <button type="button" class="btn-complete" onclick="confirmComplete('form_complete_<?= $fp['id'] ?>')">
+                                                        <i class="fas fa-check"></i> Mark complete
+                                                    </button>
+                                                </form>
+                                            <?php else: ?>
+                                                <div class="tl-next" style="background:var(--cream);color:var(--ink-mute);border-color:var(--border);margin-left:.5rem;">
+                                                    <i class="fas fa-lock" style="font-size:.6rem;"></i> Locked until due
+                                                </div>
+                                            <?php endif; ?>
+                                        <?php endif; ?>
+                                    </div>
                                 </div>
                             </div>
                         <?php endforeach; ?>
@@ -408,5 +546,31 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
         </div>
     </div>
 </div>
+
+<script>
+function confirmComplete(formId) {
+    window.customConfirm({
+        icon: '<i class="fas fa-check-circle" style="color:var(--green);"></i>',
+        title: 'Mark as Completed',
+        text: 'Are you sure you want to mark this follow-up as completed?',
+        confirmText: 'Yes, Complete it'
+    }, function() {
+        document.getElementById(formId).submit();
+    });
+}
+
+// Initialize Flatpickr
+flatpickr('#followupDatePicker', {
+    enableTime: true,
+    dateFormat: 'Y-m-d H:i',
+    altInput: true,
+    altFormat: 'd M Y, h:i K',
+    time_24hr: false,
+    minuteIncrement: 15,
+    disableMobile: true,
+    animate: true,
+    monthSelectorType: 'dropdown'
+});
+</script>
 
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>

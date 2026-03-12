@@ -253,7 +253,6 @@ select.f-ctrl {
 .btn-add:hover { background: var(--accent-dk); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(42,88,181,0.32); }
 
 /* ── Table ───────────────────────────── */
-.table-wrap { overflow-x: auto; }
 .data-table { width: 100%; border-collapse: collapse;  table-layout: auto; font-size: 0.875rem; }
 .data-table thead tr { background: #f0f4fb; border-bottom: 1.5px solid var(--border); }
 .data-table thead th {
@@ -283,7 +282,7 @@ select.f-ctrl {
 
 /* ── Pill badges ─────────────────────── */
 .pill {
-    display: inline-block; font-size: 0.67rem; font-weight: 700;
+    display: inline-block; font-size: 0.67rem; font-weight: 700; white-space: nowrap;
     letter-spacing: 0.04em; padding: 0.22rem 0.65rem; border-radius: 20px;
 }
 .pill.gray    { background: var(--cream); color: var(--ink-soft); border: 1px solid var(--border); }
@@ -618,8 +617,6 @@ select.f-ctrl {
                         <tr>
                             <th class="left">Vendor</th>
                             <th class="center">Type</th>
-                            <th class="center">Location</th>
-                            <th class="center">GST</th>
                             <th class="center">Material</th>
                             <th class="center">Qty</th>
                             <th class="center">Bills</th>
@@ -636,13 +633,13 @@ select.f-ctrl {
                             $delay   = 40 + $i * 38;
                         ?>
                         <tr class="row-anim" style="animation-delay:<?= $delay ?>ms">
-                            <td class="center">
+                            <td class="left">
                                 <div class="vname-cell" style="display:flex; flex-direction:column; align-items:flex-start; gap:0.2rem;">
                                     <span class="vname"><?= htmlspecialchars($party['name'] ?? '') ?></span>
                                     <?php 
                                     if (!empty($party['vendor_projects'])) {
                                         $projList = explode('||', $party['vendor_projects']);
-                                        echo '<div style="display:flex; flex-wrap:wrap; gap:4px;">';
+                                        echo '<div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:0.2rem;">';
                                         foreach ($projList as $pStr) {
                                             $parts = explode(':', $pStr);
                                             if (count($parts) >= 2) {
@@ -655,24 +652,15 @@ select.f-ctrl {
                                 </div>
                             </td>
                             <td class="center">
-                                <?php if ($party['vendor_type']): ?>
-                                    <span class="pill gray" style="text-transform:capitalize;">
-                                        <?= str_replace('_', ' ', $party['vendor_type']) ?>
+                                <?php if (!empty($party['supplied_types'])): ?>
+                                    <span class="pill gray">
+                                        <?= htmlspecialchars(str_replace('_', ' ', $party['supplied_types'])) ?>
                                     </span>
                                 <?php else: ?>
-                                    <span style="color:var(--ink-mute);">—</span>
+                                    <span class="pill gray" style="text-transform:capitalize;">
+                                        <?= htmlspecialchars(str_replace('_', ' ', $party['vendor_type'] ?: '—')) ?>
+                                    </span>
                                 <?php endif; ?>
-                            </td>
-                            <td class="center" style="font-size:0.82rem;font-weight:500;color:var(--ink-soft);">
-                                <?= htmlspecialchars($party['city'] ?? '—') ?>
-                            </td>
-                            <td class="center" style="text-align:left;">
-                                <div class="gst-cell">
-                                    <div class="gst-status"><?= htmlspecialchars($party['gst_status'] ?? 'Unregistered') ?></div>
-                                    <?php if (!empty($party['gst_number'])): ?>
-                                        <div class="gst-num"><?= htmlspecialchars($party['gst_number']) ?></div>
-                                    <?php endif; ?>
-                                </div>
                             </td>
                             <td class="center" style="font-size:0.78rem;color:var(--ink-soft);line-height:1.4;">
                                 <?= !empty($party['supplied_materials']) ? htmlspecialchars($party['supplied_materials']) : '<span style="color:var(--ink-mute)">—</span>' ?>

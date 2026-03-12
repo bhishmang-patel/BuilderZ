@@ -33,6 +33,8 @@ try {
             m.material_name, 
             m.unit, 
             ci.quantity, 
+            ci.size,
+            ci.work_type,
             ci.rate 
          FROM challan_items ci
          JOIN materials m ON ci.material_id = m.id

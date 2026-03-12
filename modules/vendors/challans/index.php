@@ -46,7 +46,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                         $vendor_data = [
                             'party_type' => 'vendor', 'name' => $tv['name'], 'mobile' => $tv['mobile'],
-                            'address' => $tv['address'], 'gst_number' => $tv['gst_number'],
+                            'address' => $tv['address'], 
+                            'gst_number' => empty($tv['gst_number']) ? null : $tv['gst_number'],
                             'gst_status' => !empty($tv['gst_number']) ? 'registered' : 'unregistered',
                             'email' => $tv['email'], 'status' => 'active'
                         ];
@@ -468,9 +469,9 @@ include __DIR__ . '/../../../includes/header.php';
         font-family: 'DM Sans', sans-serif; font-size: 0.875rem; font-weight: 600;
         cursor: pointer; border: 1.5px solid; transition: all 0.18s;
     }
-    .mbtn-cancel { background: white; border-color: var(--border); color: var(--ink-soft); }
+    .mbtn-cancel { background: white; border-color: var(--border); color: var(--ink-soft); margin-top: 1.5rem;}
     .mbtn-cancel:hover { border-color: var(--ink); color: var(--ink); }
-    .mbtn-approve{ background: #ecfdf5; border-color: #6ee7b7; color: #065f46; }
+    .mbtn-approve{ background: #ecfdf5; border-color: #6ee7b7; color: #065f46; margin-top: 1.5rem; }
     .mbtn-approve:hover { background: #10b981; border-color: #10b981; color: white; box-shadow: 0 4px 12px rgba(16,185,129,0.25); }
     .mbtn-delete { background: #fef2f2; border-color: #fca5a5; color: #991b1b; }
     .mbtn-delete:hover { background: #ef4444; border-color: #ef4444; color: white; box-shadow: 0 4px 12px rgba(239,68,68,0.25); }

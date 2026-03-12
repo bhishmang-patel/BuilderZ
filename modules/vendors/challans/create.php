@@ -39,12 +39,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             
             // Check if GST already exists in parties table
-            $existingGst = $db->query("SELECT id, name FROM parties WHERE gst_number = ? AND party_type='vendor'", [$_POST['gst_number']])->fetch();
+            $existingGst = $db->query("SELECT id, name, party_type FROM parties WHERE gst_number = ?", [$_POST['gst_number']])->fetch();
             if ($existingGst) {
                  // If selecting an existing vendor, ensure the GST matches that vendor (logic handled below by ID), 
-                 // but if creating a NEW vendor (vendor_id empty), this is a blocker.
+                 // but if creating a NEW vendor (vendor_id empty) or GST belongs to another party, block it.
                  if (empty($vendor_id) || $vendor_id != $existingGst['id']) {
-                     throw new Exception("GST Number '{$_POST['gst_number']}' is already registered to '{$existingGst['name']}'. Please select that vendor instead.");
+                     $partyType = ucfirst($existingGst['party_type']);
+                     throw new Exception("The GST Number '{$_POST['gst_number']}' is already registered to another {$partyType} account ('{$existingGst['name']}'). Please use a unique GST number or select the existing {$partyType}.");
                  }
             }
         }
@@ -54,6 +55,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             if ($existing_vendor) {
                 $vendor_id = $existing_vendor['id'];
+                // Update missing existing data if new values provided
+                $update_vendor = [];
+                if (!empty($_POST['gst_number'])) {
+                    $update_vendor['gst_number'] = $_POST['gst_number'];
+                    $update_vendor['gst_status'] = 'registered';
+                }
+                if (!empty($_POST['mobile'])) $update_vendor['mobile'] = sanitize($_POST['mobile']);
+                if (!empty($_POST['email'])) $update_vendor['email'] = sanitize($_POST['email']);
+                if (!empty($_POST['address'])) $update_vendor['address'] = sanitize($_POST['address']);
+                if (!empty($update_vendor)) {
+                    if (isset($update_vendor['gst_number'])) {
+                        $checkGst = $db->query("SELECT id, name, party_type FROM parties WHERE gst_number = ? AND id != ?", [$update_vendor['gst_number'], $vendor_id])->fetch();
+                        if ($checkGst) {
+                            $type = ucfirst($checkGst['party_type']);
+                            throw new Exception("The GST Number '{$update_vendor['gst_number']}' is already registered to another {$type} account ('{$checkGst['name']}'). Please use a unique GST number.");
+                        }
+                    }
+                    $db->update('parties', $update_vendor, 'id = ?', [$vendor_id]);
+                }
             } else {
                 $temp_vendor = [
                     'name' => $vendor_name,
@@ -65,10 +85,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $temp_vendor_json = json_encode($temp_vendor);
                 $vendor_id = null;
             }
+        } else {
+            // Update missing existing data for the selected vendor
+            $update_vendor = [];
+            if (!empty($_POST['gst_number'])) {
+                $update_vendor['gst_number'] = $_POST['gst_number'];
+                $update_vendor['gst_status'] = 'registered';
+            }
+            if (!empty($_POST['mobile'])) $update_vendor['mobile'] = sanitize($_POST['mobile']);
+            if (!empty($_POST['email'])) $update_vendor['email'] = sanitize($_POST['email']);
+            if (!empty($_POST['address'])) $update_vendor['address'] = sanitize($_POST['address']);
+            if (!empty($update_vendor)) {
+                if (isset($update_vendor['gst_number'])) {
+                    $checkGst = $db->query("SELECT id, name, party_type FROM parties WHERE gst_number = ? AND id != ?", [$update_vendor['gst_number'], $vendor_id])->fetch();
+                    if ($checkGst) {
+                        $type = ucfirst($checkGst['party_type']);
+                        throw new Exception("The GST Number '{$update_vendor['gst_number']}' is already registered to another {$type} account ('{$checkGst['name']}'). Please use a unique GST number.");
+                    }
+                }
+                $db->update('parties', $update_vendor, 'id = ?', [$vendor_id]);
+            }
         }
 
         $project_id = intval($_POST['project_id']);
-        $po_id = !empty($_POST['po_id']) ? intval($_POST['po_id']) : null;
         $challan_date = $_POST['challan_date'];
         $vehicle_no = sanitize($_POST['vehicle_no'] ?? '');
         $challan_no = sanitize($_POST['challan_no'] ?? '');
@@ -96,7 +135,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'challan_type' => 'material',
             'party_id' => $vendor_id,
             'project_id' => $project_id,
-            'po_id' => $po_id,
             'challan_date' => $challan_date,
             'vehicle_no' => $vehicle_no,
             'total_amount' => 0, // No value on challan
@@ -131,23 +169,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'challan_id' => $challan_id,
                 'material_id' => $material_id,
                 'quantity' => floatval($item['quantity']),
+                'size' => isset($item['size']) ? sanitize($item['size']) : null,
+                'work_type' => isset($item['work_type']) ? sanitize($item['work_type']) : null,
                 'rate' => null,
                 'tax_rate' => null,
                 'tax_amount' => null
             ];
             
             $db->insert('challan_items', $item_data);
-            
-            if ($po_id && $material_id) {
-                 $db->query("UPDATE purchase_order_items SET received_qty = received_qty + ? WHERE po_id = ? AND material_id = ?", 
-                     [$item['quantity'], $po_id, $material_id]);
-            }
-        }
-        
-        if ($po_id) {
-        require_once __DIR__ . '/../../../includes/ProcurementService.php';
-            $procService = new ProcurementService();
-            $procService->updatePOStatus($po_id);
         }
         
         logAudit('create', 'challans', $challan_id, null, $challan_data);
@@ -166,6 +195,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         setFlashMessage('success', "Delivery Challan $challan_no created successfully");
         redirect('modules/vendors/challans/index.php');
 
+    } catch (PDOException $e) {
+        $db->rollback();
+        if ($e->errorInfo[1] == 1062) {
+            $msg = $e->getMessage();
+            if (strpos($msg, 'idx_unique_gst') !== false) {
+                setFlashMessage('error', 'This GST Number is already registered to another account in the system. Please use a unique GST number.');
+            } else {
+                setFlashMessage('error', 'A record with these details already exists in the system. Please verify your entries.');
+            }
+        } else {
+            setFlashMessage('error', 'An unexpected database error occurred. Please try again.');
+        }
     } catch (Exception $e) {
         $db->rollback();
         setFlashMessage('error', $e->getMessage());
@@ -259,7 +300,8 @@ include __DIR__ . '/../../../includes/header.php';
         background: var(--surface);
         border: 1.5px solid var(--border);
         border-radius: 14px;
-        overflow: hidden;
+        overflow: visible;
+        position: relative;
         margin-bottom: 1.5rem;
         box-shadow: 0 1px 4px rgba(26,23,20,0.04);
     }
@@ -395,7 +437,7 @@ include __DIR__ . '/../../../includes/header.php';
     .sec-gap { margin-top: 1.4rem; padding-top: 1.4rem; border-top: 1px solid var(--border-lt); }
 
     /* ── Autocomplete ────────────────────────── */
-    .autocomplete-wrapper { position: relative; }
+    .autocomplete-wrapper { position: relative; z-index: 1000;}
 
     .autocomplete-list {
         position: absolute;
@@ -407,7 +449,7 @@ include __DIR__ . '/../../../includes/header.php';
         list-style: none;
         padding: 0.3rem;
         margin: 0;
-        z-index: 300;
+        z-index: 999;
         display: none;
         max-height: 210px;
         overflow-y: auto;
@@ -679,10 +721,12 @@ include __DIR__ . '/../../../includes/header.php';
 
     .ch-card:nth-of-type(1) {
         animation-delay: 0.05s;
+        z-index: 10;
     }
 
     .ch-card:nth-of-type(2) {
         animation-delay: 0.15s;
+        z-index: 9;
     }
 </style>
 
@@ -711,10 +755,10 @@ include __DIR__ . '/../../../includes/header.php';
 
                 <!-- Row 1: Core identifiers -->
                 <div class="sec-label">Core Details</div>
-                <div class="grid-3" style="margin-bottom:1.1rem">
+                <div class="grid-4" style="margin-bottom:1.1rem">
                     <div class="field">
                         <label>Project <span class="req">*</span></label>
-                        <select name="project_id" id="project_id" required onchange="fetchPOs()">
+                        <select name="project_id" id="project_id" required>
                             <option value="">— Select Project —</option>
                             <?php foreach ($projects as $project): ?>
                                 <option value="<?= $project['id'] ?>"><?= htmlspecialchars($project['project_name']) ?></option>
@@ -729,21 +773,10 @@ include __DIR__ . '/../../../includes/header.php';
                         <label>Challan Date <span class="req">*</span></label>
                         <input type="date" name="challan_date" required value="<?= date('Y-m-d') ?>">
                     </div>
-                </div>
-
-                <div class="grid-3">
-                    <div class="field">
-                        <label>Link to PO</label>
-                        <select name="po_id" id="po_id" onchange="loadPOItems()">
-                            <option value="">— None —</option>
-                        </select>
-                        <span class="hint">Select Project &amp; Vendor first</span>
-                    </div>
                     <div class="field">
                         <label>Vehicle No</label>
                         <input type="text" name="vehicle_no" placeholder="e.g. MH-12-AB-1234">
                     </div>
-                    <div class="field" style="visibility:hidden"></div>
                 </div>
 
                 <!-- Row 2: Vendor -->
@@ -753,7 +786,7 @@ include __DIR__ . '/../../../includes/header.php';
                         <div class="field">
                             <label>Vendor Name <span class="req">*</span></label>
                             <div class="autocomplete-wrapper">
-                                <input type="text" name="vendor_name" id="vendor_name" placeholder="Search vendor…" autocomplete="off" required>
+                                <input type="text" name="vendor_name" id="vendor_name" placeholder="Search / Create vendor…" autocomplete="off" required>
                                 <ul id="vendor_suggestions" class="autocomplete-list"></ul>
                             </div>
                             <input type="hidden" name="vendor_id" id="vendor_id">
@@ -798,28 +831,40 @@ include __DIR__ . '/../../../includes/header.php';
 
                 <!-- Add strip -->
                 <div class="add-strip">
-                    <div class="field">
+                    <div class="field mat-name-f">
                         <label>Material Name</label>
-                        <div class="autocomplete-wrapper">
-                            <input type="text" id="material_name_input" placeholder="Search material…" autocomplete="off">
-                            <ul id="material_suggestions" class="autocomplete-list"></ul>
-                        </div>
+                        <select id="material_name_select" style="width:100%;" onchange="handleMaterialChange()">
+                            <option value="">— Select Material —</option>
+                            <?php foreach ($materials as $m): ?>
+                                <option value="<?= htmlspecialchars($m['id']) ?>" 
+                                        data-unit="<?= htmlspecialchars($m['unit']) ?>"
+                                        data-name="<?= htmlspecialchars($m['material_name']) ?>">
+                                    <?= htmlspecialchars($m['material_name']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
                         <input type="hidden" id="material_id_hidden">
+                        <input type="hidden" id="material_name_input">
+                    </div>
+                    <div class="field" id="size_field_wrap" style="display:none;">
+                        <label>Size</label>
+                        <input type="text" id="material_size" placeholder="e.g. 12mm, 1 inch, 18 SWG">
+                    </div>
+                    <div class="field">
+                        <label>Work Type</label>
+                        <select id="material_work_type">
+                            <option value="">— Select —</option>
+                            <option value="Civil">Civil</option>
+                            <option value="Fabrication">Fabrication</option>
+                            <option value="Plumbing">Plumbing</option>
+                            <option value="Electrical">Electrical</option>
+                            <option value="Painting">Painting</option>
+                            <option value="Other">Other</option>
+                        </select>
                     </div>
                     <div class="field">
                         <label>Unit</label>
-                        <select id="material_unit">
-                            <option value="">—</option>
-                            <option value="kg">Kg</option>
-                            <option value="ton">Ton</option>
-                            <option value="bag">Bag</option>
-                            <option value="cft">CFT</option>
-                            <option value="sqft">Sqft</option>
-                            <option value="nos">Nos</option>
-                            <option value="ltr">Ltr</option>
-                            <option value="brass">Brass</option>
-                            <option value="bundle">Bundle</option>
-                        </select>
+                        <input type="text" id="material_unit" readonly style="background-color:#f9fafb; pointer-events:none; cursor:not-allowed;" placeholder="Auto-filled">
                     </div>
                     <div class="field">
                         <label>Quantity</label>
@@ -837,6 +882,8 @@ include __DIR__ . '/../../../includes/header.php';
                             <tr>
                                 <th>#</th>
                                 <th>Material</th>
+                                <th>Size</th>
+                                <th>Work Type</th>
                                 <th>Unit</th>
                                 <th>Quantity</th>
                                 <th></th>
@@ -844,7 +891,7 @@ include __DIR__ . '/../../../includes/header.php';
                         </thead>
                         <tbody id="materials_tbody">
                             <tr class="empty-row">
-                                <td colspan="5">
+                                <td colspan="7">
                                     <span class="ei"><i class="fas fa-cubes"></i></span>
                                     No items added. Use the form above to add materials.
                                 </td>
@@ -960,128 +1007,42 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('vendor_email').value   = vendor.email || '';
         document.getElementById('vendor_address').value = vendor.address || '';
         document.getElementById('vendor_gst').value     = vendor.gst_number || '';
-        fetchPOs();
     });
 
     const vNameInput = document.getElementById('vendor_name');
     if(vNameInput) {
         vNameInput.addEventListener('input', () => {
             document.getElementById('vendor_id').value = '';
-            document.getElementById('po_id').innerHTML = '<option value="">— None —</option>';
         });
     }
 
-    setupAutocomplete('material_name_input', 'material_suggestions', existingMaterials, 'material_name', material => {
-        document.getElementById('material_name_input').value = material.material_name;
-        document.getElementById('material_id_hidden').value  = material.id;
-        document.getElementById('material_unit').value       = material.unit;
-    });
-
-    const mNameInput = document.getElementById('material_name_input');
-    if(mNameInput) {
-        mNameInput.addEventListener('input', () => {
+    window.handleMaterialChange = function() {
+        const select = document.getElementById('material_name_select');
+        const opt = select.options[select.selectedIndex];
+        
+        if(!opt || !opt.value) {
             document.getElementById('material_id_hidden').value = '';
-        });
-    }
-
-    // Expose functions globally for inline onclicks in HTML (like onchange="fetchPOs()")
-    // Note: It's better to attach listeners in JS, but for now we expose them to window to keep HTML compatible
-    window.fetchPOs = function() {
-        const projectId = document.getElementById('project_id').value;
-        const poSelect  = document.getElementById('po_id');
-
-        if (!projectId) {
-            poSelect.innerHTML = '<option value="">— Select Project First —</option>';
+            document.getElementById('material_name_input').value = '';
+            document.getElementById('material_unit').value = '';
+            document.getElementById('size_field_wrap').style.display = 'none';
             return;
         }
-
-        poSelect.innerHTML = `<option value="">Loading POs...</option>`;
-
-        fetch(`../../api/get_project_pos.php?project_id=${projectId}`)
-            .then(r => r.json())
-            .then(data => {
-                let opts = '';
-                if (data.length > 0) {
-                    opts = `<option value="">— Select PO —</option>`;
-                    data.forEach(po => {
-                        const date = new Date(po.order_date).toLocaleDateString('en-GB'); 
-                        opts += `<option value="${po.id}">#${po.po_number} (₹${parseFloat(po.total_amount).toLocaleString('en-IN')}) - ${date}</option>`;
-                    });
-                } else {
-                    opts = `<option value="">No Approved POs found</option>`;
-                }
-                poSelect.innerHTML = opts;
-            })
-            .catch(() => {
-                poSelect.innerHTML = '<option value="">Failed to load POs</option>';
-            });
-    };
-
-    window.loadPOItems = function() {
-        const poId = document.getElementById('po_id').value;
-        if (!poId) {
-            toggleVendorFields(false);
-            return;
-        } 
         
-        const executePOFetch = function() {
-            fetch(`../../api/get_po_details.php?po_id=${poId}`)
-                .then(r => r.json())
-                .then(data => {
-                    const po = data.po;
-                    const items = data.items;
-
-                    if (po) {
-                        document.getElementById('vendor_id').value      = po.vendor_id;
-                        document.getElementById('vendor_name').value    = po.vendor_name;
-                        document.getElementById('vendor_mobile').value  = po.vendor_mobile || '';
-                        document.getElementById('vendor_email').value   = po.vendor_email || '';
-                        document.getElementById('vendor_address').value = po.vendor_address || '';
-                        document.getElementById('vendor_gst').value     = po.vendor_gst || '';
-                        toggleVendorFields(true);
-                        showToast('Vendor details auto-filled from PO.', 'success');
-                    }
-
-                    window.materialsData = [];
-                    if (items && items.length > 0) {
-                        items.forEach(item => {
-                            const pendingQty = parseFloat(item.quantity) - parseFloat(item.received_qty);
-                            if (pendingQty > 0) {
-                                window.materialsData.push({
-                                    material_id:   item.material_id,
-                                    material_name: item.material_name,
-                                    unit:          item.unit,
-                                    quantity:      pendingQty, 
-                                    rate:          parseFloat(item.rate),
-                                    total:         pendingQty * parseFloat(item.rate)
-                                });
-                            }
-                        });
-                        renderMaterials();
-                    } else {
-                        showToast('No items found in this PO', 'warning');
-                    }
-                })
-                .catch((e) => {
-                    console.error(e);
-                    showToast('Failed to load PO items.', 'error');
-                });
-        };
-
-        if (window.materialsData.length > 0) {
-            window.customConfirm({
-                title: 'Replace Items?',
-                text: 'This will replace current items and vendor details. Continue?',
-                icon: '<i class="fas fa-exclamation-triangle"></i>',
-                confirmText: 'Yes, Continue',
-                onCancel: function() {
-                    document.getElementById('po_id').value = '';
-                }
-            }, function() {
-                executePOFetch();
-            });
+        const matName = opt.getAttribute('data-name');
+        document.getElementById('material_id_hidden').value = opt.value;
+        document.getElementById('material_name_input').value = matName;
+        document.getElementById('material_unit').value = opt.getAttribute('data-unit');
+        
+        // Show Size if name contains specific keywords
+        const nameLower = matName.toLowerCase();
+        const sizeKeywords = ['steel', 'tmt', 'pipe', 'wire', 'aggregate', 'sand'];
+        const needsSize = sizeKeywords.some(keyword => nameLower.includes(keyword));
+        
+        if(needsSize) {
+            document.getElementById('size_field_wrap').style.display = 'flex';
         } else {
-            executePOFetch();
+            document.getElementById('size_field_wrap').style.display = 'none';
+            document.getElementById('material_size').value = '';
         }
     };
 
@@ -1107,25 +1068,48 @@ document.addEventListener('DOMContentLoaded', function() {
         const id   = document.getElementById('material_id_hidden').value;
         const unit = document.getElementById('material_unit').value;
         const qty  = parseFloat(document.getElementById('material_quantity').value);
+        
+        const sizeWrap = document.getElementById('size_field_wrap');
+        const sizeStr = (sizeWrap.style.display !== 'none') ? document.getElementById('material_size').value.trim() : '';
+        const workType = document.getElementById('material_work_type').value;
 
         if (!name || !unit || isNaN(qty) || qty <= 0) {
             showToast('Please fill Material Name, Unit and Quantity.', 'warning', 'Incomplete');
             return;
         }
 
-        if (window.materialsData.some(m => m.material_name.toLowerCase() === name.toLowerCase())) {
-            showToast('This material has already been added.', 'warning', 'Duplicate');
+        const duplicate = window.materialsData.find(item => 
+            item.material_name.toLowerCase() === name.toLowerCase() &&
+            (item.size || '') === sizeStr &&
+            (item.work_type || '') === workType
+        );
+
+        if(duplicate) {
+            showToast('This exact material is already added.', 'warning', 'Duplicate');
             return;
         }
 
-        window.materialsData.push({ material_id: id, material_name: name, unit, quantity: qty, rate: 0, total: 0 });
+        window.materialsData.push({ 
+            material_id: id, 
+            material_name: name, 
+            size: sizeStr,
+            work_type: workType,
+            unit, 
+            quantity: qty, 
+            rate: 0, 
+            total: 0 
+        });
         renderMaterials();
 
+        document.getElementById('material_name_select').value = '';
         document.getElementById('material_name_input').value = '';
         document.getElementById('material_id_hidden').value  = '';
         document.getElementById('material_unit').value       = '';
         document.getElementById('material_quantity').value   = '';
-        document.getElementById('material_name_input').focus();
+        document.getElementById('material_size').value       = '';
+        document.getElementById('material_work_type').value  = '';
+        document.getElementById('size_field_wrap').style.display  = 'none';
+        document.getElementById('material_name_select').focus();
     };
 
     window.renderMaterials = function() {
@@ -1133,7 +1117,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const badge = document.getElementById('item_badge');
 
         if (!window.materialsData.length) {
-            tbody.innerHTML = `<tr class="empty-row"><td colspan="5">
+            tbody.innerHTML = `<tr class="empty-row"><td colspan="7">
                 <span class="ei"><i class="fas fa-cubes"></i></span>
                 No items added. Use the form above to add materials.
             </td></tr>`;
@@ -1144,10 +1128,16 @@ document.addEventListener('DOMContentLoaded', function() {
         badge.textContent    = window.materialsData.length;
         badge.style.display  = 'inline-flex';
 
-        tbody.innerHTML = window.materialsData.map((m, i) => `
+        tbody.innerHTML = window.materialsData.map((m, i) => {
+            const sizeTd = m.size ? `<td>${m.size}</td>` : `<td style="color:#aaa">-</td>`;
+            const workTypeTd = m.work_type ? `<td>${m.work_type}</td>` : `<td style="color:#aaa">-</td>`;
+            
+            return `
             <tr>
                 <td style="color:var(--ink-mute);font-size:.75rem;width:36px">${i + 1}</td>
                 <td><span class="mat-name">${m.material_name}</span></td>
+                ${sizeTd}
+                ${workTypeTd}
                 <td><span class="mat-unit">${m.unit.toUpperCase()}</span></td>
                 <td>
                     <input class="qty-input" type="number" value="${m.quantity}"
@@ -1158,7 +1148,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         <i class="fas fa-times"></i>
                     </button>
                 </td>
-            </tr>`).join('');
+            </tr>`;
+        }).join('');
     };
 
     window.updateQty = function(idx, val) {

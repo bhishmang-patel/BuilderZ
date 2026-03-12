@@ -41,7 +41,7 @@ if (!$challan) {
 }
 
 $items = $db->query(
-    "SELECT ci.*, m.material_name, m.unit
+    "SELECT ci.*, ci.size, ci.work_type, m.material_name, m.unit
      FROM challan_items ci
      JOIN materials m ON ci.material_id = m.id
      WHERE ci.challan_id = ?",
@@ -350,6 +350,8 @@ $isLabour = $challan['challan_type'] === 'labour';
                         <tr>
                             <th>#</th>
                             <th>Material</th>
+                            <th>Size</th>
+                            <th>Work Type</th>
                             <th class="th-c">Quantity</th>
                         </tr>
                     </thead>
@@ -360,6 +362,8 @@ $isLabour = $challan['challan_type'] === 'labour';
                             <td>
                                 <span class="mat-name"><?= htmlspecialchars($item['material_name']) ?></span>
                             </td>
+                            <td style="color:#64748b; font-size:0.8rem;"><?= htmlspecialchars($item['size'] ?: '-') ?></td>
+                            <td style="color:#64748b; font-size:0.8rem;"><?= htmlspecialchars($item['work_type'] ?: '-') ?></td>
                             <td class="td-c">
                                 <span class="mat-qty"><?= number_format($item['quantity'], 2) ?></span>
                                 <span class="mat-unit"><?= strtoupper($item['unit']) ?></span>

@@ -159,9 +159,55 @@
         opacity: 1;
         transition: opacity 0.3s;
         white-space: nowrap;
+        flex: 1;
     }
 
     .sidebar.collapsed .sidebar-menu li a span { opacity: 0; width: 0; overflow: hidden; }
+
+    /* Dropdown Chevron */
+    .sidebar-menu li a .submenu-arrow {
+        font-size: 0.75rem;
+        transition: transform 0.3s ease;
+        opacity: 0.5;
+        flex-shrink: 0;
+    }
+
+    .sidebar.collapsed .sidebar-menu li a .submenu-arrow { display: none; }
+    
+    .sidebar-menu li.has-submenu.open > a .submenu-arrow {
+        transform: rotate(180deg);
+    }
+
+    /* Submenu Styling */
+    .submenu {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease-in-out;
+    }
+
+    .sidebar.collapsed .submenu { display: none !important; }
+
+    .submenu li a {
+        padding: 0.55rem 0.75rem 0.55rem 2.5rem; /* Indented padding */
+        font-size: 0.82rem;
+        color: var(--ink-mute);
+    }
+
+    .submenu li a:hover, .submenu li a.active {
+        color: var(--sidebar-accent);
+        background: transparent;
+    }
+
+    .submenu li a.active {
+        font-weight: 600;
+    }
+
+    .submenu li a.active::before {
+        display: none; /* Hide the active border line for submenu items */
+    }
 
     .sidebar-menu li a:hover {
         transition: background-color 0.18s ease, color 0.18s ease;
@@ -700,151 +746,195 @@ $headerLogoUrl = !empty($companySettings['company_logo']) ? BASE_URL . $companyS
 
                 <!-- PROJECTS -->
                 <?php if (hasPageAccess('projects')): ?>
-                <li class="menu-section">PROJECTS</li>
-                <li>
-                    <a href="<?= BASE_URL ?>modules/projects/projects.php" class="<?= ($current_page ?? '') === 'projects' ? 'active' : '' ?>">
+                <li class="has-submenu">
+                    <a href="javascript:void(0)" class="submenu-toggle">
                         <i class="fas fa-building"></i> <span>Projects</span>
+                        <i class="fas fa-chevron-down submenu-arrow"></i>
                     </a>
-                </li>
-                <li>
-                    <a href="<?= BASE_URL ?>modules/projects/flats/flats.php" class="<?= ($current_page ?? '') === 'flats' ? 'active' : '' ?>">
-                        <i class="fas fa-house"></i> <span>Units</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?= BASE_URL ?>modules/projects/stage_of_work.php" class="<?= ($current_page ?? '') === 'stage_of_work' ? 'active' : '' ?>">
-                        <i class="fas fa-list-ol"></i> <span>Stage of Work</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?= BASE_URL ?>modules/projects/milestones.php" class="<?= ($current_page ?? '') === 'project_progress' ? 'active' : '' ?>">
-                        <i class="fas fa-tasks"></i> <span>Project Progress</span>
-                    </a>
+                    <ul class="submenu">
+                        <li>
+                            <a href="<?= BASE_URL ?>modules/projects/projects.php" class="<?= ($current_page ?? '') === 'projects' ? 'active' : '' ?>">
+                                <span>Projects List</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="<?= BASE_URL ?>modules/projects/flats/flats.php" class="<?= ($current_page ?? '') === 'flats' ? 'active' : '' ?>">
+                                <span>Units</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="<?= BASE_URL ?>modules/projects/stage_of_work.php" class="<?= ($current_page ?? '') === 'stage_of_work' ? 'active' : '' ?>">
+                                <span>Stage of Work</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="<?= BASE_URL ?>modules/projects/milestones.php" class="<?= ($current_page ?? '') === 'project_progress' ? 'active' : '' ?>">
+                                <span>Project Progress</span>
+                            </a>
+                        </li>
+                    </ul>
                 </li>
                 <?php endif; ?>
 
                 <!-- SALES (Leads, Bookings, Demands) -->
                 <?php if (hasPageAccess('sales')): ?>
-                <li class="menu-section">SALES</li>
-                <li>
-                    <a href="<?= BASE_URL ?>modules/crm/index.php" class="<?= (strpos($current_page ?? '', 'lead') !== false) ? 'active' : '' ?>">
-                        <i class="fas fa-bullhorn"></i> <span>Leads</span>
+                <li class="has-submenu">
+                    <a href="javascript:void(0)" class="submenu-toggle">
+                        <i class="fas fa-bullhorn"></i> <span>Sales</span>
+                        <i class="fas fa-chevron-down submenu-arrow"></i>
                     </a>
-                </li>
-                <li>
-                    <a href="<?= BASE_URL ?>modules/booking/index.php" class="<?= ($current_page ?? '') === 'booking' ? 'active' : '' ?>">
-                        <i class="fas fa-handshake"></i> <span>Bookings</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?= BASE_URL ?>modules/booking/demands.php" class="<?= ($current_page ?? '') === 'demands' ? 'active' : '' ?>">
-                        <i class="fas fa-file-invoice-dollar"></i> <span>Payment Demand</span>
-                    </a>
+                    <ul class="submenu">
+                        <li>
+                            <a href="<?= BASE_URL ?>modules/crm/index.php" class="<?= (strpos($current_page ?? '', 'lead') !== false) ? 'active' : '' ?>">
+                                <span>Leads</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="<?= BASE_URL ?>modules/booking/index.php" class="<?= ($current_page ?? '') === 'booking' ? 'active' : '' ?>">
+                                <span>Bookings</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="<?= BASE_URL ?>modules/booking/demands.php" class="<?= ($current_page ?? '') === 'demands' ? 'active' : '' ?>">
+                                <span>Payment Demand</span>
+                            </a>
+                        </li>
+                    </ul>
                 </li>
                 <?php endif; ?>
 
                 <!-- FINANCE -->
                 <?php if (hasPageAccess('finance')): ?>
-                <li class="menu-section">FINANCE</li>
-                <li>
-                    <a href="<?= BASE_URL ?>modules/investments/index.php" class="<?= ($current_page ?? '') === 'investments' ? 'active' : '' ?>">
-                        <i class="fas fa-hand-holding-usd"></i> <span>Investments</span>
+                <li class="has-submenu">
+                    <a href="javascript:void(0)" class="submenu-toggle">
+                        <i class="fas fa-chart-pie"></i> <span>Finance</span>
+                        <i class="fas fa-chevron-down submenu-arrow"></i>
                     </a>
-                </li>
-                <li>
-                    <a href="<?= BASE_URL ?>modules/payments/index.php" class="<?= ($current_page ?? '') === 'payments' ? 'active' : '' ?>">
-                        <i class="fas fa-money-bill-wave"></i> <span>Payments</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?= BASE_URL ?>modules/accounts/index.php" class="<?= ($current_page ?? '') === 'accounts' ? 'active' : '' ?>">
-                        <i class="fas fa-book"></i> <span>Accounts & Expenses</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?= BASE_URL ?>modules/masters/bank_accounts.php" class="<?= ($current_page ?? '') === 'masters' ? 'active' : '' ?>">
-                        <i class="fas fa-university"></i> <span>Bank Accounts</span>
-                    </a>
+                    <ul class="submenu">
+                        <li>
+                            <a href="<?= BASE_URL ?>modules/investments/index.php" class="<?= ($current_page ?? '') === 'investments' ? 'active' : '' ?>">
+                                <span>Investments</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="<?= BASE_URL ?>modules/payments/index.php" class="<?= ($current_page ?? '') === 'payments' ? 'active' : '' ?>">
+                                <span>Payments</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="<?= BASE_URL ?>modules/accounts/index.php" class="<?= ($current_page ?? '') === 'accounts' ? 'active' : '' ?>">
+                                <span>Accounts & Expenses</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="<?= BASE_URL ?>modules/masters/bank_accounts.php" class="<?= ($current_page ?? '') === 'masters' ? 'active' : '' ?>">
+                                <span>Bank Accounts</span>
+                            </a>
+                        </li>
+                    </ul>
                 </li>
                 <?php endif; ?>
 
                 <!-- PURCHASING -->
                 <?php if (hasPageAccess('purchasing')): ?>
-                <li class="menu-section">PURCHASING</li>
-                <li>
-                    <a href="<?= BASE_URL ?>modules/vendors/procurement/index.php" class="<?= ($current_page ?? '') === 'procurement' ? 'active' : '' ?>">
-                        <i class="fa-solid fa-receipt"></i> <span>Procurement (PO)</span>
+                <li class="has-submenu">
+                    <a href="javascript:void(0)" class="submenu-toggle">
+                        <i class="fas fa-shopping-cart"></i> <span>Purchasing</span>
+                        <i class="fas fa-chevron-down submenu-arrow"></i>
                     </a>
-                </li>
-                <li>
-                    <a href="<?= BASE_URL ?>modules/vendors/challans/index.php" class="<?= ($current_page ?? '') === 'material_challan' ? 'active' : '' ?>">
-                        <i class="fas fa-file-invoice"></i> <span>Delivery Challans</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?= BASE_URL ?>modules/vendors/index.php" class="<?= ($current_page ?? '') === 'vendors' ? 'active' : '' ?>">
-                        <i class="fas fa-boxes-stacked"></i> <span>Vendor Bills</span>
-                    </a>
+                    <ul class="submenu">
+                        <li>
+                            <a href="<?= BASE_URL ?>modules/vendors/challans/index.php" class="<?= ($current_page ?? '') === 'material_challan' ? 'active' : '' ?>">
+                                <span>Delivery Challans</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="<?= BASE_URL ?>modules/vendors/index.php" class="<?= ($current_page ?? '') === 'vendors' ? 'active' : '' ?>">
+                                <span>Vendor Bills</span>
+                            </a>
+                        </li>
+                    </ul>
                 </li>
                 <?php endif; ?>
 
                 <!-- CONTRACTOR MANAGEMENT -->
                 <?php if (hasPageAccess('contractors')): ?>
-                <li class="menu-section">CONTRACTOR MGMT</li>
-                <li>
-                    <a href="<?= BASE_URL ?>modules/contractors/work_orders.php" class="<?= ($current_page ?? '') === 'work_orders' ? 'active' : '' ?>">
-                        <i class="fas fa-file-contract"></i> <span>Work Orders</span>
+                <li class="has-submenu">
+                    <a href="javascript:void(0)" class="submenu-toggle">
+                        <i class="fas fa-hard-hat"></i> <span>Contractors</span>
+                        <i class="fas fa-chevron-down submenu-arrow"></i>
                     </a>
-                </li>
-                <li>
-                    <a href="<?= BASE_URL ?>modules/contractors/index.php" class="<?= ($current_page ?? '') === 'contractor_pay' ? 'active' : '' ?>">
-                        <i class="fas fa-hard-hat"></i> <span>Contractor Bills</span>
-                    </a>
+                    <ul class="submenu">
+                        <li>
+                            <a href="<?= BASE_URL ?>modules/contractors/work_orders.php" class="<?= ($current_page ?? '') === 'work_orders' ? 'active' : '' ?>">
+                                <span>Work Orders</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="<?= BASE_URL ?>modules/contractors/index.php" class="<?= ($current_page ?? '') === 'contractor_pay' ? 'active' : '' ?>">
+                                <span>Contractor Bills</span>
+                            </a>
+                        </li>
+                    </ul>
                 </li>
                 <?php endif; ?>
                 
                 <!-- INVENTORY -->
                 <?php if (hasPageAccess('inventory')): ?>
-                <li class="menu-section">INVENTORY</li>
-                <li>
-                    <a href="<?= BASE_URL ?>modules/inventory/index.php" class="<?= ($current_page ?? '') === 'stock' ? 'active' : '' ?>">
-                        <i class="fas fa-warehouse"></i> <span>Stock Status</span>
+                <li class="has-submenu">
+                    <a href="javascript:void(0)" class="submenu-toggle">
+                        <i class="fas fa-warehouse"></i> <span>Inventory</span>
+                        <i class="fas fa-chevron-down submenu-arrow"></i>
                     </a>
-                </li>
-                <li>
-                    <a href="<?= BASE_URL ?>modules/inventory/usage.php" class="<?= ($current_page ?? '') === 'usage' ? 'active' : '' ?>">
-                        <i class="fas fa-truck-loading"></i> <span>Material Usage</span>
-                    </a>
+                    <ul class="submenu">
+                        <li>
+                            <a href="<?= BASE_URL ?>modules/inventory/index.php" class="<?= ($current_page ?? '') === 'stock' ? 'active' : '' ?>">
+                                <span>Stock Status</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="<?= BASE_URL ?>modules/inventory/usage.php" class="<?= ($current_page ?? '') === 'usage' ? 'active' : '' ?>">
+                                <span>Material Usage</span>
+                            </a>
+                        </li>
+                    </ul>
                 </li>
                 <?php endif; ?>
 
                 <!-- REPORTS -->
                 <?php if (hasPageAccess('reports')): ?>
-                <li class="menu-section">REPORTS</li>
-                <li>
-                    <a href="<?= BASE_URL ?>modules/reports/project_pl/project_pl.php" class="<?= ($current_page ?? '') === 'project_pl' ? 'active' : '' ?>">
-                        <i class="fas fa-balance-scale"></i> <span>Project P&amp;L</span>
+                <li class="has-submenu">
+                    <a href="javascript:void(0)" class="submenu-toggle">
+                        <i class="fas fa-file-invoice"></i> <span>Reports</span>
+                        <i class="fas fa-chevron-down submenu-arrow"></i>
                     </a>
-                </li>
-                <li>
-                    <a href="<?= BASE_URL ?>modules/reports/payment_register.php" class="<?= ($current_page ?? '') === 'payment_register' ? 'active' : '' ?>">
-                        <i class="fas fa-file-alt"></i> <span>Payment Register</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?= BASE_URL ?>modules/reports/financial_overview.php" class="<?= ($current_page ?? '') === 'financial_overview' ? 'active' : '' ?>">
-                        <i class="fas fa-chart-pie"></i> <span>Financial Overview</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?= BASE_URL ?>modules/reports/roi_report.php" class="<?= ($current_page ?? '') === 'roi_report' ? 'active' : '' ?>">
-                        <i class="fas fa-chart-line"></i> <span>ROI & Profits</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?= BASE_URL ?>modules/reports/compliance.php" class="<?= ($current_page ?? '') === 'compliance' ? 'active' : '' ?>">
-                        <i class="fas fa-file-export"></i> <span>Audit Exports (CA)</span>
-                    </a>
+                    <ul class="submenu">
+                        <li>
+                            <a href="<?= BASE_URL ?>modules/reports/project_pl/project_pl.php" class="<?= ($current_page ?? '') === 'project_pl' ? 'active' : '' ?>">
+                                <span>Project P&amp;L</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="<?= BASE_URL ?>modules/reports/payment_register.php" class="<?= ($current_page ?? '') === 'payment_register' ? 'active' : '' ?>">
+                                <span>Payment Register</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="<?= BASE_URL ?>modules/reports/financial_overview.php" class="<?= ($current_page ?? '') === 'financial_overview' ? 'active' : '' ?>">
+                                <span>Financial Overview</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="<?= BASE_URL ?>modules/reports/roi_report.php" class="<?= ($current_page ?? '') === 'roi_report' ? 'active' : '' ?>">
+                                <span>ROI & Profits</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="<?= BASE_URL ?>modules/reports/compliance.php" class="<?= ($current_page ?? '') === 'compliance' ? 'active' : '' ?>">
+                                <span>Audit Exports (CA)</span>
+                            </a>
+                        </li>
+                    </ul>
                 </li>
                 <?php endif; ?>
 
@@ -1030,7 +1120,7 @@ function fetchNotifications() {
                     const time = new Date(notif.created_at).toLocaleDateString() + ' ' + new Date(notif.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                     
                     html += `
-                        <div class="notification-item ${notif.type} ${notif.is_read == 0 ? 'unread' : ''}" style="cursor: pointer;" onclick="markAsRead(${notif.id}, '${notif.link}')">
+                        <div class="notification-item ${notif.type} ${notif.is_read == 0 ? 'unread' : ''}" style="cursor: pointer;" onclick="markAsRead('${notif.id}', '${notif.link}')">
                             <div class="notification-icon">
                                 <i class="fas ${iconClass}"></i>
                             </div>
@@ -1127,6 +1217,57 @@ document.getElementById('notificationTrigger').addEventListener('click', functio
     e.stopPropagation();
     document.getElementById('notificationDropdown').classList.toggle('active');
     document.getElementById('profileDropdownMenu').classList.remove('active'); // Close profile
+});
+
+// Sidebar Dropdown Navigation Script
+document.addEventListener('DOMContentLoaded', function() {
+    const dropdownToggles = document.querySelectorAll('.submenu-toggle');
+    const sidebar = document.getElementById('sidebar');
+
+    // Auto-expand submenu if it contains an active link
+    document.querySelectorAll('.submenu').forEach(submenu => {
+        if (submenu.querySelector('a.active')) {
+            const parentLi = submenu.closest('.has-submenu');
+            parentLi.classList.add('open');
+            submenu.style.maxHeight = submenu.scrollHeight + 'px';
+            
+            // Add active class to main section toggle parent if desired
+            // parentLi.querySelector('.submenu-toggle').classList.add('active');
+        }
+    });
+
+    // Handle toggle clicks
+    dropdownToggles.forEach(toggle => {
+        toggle.addEventListener('click', function(e) {
+            e.preventDefault();
+
+            // If the sidebar is collapsed and user clicks the icon, expand the sidebar instead of doing nothing
+            if (sidebar.classList.contains('collapsed')) {
+                toggleSidebar();
+                // Then continue to open this specific submenu
+            }
+
+            const parentLi = this.closest('.has-submenu');
+            const submenu = parentLi.querySelector('.submenu');
+
+            // Close other open submenus (accordion style)
+            document.querySelectorAll('.has-submenu.open').forEach(openLi => {
+                if (openLi !== parentLi) {
+                    openLi.classList.remove('open');
+                    openLi.querySelector('.submenu').style.maxHeight = '0';
+                }
+            });
+
+            // Toggle current submenu
+            if (parentLi.classList.contains('open')) {
+                parentLi.classList.remove('open');
+                submenu.style.maxHeight = '0';
+            } else {
+                parentLi.classList.add('open');
+                submenu.style.maxHeight = submenu.scrollHeight + "px";
+            }
+        });
+    });
 });
 
 // Poll every 30 seconds

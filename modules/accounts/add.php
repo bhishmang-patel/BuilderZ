@@ -33,6 +33,7 @@ if ($id) {
             $_POST['description']    = $expense['description'];
             $_POST['payment_method'] = $expense['payment_method'];
             $_POST['gst_amount']     = $expense['gst_amount'];
+            $_POST['gst_percentage'] = $expense['gst_percentage'] ?? 0;
             $_POST['reference_no']   = $expense['reference_no'];
             $_POST['project_id']     = $expense['project_id'];
             $_POST['bank_account_id']= $expense['bank_account_id'];
@@ -45,6 +46,7 @@ if ($id) {
 
 // Get categories
 $categories = $db->query("SELECT * FROM expense_categories ORDER BY name")->fetchAll();
+$bank_accounts = $db->query("SELECT * FROM company_accounts WHERE status = 'active' ORDER BY account_name")->fetchAll();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $category_id    = $_POST['category_id']    ?? '';
@@ -53,6 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $description    = $_POST['description']    ?? '';
     $payment_method = $_POST['payment_method'] ?? 'cash';
     $gst_included   = isset($_POST['gst_included']) ? 1 : 0;
+    $gst_percentage  = (float)($_POST['gst_percentage'] ?? 0);
     $gst_amount     = $_POST['gst_amount']     ?? 0;
     $reference_no   = $_POST['reference_no']   ?? '';
     $project_id     = !empty($_POST['project_id']) ? $_POST['project_id'] : null;
@@ -73,6 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'description'    => $description,
             'payment_method' => $payment_method,
             'gst_included'   => $gst_included,
+            'gst_percentage' => $gst_percentage,
             'gst_amount'     => $gst_amount,
             'reference_no'   => $reference_no,
             'project_id'     => $project_id,
@@ -83,9 +87,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $db->beginTransaction();
         try {
             if ($edit_mode) {
-                // 1. Revert Old Balance
+                // 1. Revert Old Balance (base + GST)
                 if ($expense['bank_account_id']) {
-                    $db->query("UPDATE company_accounts SET balance = balance + ? WHERE id = ?", [$expense['amount'], $expense['bank_account_id']]);
+                    $old_total = $expense['amount'] + ($expense['gst_amount'] ?? 0);
+                    $db->query("UPDATE company_accounts SET current_balance = current_balance + ? WHERE id = ?", [$old_total, $expense['bank_account_id']]);
                 }
 
                 // 2. Update Expense
@@ -97,9 +102,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['success'] = "Expense recorded successfully!";
             }
 
-            // 4. Deduct New Balance
+            // 4. Deduct New Balance (base + GST)
+            $total_deduction = (float)$amount + (float)$gst_amount;
             if ($bank_account_id) {
-                $db->query("UPDATE company_accounts SET balance = balance - ? WHERE id = ?", [$amount, $bank_account_id]);
+                $db->query("UPDATE company_accounts SET current_balance = current_balance - ? WHERE id = ?", [$total_deduction, $bank_account_id]);
             }
 
             $db->commit();
@@ -459,8 +465,67 @@ include __DIR__ . '/../../includes/header.php';
     transition: max-height .35s cubic-bezier(.22,1,.36,1), opacity .25s;
     opacity: 0;
   }
-  .exp-gst-reveal.is-open { max-height: 160px; opacity: 1; }
+  .exp-gst-reveal.is-open { max-height: 320px; opacity: 1; }
   .exp-gst-reveal .exp-gst-inner { padding-top: 14px; }
+
+  /* ── Cost Breakdown Panel ───────────────────────────── */
+  .exp-breakdown {
+    background: var(--exp-surface2);
+    border: 1px solid var(--exp-line);
+    border-radius: 4px;
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transition: max-height .35s cubic-bezier(.22,1,.36,1), opacity .25s;
+  }
+  .exp-breakdown.is-open { max-height: 180px; opacity: 1; }
+  .exp-breakdown-head {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--exp-line);
+    font-size: 9.5px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--exp-text3); font-weight: 600;
+  }
+  .exp-brow {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 7px 14px; font-size: 11.5px; color: var(--exp-text2);
+    border-bottom: 1px solid var(--exp-line);
+  }
+  .exp-brow:last-child { border-bottom: none; }
+  .exp-brow.final {
+    background: var(--exp-accent-bg); color: var(--exp-accent);
+    font-weight: 700; font-family: 'Fraunces', serif; font-size: 13px;
+  }
+  .exp-brow-val { font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+  .exp-brow.final .exp-brow-val { font-size: 13px; }
+
+  /* ── Total Summary Bar ──────────────────────────────── */
+  .exp-total-bar {
+    margin-top: 18px;
+    background: var(--exp-surface2);
+    border: 1px solid var(--exp-line);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .exp-total-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 16px;
+    font-size: 11.5px; color: var(--exp-text2);
+    border-bottom: 1px solid var(--exp-line);
+  }
+  .exp-total-row:last-child { border-bottom: none; }
+  .exp-total-final {
+    background: var(--exp-accent-bg);
+    padding: 10px 16px;
+    font-weight: 700; font-family: 'Fraunces', serif; font-size: 14px;
+    color: var(--exp-accent);
+  }
+  .exp-total-label { letter-spacing: .03em; }
+  .exp-total-val {
+    font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
+    font-weight: 600;
+  }
+  .exp-total-final .exp-total-val { font-size: 14px; color: var(--exp-accent); }
 
   /* ── Tips panel ───────────────────────────────────────── */
   .exp-tips {
@@ -662,17 +727,37 @@ include __DIR__ . '/../../includes/header.php';
 
             <div class="exp-section-tag">02 — Payment</div>
 
+            <?php
+              $gst_rates = [0, 5, 12, 18, 28];
+              $saved_pct = (float)($_POST['gst_percentage'] ?? 0);
+            ?>
+
             <div class="exp-row">
               <div class="exp-field exp-w55">
-                <label class="exp-label">Total Amount <span class="exp-req">*</span></label>
+                <label class="exp-label">Amount <span class="exp-req">*</span></label>
                 <div class="exp-prefix-wrap">
                   <span class="exp-prefix">₹</span>
-                  <input type="number" step="0.01" name="amount"
+                  <input type="number" step="0.01" name="amount" id="expAmountInput"
                          class="exp-control"
                          value="<?= htmlspecialchars($_POST['amount'] ?? '') ?>"
                          placeholder="0.00" required>
                 </div>
               </div>
+              <div class="exp-field">
+                <label class="exp-label">GST %</label>
+                <div class="exp-select-wrap">
+                  <select name="gst_percentage" id="gstPctSelect" class="exp-control">
+                    <?php foreach ($gst_rates as $rate): ?>
+                      <option value="<?= $rate ?>" <?= $saved_pct == $rate ? 'selected' : '' ?>>
+                        <?= $rate ?>%<?= $rate === 0 ? ' — No GST' : '' ?>
+                      </option>
+                    <?php endforeach; ?>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="exp-row">
               <div class="exp-field">
                 <label class="exp-label">Payment Mode</label>
                 <div class="exp-select-wrap">
@@ -695,10 +780,7 @@ include __DIR__ . '/../../includes/header.php';
                   </select>
                 </div>
               </div>
-            </div>
-
-            <!-- Bank Account Selection (Hidden for Cash) -->
-            <div class="exp-field" id="bankAccountField" style="display:none;">
+              <div class="exp-field" id="bankAccountField" style="display:none;">
                 <label class="exp-label">Paid From Account <span class="exp-req">*</span></label>
                 <div class="exp-select-wrap">
                     <?php
@@ -713,6 +795,7 @@ include __DIR__ . '/../../includes/header.php';
                         <?php endforeach; ?>
                     </select>
                 </div>
+              </div>
             </div>
 
             <div class="exp-field">
@@ -724,58 +807,31 @@ include __DIR__ . '/../../includes/header.php';
               <div class="exp-help">Bank ref, cheque number, or UPI transaction ID</div>
             </div>
 
+            <!-- Hidden GST amount field (auto-calculated by JS) -->
+            <input type="hidden" name="gst_amount" id="gstAmountInput" value="<?= htmlspecialchars($_POST['gst_amount'] ?? '0') ?>">
+            <input type="hidden" name="gst_included" value="1">
+
+            <!-- Total Summary Bar -->
+            <div class="exp-total-bar" id="expTotalBar">
+              <div class="exp-total-row">
+                <span class="exp-total-label">Amount</span>
+                <span class="exp-total-val" id="tbAmt">₹ 0.00</span>
+              </div>
+              <div class="exp-total-row">
+                <span class="exp-total-label">+ GST (<span id="tbPct">0</span>%)</span>
+                <span class="exp-total-val" id="tbGst">₹ 0.00</span>
+              </div>
+              <div class="exp-total-row exp-total-final">
+                <span class="exp-total-label">Total Amount</span>
+                <span class="exp-total-val" id="tbTotal">₹ 0.00</span>
+              </div>
+            </div>
+
           </div>
         </div>
 
         <!-- ── RIGHT column ─────────────────────────────── -->
         <div class="exp-right">
-
-          <!-- GST Panel -->
-          <div class="exp-panel">
-            <div class="exp-panel-head">
-              <div class="exp-panel-icon exp-icon-teal">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                  <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
-                </svg>
-              </div>
-              <div>
-                <div class="exp-panel-title">GST Information</div>
-                <div class="exp-panel-sub">Tax &amp; input credit</div>
-              </div>
-            </div>
-
-            <div class="exp-panel-body">
-
-              <?php $gst_checked = isset($_POST['gst_included']); ?>
-              <div class="exp-field">
-                <label class="exp-check-row <?= $gst_checked ? 'is-checked' : '' ?>"
-                       id="expGstRow" onclick="expToggleGST()">
-                  <input type="checkbox" name="gst_included" id="expGstCheck"
-                         <?= $gst_checked ? 'checked' : '' ?>>
-                  <span class="exp-check-box"><?= $gst_checked ? '✓' : '' ?></span>
-                  <span class="exp-check-label">GST is included in total amount</span>
-                </label>
-              </div>
-
-              <div class="exp-gst-reveal <?= $gst_checked ? 'is-open' : '' ?>" id="expGstReveal">
-                <div class="exp-gst-inner">
-                  <div class="exp-field">
-                    <label class="exp-label">GST Amount (Input Credit)</label>
-                    <div class="exp-prefix-wrap">
-                      <span class="exp-prefix">₹</span>
-                      <input type="number" step="0.01" name="gst_amount"
-                             class="exp-control"
-                             value="<?= htmlspecialchars($_POST['gst_amount'] ?? '') ?>"
-                             placeholder="0.00">
-                    </div>
-                    <div class="exp-help">Enter the tax portion included in the total</div>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          </div>
 
           <!-- Tips Panel -->
           <div class="exp-tips">
@@ -829,17 +885,45 @@ include __DIR__ . '/../../includes/header.php';
 </div><!-- .exp-wrap -->
 
 <script>
-function expToggleGST() {
-  var check  = document.getElementById('expGstCheck');
-  var row    = document.getElementById('expGstRow');
-  var reveal = document.getElementById('expGstReveal');
-  var box    = row.querySelector('.exp-check-box');
+function expCalcGST() {
+  var amountInput  = document.getElementById('expAmountInput');
+  var gstPctSelect = document.getElementById('gstPctSelect');
+  var gstAmtInput  = document.getElementById('gstAmountInput');
+  var tbAmt        = document.getElementById('tbAmt');
+  var tbPct        = document.getElementById('tbPct');
+  var tbGst        = document.getElementById('tbGst');
+  var tbTotal      = document.getElementById('tbTotal');
 
-  check.checked = !check.checked;
-  row.classList.toggle('is-checked', check.checked);
-  reveal.classList.toggle('is-open', check.checked);
-  box.textContent = check.checked ? '✓' : '';
+  if (!amountInput || !gstPctSelect) return;
+
+  var amount = parseFloat(amountInput.value) || 0;
+  var pct    = parseFloat(gstPctSelect.value) || 0;
+  var gstAmt = parseFloat((amount * pct / 100).toFixed(2));
+  var total  = parseFloat((amount + gstAmt).toFixed(2));
+
+  // Update hidden GST amount
+  if (gstAmtInput) gstAmtInput.value = gstAmt.toFixed(2);
+
+  // Update summary bar
+  var fmt = function(v) {
+    return '\u20b9 ' + v.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+  };
+  if (tbAmt)   tbAmt.textContent   = fmt(amount);
+  if (tbPct)   tbPct.textContent   = pct;
+  if (tbGst)   tbGst.textContent   = fmt(gstAmt);
+  if (tbTotal) tbTotal.textContent = fmt(total);
 }
+
+// Wire up events
+document.addEventListener('DOMContentLoaded', function() {
+  var amtInput = document.getElementById('expAmountInput');
+  var gstSelect = document.getElementById('gstPctSelect');
+
+  if (amtInput) amtInput.addEventListener('input', expCalcGST);
+  if (gstSelect) gstSelect.addEventListener('change', expCalcGST);
+
+  expCalcGST(); // initial calculation on load
+});
 
 // Payment Method Toggle
 const paymentMethodSelect = document.querySelector('select[name="payment_method"]');
@@ -859,7 +943,7 @@ function toggleBankField() {
 
 if(paymentMethodSelect) {
     paymentMethodSelect.addEventListener('change', toggleBankField);
-    toggleBankField(); // Run on load
+    toggleBankField();
 }
 </script>
 

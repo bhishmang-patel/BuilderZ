@@ -123,6 +123,7 @@ include __DIR__ . '/../../includes/header.php';
         padding-bottom: 1.5rem;
         border-bottom: 1.5px solid var(--border);
         flex-wrap: wrap;
+        opacity: 0; animation: fadeUp 0.35s 0.05s ease both;
     }
 
     .header-meta {
@@ -277,6 +278,7 @@ include __DIR__ . '/../../includes/header.php';
         border-radius: 12px;
         overflow: hidden;
         margin-bottom: 1.5rem;
+        opacity: 0; animation: fadeUp 0.35s 0.08s ease both;
     }
     @media (max-width: 700px) { .summary-strip { grid-template-columns: repeat(2, 1fr); } }
 
@@ -315,6 +317,7 @@ include __DIR__ . '/../../includes/header.php';
         grid-template-columns: 1fr 1fr;
         gap: 1.25rem;
         margin-bottom: 1.25rem;
+        opacity: 0; animation: fadeUp 0.35s 0.1s ease both;
     }
     @media (max-width: 680px) { .info-grid { grid-template-columns: 1fr; } }
 
@@ -325,6 +328,7 @@ include __DIR__ . '/../../includes/header.php';
         border-radius: 14px;
         overflow: hidden;
         margin-bottom: 1.25rem;
+        opacity: 0; animation: fadeUp 0.35s 0.12s ease both;
     }
 
     .card-head {
@@ -459,6 +463,11 @@ include __DIR__ . '/../../includes/header.php';
     
     .cont-btn.secondary { background: white; color: var(--ink); border: 1px solid var(--border); }
     .cont-btn.secondary:hover { background: #f8fafc; border-color: #cbd5e1; }
+
+    @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
 
 </style>
 
@@ -605,7 +614,7 @@ include __DIR__ . '/../../includes/header.php';
                     <span>Basic Amount</span>
                     <span class="calc-val"><?= formatCurrency($bill['basic_amount']) ?></span>
                 </div>
-                <?php if ($bill['gst_amount'] > 0): ?>
+                <?php if ($bill['gst_amount'] > 0 && !$bill['is_rcm']): ?>
                 <div class="calc-row">
                     <span>GST Added</span>
                     <span class="calc-val green">+ <?= formatCurrency($bill['gst_amount']) ?></span>

@@ -634,6 +634,7 @@ function openBillModal(contractorId, contractorName) {
     document.body.style.overflow = 'hidden';
 
     // Reset stats
+    document.getElementById('cb_contract_value').textContent = '—';
     document.getElementById('cb_total').textContent = '—';
     document.getElementById('cb_paid').textContent = '—';
     document.getElementById('cb_pending').textContent = '—';
@@ -647,6 +648,7 @@ function openBillModal(contractorId, contractorName) {
             if (data.success) {
                 // Update stats
                 if(data.stats) {
+                    document.getElementById('cb_contract_value').textContent = data.stats.contract_value;
                     document.getElementById('cb_total').textContent   = data.stats.total;
                     document.getElementById('cb_paid').textContent    = data.stats.paid;
                     document.getElementById('cb_pending').textContent = data.stats.pending;
@@ -666,6 +668,7 @@ function openBillModal(contractorId, contractorName) {
                             <td><span style="font-size:0.8rem">${bill.project_name || '-'}</span></td>
                             <td><span style="font-size:0.75rem;font-family:monospace">${bill.work_order_no}</span></td>
                             <td class="td-r"><strong style="color:#10b981">${bill.amount}</strong></td>
+                            <td class="td-r"><strong style="color:var(--orange)">${bill.outstanding}</strong></td>
                             <td class="td-c"><span class="pill ${bill.status_class}">${bill.status}</span></td>
                             <td class="td-c"><span class="pill ${bill.payment_class}">${bill.payment_status}</span></td>
                             <td class="td-c">
@@ -700,7 +703,7 @@ document.getElementById('billModal').addEventListener('click', function(e) {
 
 <!-- Bills Modal -->
 <div class="cont-modal-backdrop" id="billModal">
-    <div class="cont-modal md">
+    <div class="cont-modal lg" style="max-width: 1100px;">
         <div class="modal-head">
             <h3><i class="fas fa-file-invoice"></i> Bills: <span id="modalContractorName"></span></h3>
             <button type="button" class="modal-close" onclick="closeBillModal()">×</button>
@@ -708,6 +711,10 @@ document.getElementById('billModal').addEventListener('click', function(e) {
         <div class="modal-body">
             <!-- Stats -->
             <div style="display:flex; gap:1rem; margin-bottom:1.5rem; flex-wrap:wrap;">
+                <div class="stat-pill">
+                    <span class="lbl">Contract Value</span>
+                    <span class="val blue" id="cb_contract_value">—</span>
+                </div>
                 <div class="stat-pill">
                     <span class="lbl">Total Billed</span>
                     <span class="val" id="cb_total">—</span>
@@ -731,6 +738,7 @@ document.getElementById('billModal').addEventListener('click', function(e) {
                             <th>Project</th>
                             <th>WO #</th>
                             <th class="th-r">Amount</th>
+                            <th class="th-r">Outstanding</th>
                             <th class="th-c">Approval</th>
                             <th class="th-c">Payment</th>
                             <th class="th-c">Action</th>
@@ -738,7 +746,7 @@ document.getElementById('billModal').addEventListener('click', function(e) {
                     </thead>
                     <tbody id="modalBillList">
                         <!-- Loaded via JS -->
-                        <tr><td colspan="7" class="td-c">Loading...</td></tr>
+                        <tr><td colspan="9" class="td-c">Loading...</td></tr>
                     </tbody>
                 </table>
             </div>

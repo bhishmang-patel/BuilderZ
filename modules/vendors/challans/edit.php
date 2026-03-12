@@ -37,6 +37,8 @@ foreach ($items as $item) {
     $js_items[] = [
         'material_id' => $item['material_id'],
         'material_name' => $item['material_name'],
+        'size' => isset($item['size']) ? $item['size'] : '',
+        'work_type' => isset($item['work_type']) ? $item['work_type'] : '',
         'unit' => $item['unit'],
         'quantity' => floatval($item['quantity']),
         'rate' => floatval($item['rate']),
@@ -69,6 +71,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!preg_match("/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/", $_POST['gst_number'])) {
                 throw new Exception("Invalid GST Number. Must be exactly 15 characters (e.g. 22AAAAA0000A1Z5).");
             }
+            
+            // Check if GST already exists in parties table
+            $existingGst = $db->query("SELECT id, name, party_type FROM parties WHERE gst_number = ?", [$_POST['gst_number']])->fetch();
+            if ($existingGst) {
+                 if (empty($vendor_id) || $vendor_id != $existingGst['id']) {
+                     $partyType = ucfirst($existingGst['party_type']);
+                     throw new Exception("The GST Number '{$_POST['gst_number']}' is already registered to another {$partyType} account ('{$existingGst['name']}'). Please use a unique GST number or select the existing {$partyType}.");
+                 }
+            }
         }
         
         // Handle new vendor if typed manually
@@ -76,6 +87,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $existing_vendor = $db->query("SELECT id FROM parties WHERE LOWER(name) = LOWER(?) AND party_type='vendor'", [$vendor_name])->fetch();
             if ($existing_vendor) {
                 $vendor_id = $existing_vendor['id'];
+                // Update missing existing data if new values provided
+                if (!empty($_POST['gst_number'])) {
+                    $update_vendor['gst_number'] = $_POST['gst_number'];
+                    $update_vendor['gst_status'] = 'registered';
+                }
+                if (!empty($_POST['mobile'])) $update_vendor['mobile'] = sanitize($_POST['mobile']);
+                if (!empty($_POST['email'])) $update_vendor['email'] = sanitize($_POST['email']);
+                if (!empty($_POST['address'])) $update_vendor['address'] = sanitize($_POST['address']);
+                if (!empty($update_vendor)) {
+                    if (isset($update_vendor['gst_number'])) {
+                        $checkGst = $db->query("SELECT id, name, party_type FROM parties WHERE gst_number = ? AND id != ?", [$update_vendor['gst_number'], $vendor_id])->fetch();
+                        if ($checkGst) {
+                            $type = ucfirst($checkGst['party_type']);
+                            throw new Exception("The GST Number '{$update_vendor['gst_number']}' is already registered to another {$type} account ('{$checkGst['name']}'). Please use a unique GST number.");
+                        }
+                    }
+                    $db->update('parties', $update_vendor, 'id = ?', [$vendor_id]);
+                }
             } else {
                  $temp_vendor = [
                     'name' => $vendor_name,
@@ -86,6 +115,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ];
                 $temp_vendor_json = json_encode($temp_vendor);
                 $vendor_id = null;
+            }
+        } else {
+            // Update missing existing data for the selected vendor
+            $update_vendor = [];
+            if (!empty($_POST['gst_number'])) {
+                $update_vendor['gst_number'] = $_POST['gst_number'];
+                $update_vendor['gst_status'] = 'registered';
+            }
+            if (!empty($_POST['mobile'])) $update_vendor['mobile'] = sanitize($_POST['mobile']);
+            if (!empty($_POST['email'])) $update_vendor['email'] = sanitize($_POST['email']);
+            if (!empty($_POST['address'])) $update_vendor['address'] = sanitize($_POST['address']);
+            if (!empty($update_vendor)) {
+                if (isset($update_vendor['gst_number'])) {
+                    $checkGst = $db->query("SELECT id, name, party_type FROM parties WHERE gst_number = ? AND id != ?", [$update_vendor['gst_number'], $vendor_id])->fetch();
+                    if ($checkGst) {
+                        $type = ucfirst($checkGst['party_type']);
+                        throw new Exception("The GST Number '{$update_vendor['gst_number']}' is already registered to another {$type} account ('{$checkGst['name']}'). Please use a unique GST number.");
+                    }
+                }
+                $db->update('parties', $update_vendor, 'id = ?', [$vendor_id]);
             }
         }
 
@@ -175,6 +224,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'challan_id' => $id,
                 'material_id' => $material_id,
                 'quantity' => floatval($item['quantity']),
+                'size' => isset($item['size']) ? sanitize($item['size']) : null,
+                'work_type' => isset($item['work_type']) ? sanitize($item['work_type']) : null,
                 'rate' => $rate
             ];
             
@@ -190,6 +241,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         setFlashMessage('success', "Challan updated successfully");
         redirect('modules/vendors/challans/index.php');
 
+    } catch (PDOException $e) {
+        $db->rollback();
+        if ($e->errorInfo[1] == 1062) {
+            $msg = $e->getMessage();
+            if (strpos($msg, 'idx_unique_gst') !== false) {
+                setFlashMessage('error', 'This GST Number is already registered to another account in the system. Please use a unique GST number.');
+            } else {
+                setFlashMessage('error', 'A record with these details already exists in the system. Please verify your entries.');
+            }
+        } else {
+            setFlashMessage('error', 'An unexpected database error occurred. Please try again.');
+        }
     } catch (Exception $e) {
         $db->rollback();
         setFlashMessage('error', $e->getMessage());
@@ -321,7 +384,8 @@ include __DIR__ . '/../../../includes/header.php';
         background: var(--surface);
         border: 1.5px solid var(--border);
         border-radius: 14px;
-        overflow: hidden;
+        overflow: visible;
+        position: relative;
         margin-bottom: 1.5rem;
         box-shadow: 0 1px 4px rgba(26,23,20,0.04);
     }
@@ -457,7 +521,7 @@ include __DIR__ . '/../../../includes/header.php';
     .sec-gap { margin-top: 1.4rem; padding-top: 1.4rem; border-top: 1px solid var(--border-lt); }
 
     /* ── Autocomplete ────────────────────────── */
-    .autocomplete-wrapper { position: relative; }
+    .autocomplete-wrapper { position: relative; z-index: 1000;}
 
     .autocomplete-list {
         position: absolute;
@@ -469,7 +533,7 @@ include __DIR__ . '/../../../includes/header.php';
         list-style: none;
         padding: 0.3rem;
         margin: 0;
-        z-index: 300;
+        z-index: 999;
         display: none;
         max-height: 210px;
         overflow-y: auto;
@@ -492,20 +556,23 @@ include __DIR__ . '/../../../includes/header.php';
 
     /* ── Add Material Strip ──────────────────── */
     .add-strip {
-        display: grid;
-        grid-template-columns: 2.2fr 0.9fr 0.9fr auto;
-        gap: 0.85rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.8rem;
         align-items: flex-end;
-        padding: 1.2rem 1.4rem;
-        background: #fdf8f3;
-        border: 1.5px dashed #e0c9b5;
+        padding: 1.2rem;
+        background: #fdfcfa;
+        border: 1.5px dashed var(--border);
         border-radius: 10px;
-        margin-bottom: 1.4rem;
+        margin-bottom: 1.2rem;
     }
 
+    .add-strip .field { margin-bottom: 0; flex: 1 1 120px; }
+    .add-strip .field.mat-name-f { flex: 2 1 200px; }
+    .add-strip .btn-add { flex: 0 0 auto; }
+
     @media (max-width: 760px) {
-        .add-strip { grid-template-columns: 1fr 1fr; }
-        .add-strip .btn-add { grid-column: span 2; }
+        .add-strip .btn-add { flex: 1 1 100%; }
     }
 
     .btn-add {
@@ -741,10 +808,12 @@ include __DIR__ . '/../../../includes/header.php';
 
     .ch-card:nth-of-type(1) {
         animation-delay: 0.05s;
+        z-index: 10;
     }
 
     .ch-card:nth-of-type(2) {
         animation-delay: 0.15s;
+        z-index: 9;
     }
 </style>
 
@@ -779,7 +848,7 @@ include __DIR__ . '/../../../includes/header.php';
 
                 <!-- Row 1: Core identifiers -->
                 <div class="sec-label">Core Details</div>
-                <div class="grid-3" style="margin-bottom:1.1rem">
+                <div class="grid-4" style="margin-bottom:1.1rem">
                     <div class="field">
                         <label>Project <span class="req">*</span></label>
                         <select name="project_id" required>
@@ -799,21 +868,10 @@ include __DIR__ . '/../../../includes/header.php';
                         <label>Challan Date <span class="req">*</span></label>
                         <input type="date" name="challan_date" required value="<?= $challan['challan_date'] ?>">
                     </div>
-                </div>
-
-                <div class="grid-3">
-                    <div class="field">
-                        <label>Link to PO</label>
-                        <select>
-                            <option value="">— None —</option>
-                        </select>
-                        <span class="hint">Select Project &amp; Vendor first</span>
-                    </div>
                     <div class="field">
                         <label>Vehicle No</label>
                         <input type="text" name="vehicle_no" placeholder="e.g. MH-12-AB-1234" value="<?= htmlspecialchars($challan['vehicle_no']) ?>">
                     </div>
-                    <div class="field" style="visibility:hidden"></div>
                 </div>
 
                 <!-- Row 2: Vendor -->
@@ -868,28 +926,41 @@ include __DIR__ . '/../../../includes/header.php';
 
                 <!-- Add strip -->
                 <div class="add-strip">
-                    <div class="field">
+                    <div class="field mat-name-f">
                         <label>Material Name</label>
-                        <div class="autocomplete-wrapper">
-                            <input type="text" id="material_name_input" placeholder="Search material…" autocomplete="off">
-                            <ul id="material_suggestions" class="autocomplete-list"></ul>
-                        </div>
+                        <select id="material_name_select" style="width:100%;" onchange="handleMaterialChange()">
+                            <option value="">— Select Material —</option>
+                            <?php foreach ($materials as $m): ?>
+                                <option value="<?= htmlspecialchars($m['id']) ?>" 
+                                        data-unit="<?= htmlspecialchars($m['unit']) ?>"
+                                        data-rate="<?= htmlspecialchars($m['default_rate']) ?>"
+                                        data-name="<?= htmlspecialchars($m['material_name']) ?>">
+                                    <?= htmlspecialchars($m['material_name']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
                         <input type="hidden" id="material_id_hidden">
+                        <input type="hidden" id="material_name_input">
+                    </div>
+                    <div class="field" id="size_field_wrap" style="display:none;">
+                        <label>Size</label>
+                        <input type="text" id="material_size" placeholder="e.g. 12mm, 1 inch, 18 SWG">
+                    </div>
+                    <div class="field">
+                        <label>Work Type</label>
+                        <select id="material_work_type">
+                            <option value="">— Select —</option>
+                            <option value="Civil">Civil</option>
+                            <option value="Fabrication">Fabrication</option>
+                            <option value="Plumbing">Plumbing</option>
+                            <option value="Electrical">Electrical</option>
+                            <option value="Painting">Painting</option>
+                            <option value="Other">Other</option>
+                        </select>
                     </div>
                     <div class="field">
                         <label>Unit</label>
-                        <select id="material_unit">
-                            <option value="">—</option>
-                            <option value="kg">Kg</option>
-                            <option value="ton">Ton</option>
-                            <option value="bag">Bag</option>
-                            <option value="cft">CFT</option>
-                            <option value="sqft">Sqft</option>
-                            <option value="nos">Nos</option>
-                            <option value="ltr">Ltr</option>
-                            <option value="brass">Brass</option>
-                            <option value="bundle">Bundle</option>
-                        </select>
+                        <input type="text" id="material_unit" readonly style="background-color:#f9fafb; pointer-events:none; cursor:not-allowed;" placeholder="Auto-filled">
                     </div>
                     <div class="field">
                         <label>Quantity</label>
@@ -911,6 +982,8 @@ include __DIR__ . '/../../../includes/header.php';
                             <tr>
                                 <th>#</th>
                                 <th>Material</th>
+                                <th>Size</th>
+                                <th>Work Type</th>
                                 <th>Unit</th>
                                 <th>Quantity</th>
                                 <th></th>
@@ -918,7 +991,7 @@ include __DIR__ . '/../../../includes/header.php';
                         </thead>
                         <tbody id="materials_tbody">
                             <tr class="empty-row">
-                                <td colspan="5">
+                                <td colspan="7">
                                     <span class="ei"><i class="fas fa-cubes"></i></span>
                                     No items added. Use the form above to add materials.
                                 </td>
@@ -970,64 +1043,6 @@ function showToast(message, type = 'error', title = '') {
     setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.3s'; setTimeout(() => t.remove(), 300); }, 4000);
 }
 
-/* ── Autocomplete ─────────────────────────────────── */
-function setupAutocomplete(inputId, listId, data, displayKey, onSelect) {
-    const input  = document.getElementById(inputId);
-    const list   = document.getElementById(listId);
-    let focus = -1;
-
-    function render(matches) {
-        list.innerHTML = '';
-        if (!matches.length) { list.classList.remove('show'); return; }
-        list.classList.add('show');
-        matches.forEach(item => {
-            const li = document.createElement('li');
-            li.className = 'autocomplete-item';
-            if (displayKey === 'name') {
-                li.innerHTML = `<strong>${item.name}</strong>`;
-            } else {
-                li.innerHTML = `<strong>${item.material_name}</strong><div class="ac-sub">${item.unit}</div>`;
-            }
-            li.onclick = () => { onSelect(item); list.classList.remove('show'); focus = -1; };
-            list.appendChild(li);
-        });
-    }
-
-    function filter(val) {
-        const v = val.toLowerCase();
-        const matches = !v
-            ? data.slice(0, 12)
-            : data.filter(d => (d[displayKey] || '').toLowerCase().includes(v));
-        render(matches);
-        focus = -1;
-    }
-
-    input.addEventListener('input',  () => filter(input.value));
-    input.addEventListener('focus',  () => filter(input.value));
-
-    input.addEventListener('keydown', e => {
-        const items = list.querySelectorAll('.autocomplete-item');
-        if (!list.classList.contains('show') || !items.length) return;
-        if (e.key === 'ArrowDown') { focus = Math.min(focus + 1, items.length - 1); }
-        else if (e.key === 'ArrowUp') { focus = Math.max(focus - 1, 0); }
-        else if (e.key === 'Enter') { e.preventDefault(); if (focus >= 0) items[focus].click(); else if (items.length === 1) items[0].click(); return; }
-        else return;
-        items.forEach((el, i) => el.classList.toggle('active', i === focus));
-        items[focus]?.scrollIntoView({ block: 'nearest' });
-    });
-
-    document.addEventListener('click', e => { if (e.target !== input) list.classList.remove('show'); });
-}
-
-setupAutocomplete('vendor_name', 'vendor_suggestions', vendors, 'name', vendor => {
-    document.getElementById('vendor_name').value    = vendor.name;
-    document.getElementById('vendor_id').value      = vendor.id;
-    document.getElementById('vendor_mobile').value  = vendor.mobile || '';
-    document.getElementById('vendor_email').value   = vendor.email || '';
-    document.getElementById('vendor_address').value = vendor.address || '';
-    document.getElementById('vendor_gst').value     = vendor.gst_number || '';
-});
-
 // Pre-fill vendor info
 const currentVendorId = document.getElementById('vendor_id').value;
 if (currentVendorId) {
@@ -1045,16 +1060,37 @@ document.getElementById('vendor_name').addEventListener('input', () => {
     document.getElementById('vendor_id').value = '';
 });
 
-setupAutocomplete('material_name_input', 'material_suggestions', existingMaterials, 'material_name', material => {
-    document.getElementById('material_name_input').value = material.material_name;
-    document.getElementById('material_id_hidden').value  = material.id;
-    document.getElementById('material_unit').value       = material.unit;
-    document.getElementById('material_rate').value       = material.default_rate;
-});
-
-document.getElementById('material_name_input').addEventListener('input', () => {
-    document.getElementById('material_id_hidden').value = '';
-});
+window.handleMaterialChange = function() {
+    const select = document.getElementById('material_name_select');
+    const opt = select.options[select.selectedIndex];
+    
+    if(!opt || !opt.value) {
+        document.getElementById('material_id_hidden').value = '';
+        document.getElementById('material_name_input').value = '';
+        document.getElementById('material_unit').value = '';
+        if(document.getElementById('material_rate')) document.getElementById('material_rate').value = '';
+        document.getElementById('size_field_wrap').style.display = 'none';
+        return;
+    }
+    
+    const matName = opt.getAttribute('data-name');
+    document.getElementById('material_id_hidden').value = opt.value;
+    document.getElementById('material_name_input').value = matName;
+    document.getElementById('material_unit').value = opt.getAttribute('data-unit');
+    if(document.getElementById('material_rate')) document.getElementById('material_rate').value = opt.getAttribute('data-rate');
+    
+    // Show Size if name contains specific keywords
+    const nameLower = matName.toLowerCase();
+    const sizeKeywords = ['steel', 'tmt', 'pipe', 'wire', 'aggregate', 'sand'];
+    const needsSize = sizeKeywords.some(keyword => nameLower.includes(keyword));
+    
+    if(needsSize) {
+        document.getElementById('size_field_wrap').style.display = 'flex';
+    } else {
+        document.getElementById('size_field_wrap').style.display = 'none';
+        document.getElementById('material_size').value = '';
+    }
+};
 
 /* ── Add Material ─────────────────────────────────── */
 function addMaterial() {
@@ -1064,26 +1100,49 @@ function addMaterial() {
     const qty  = parseFloat(document.getElementById('material_quantity').value);
     let   rate = parseFloat(document.getElementById('material_rate').value);
 
+    const sizeWrap = document.getElementById('size_field_wrap');
+    const sizeStr = (sizeWrap.style.display !== 'none') ? document.getElementById('material_size').value.trim() : '';
+    const workType = document.getElementById('material_work_type').value;
+
     if (!name || !unit || isNaN(qty) || qty <= 0) {
         showToast('Please fill Material Name, Unit and Quantity.', 'warning', 'Incomplete');
         return;
     }
     if (isNaN(rate)) rate = 0;
 
-    if (materialsData.some(m => m.material_name.toLowerCase() === name.toLowerCase())) {
-        showToast('This material has already been added.', 'warning', 'Duplicate');
+    const duplicate = materialsData.find(item => 
+        item.material_name.toLowerCase() === name.toLowerCase() &&
+        (item.size || '') === sizeStr &&
+        (item.work_type || '') === workType
+    );
+
+    if(duplicate) {
+        showToast('This exact material is already added.', 'warning', 'Duplicate');
         return;
     }
 
-    materialsData.push({ material_id: id, material_name: name, unit, quantity: qty, rate, total: qty * rate });
+    materialsData.push({ 
+        material_id: id, 
+        material_name: name, 
+        size: sizeStr,
+        work_type: workType,
+        unit, 
+        quantity: qty, 
+        rate, 
+        total: qty * rate 
+    });
     renderMaterials();
 
+    document.getElementById('material_name_select').value = '';
     document.getElementById('material_name_input').value = '';
     document.getElementById('material_id_hidden').value  = '';
     document.getElementById('material_unit').value       = '';
     document.getElementById('material_quantity').value   = '';
     document.getElementById('material_rate').value       = '';
-    document.getElementById('material_name_input').focus();
+    document.getElementById('material_size').value       = '';
+    document.getElementById('material_work_type').value  = '';
+    document.getElementById('size_field_wrap').style.display  = 'none';
+    document.getElementById('material_name_select').focus();
 }
 
 /* ── Render Table ─────────────────────────────────── */
@@ -1092,7 +1151,7 @@ function renderMaterials() {
     const badge = document.getElementById('item_badge');
 
     if (!materialsData.length) {
-        tbody.innerHTML = `<tr class="empty-row"><td colspan="5">
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="7">
             <span class="ei"><i class="fas fa-cubes"></i></span>
             No items added. Use the form above to add materials.
         </td></tr>`;
@@ -1103,10 +1162,16 @@ function renderMaterials() {
     badge.textContent    = materialsData.length;
     badge.style.display  = 'inline-flex';
 
-    tbody.innerHTML = materialsData.map((m, i) => `
+    tbody.innerHTML = materialsData.map((m, i) => {
+        const sizeTd = m.size ? `<td>${m.size}</td>` : `<td style="color:#aaa">-</td>`;
+        const workTypeTd = m.work_type ? `<td>${m.work_type}</td>` : `<td style="color:#aaa">-</td>`;
+        
+        return `
         <tr>
             <td style="color:var(--ink-mute);font-size:.75rem;width:36px">${i + 1}</td>
             <td><span class="mat-name">${m.material_name}</span></td>
+            ${sizeTd}
+            ${workTypeTd}
             <td><span class="mat-unit">${m.unit.toUpperCase()}</span></td>
             <td>
                 <input class="qty-input" type="number" value="${m.quantity}"
@@ -1117,7 +1182,8 @@ function renderMaterials() {
                     <i class="fas fa-times"></i>
                 </button>
             </td>
-        </tr>`).join('');
+        </tr>`;
+    }).join('');
 }
 
 function updateQty(idx, val) {

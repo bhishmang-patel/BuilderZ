@@ -90,12 +90,24 @@ class CrmService {
         return $this->db->query("SELECT * FROM lead_followups WHERE lead_id = ? ORDER BY created_at DESC", [$leadId])->fetchAll();
     }
     
+    public function completeFollowup($id) {
+        $sql = "SELECT followup_date FROM lead_followups WHERE id = :id";
+        $followup = $this->db->query($sql, ['id' => $id])->fetch();
+        
+        // Prevent completing if the follow-up date is in the future
+        if ($followup && !empty($followup['followup_date']) && strtotime($followup['followup_date']) > time()) {
+            return false;
+        }
+
+        return $this->db->update('lead_followups', ['is_completed' => 1], "id = :id", ['id' => $id]);
+    }
+    
     public function getPendingFollowups() {
         $sql = "SELECT f.*, l.full_name, l.mobile 
                 FROM lead_followups f 
                 JOIN leads l ON f.lead_id = l.id 
                 WHERE f.is_completed = 0 
-                AND f.followup_date <= CURDATE() 
+                AND DATE(f.followup_date) <= CURDATE() 
                 ORDER BY f.followup_date ASC";
         return $this->db->query($sql)->fetchAll();
     }

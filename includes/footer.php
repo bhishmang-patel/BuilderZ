@@ -22,6 +22,8 @@
         font-size: 0.75rem;
         color: #9e9690;
         letter-spacing: 0.02em;
+        position: relative;
+        z-index: 10;
     }
     .main-footer strong {
         font-weight: 700;

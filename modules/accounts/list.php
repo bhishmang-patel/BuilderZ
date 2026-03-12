@@ -53,7 +53,7 @@ $expenses = $db->query($sql, $params)->fetchAll();
 
 $total_amount = 0;
 foreach ($expenses as $exp) {
-    $total_amount += $exp['amount'];
+    $total_amount += $exp['amount'] + ($exp['gst_amount'] ?? 0);
 }
 
 include __DIR__ . '/../../includes/header.php';
@@ -621,12 +621,6 @@ body {
 
                             <td>
                                 <div class="desc-main"><?= htmlspecialchars($row['description'] ?: '—') ?></div>
-                                <?php if (!empty($row['gst_included'])): ?>
-                                    <div class="desc-gst">
-                                        <i class="fas fa-check-circle" style="font-size:0.65rem;"></i>
-                                        GST Paid: <?= formatCurrencyShort($row['gst_amount']) ?>
-                                    </div>
-                                <?php endif; ?>
                             </td>
 
                             <td class="center">
@@ -634,7 +628,7 @@ body {
                             </td>
 
                             <td class="right">
-                                <span class="amount"><?= formatCurrency($row['amount']) ?></span>
+                                <span class="amount"><?= formatCurrency($row['amount'] + ($row['gst_amount'] ?? 0)) ?></span>
                             </td>
 
                             <td class="center">

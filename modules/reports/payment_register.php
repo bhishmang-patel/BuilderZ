@@ -34,7 +34,6 @@ $total_payments = $totals['payments'];
 $total_refunds = $totals['refunds'];
 $customer_receipts_count = $totals['counts']['receipts'];
 $vendor_payments_count = $totals['counts']['vendor'];
-$vendor_payments_count = $totals['counts']['vendor'];
 $contractor_payments_count = $totals['counts']['contractor'];
 $refunds_count = $totals['counts']['refunds'];
 $cancellation_income = $totals['canc_income'];
@@ -378,8 +377,12 @@ include __DIR__ . '/../../includes/header.php';
                         <option value="customer_receipt" <?= $payment_type_filter === 'customer_receipt' ? 'selected' : '' ?>>Customer Receipt</option>
                         <option value="customer_refund" <?= $payment_type_filter === 'customer_refund' ? 'selected' : '' ?>>Customer Refund</option>
                         <option value="vendor_payment" <?= $payment_type_filter === 'vendor_payment' ? 'selected' : '' ?>>Vendor Payment</option>
-                        <option value="vendor_payment" <?= $payment_type_filter === 'vendor_payment' ? 'selected' : '' ?>>Vendor Payment</option>
+                        <option value="vendor_bill_payment" <?= $payment_type_filter === 'vendor_bill_payment' ? 'selected' : '' ?>>Vendor Bill Payment</option>
                         <option value="contractor_payment" <?= $payment_type_filter === 'contractor_payment' ? 'selected' : '' ?>>Contractor Payment</option>
+                        <option value="gst_payment" <?= $payment_type_filter === 'gst_payment' ? 'selected' : '' ?>>GST Payment</option>
+                        <option value="tds_payment" <?= $payment_type_filter === 'tds_payment' ? 'selected' : '' ?>>TDS Payment</option>
+                        <option value="tax_refund" <?= $payment_type_filter === 'tax_refund' ? 'selected' : '' ?>>Tax Refund</option>
+                        <option value="expense" <?= $payment_type_filter === 'expense' ? 'selected' : '' ?>>Expense</option>
                     </select>
                 </div>
 
@@ -418,14 +421,14 @@ include __DIR__ . '/../../includes/header.php';
                         </tr>
                     <?php else: 
                         foreach ($payments as $payment): 
-                            $inflow = ($payment['payment_type'] === 'customer_receipt') ? $payment['amount'] : 0;
-                            $outflow = (in_array($payment['payment_type'], ['vendor_payment', 'customer_refund', 'vendor_bill_payment', 'contractor_payment'])) ? $payment['amount'] : 0;
+                            $inflow = in_array($payment['payment_type'], ['customer_receipt', 'tax_refund']) ? $payment['amount'] : 0;
+                            $outflow = in_array($payment['payment_type'], ['vendor_payment', 'customer_refund', 'vendor_bill_payment', 'contractor_payment', 'gst_payment', 'tds_payment', 'expense']) ? $payment['amount'] : 0;
                             
                             $isVendor = in_array($payment['payment_type'], ['vendor_payment', 'vendor_bill_payment']);
-                            $colorKey = $isVendor ? $payment['party_name'] : $payment['party_id'];
+                            $colorKey = $isVendor ? ($payment['party_name'] ?? 'U') : ($payment['party_id'] ?? 0);
                             
                             $partyColor = ColorHelper::getCustomerColor($colorKey);
-                            $partyInitial = strtoupper(substr($payment['party_name'], 0, 1));
+                            $partyInitial = strtoupper(substr($payment['party_name'] ?? 'U', 0, 1));
                             
                             $badgeClass = 'gray';
                             $badgeLabel = 'Other';
@@ -433,7 +436,11 @@ include __DIR__ . '/../../includes/header.php';
                             if($payment['payment_type'] === 'customer_refund') { $badgeClass = 'red'; $badgeLabel = 'Refund'; }
                             if($payment['payment_type'] === 'vendor_payment') { $badgeClass = 'blue'; $badgeLabel = 'Vendor Pay'; }
                             if($payment['payment_type'] === 'vendor_bill_payment') { $badgeClass = 'blue'; $badgeLabel = 'Vendor Bill'; }
-                            if($payment['payment_type'] === 'contractor_payment') { $badgeClass = 'orange'; $badgeLabel = 'Contractor Bill'; }
+                            if($payment['payment_type'] === 'contractor_payment') { $badgeClass = 'orange'; $badgeLabel = 'Contractor'; }
+                            if($payment['payment_type'] === 'gst_payment') { $badgeClass = 'gray'; $badgeLabel = 'GST'; }
+                            if($payment['payment_type'] === 'tds_payment') { $badgeClass = 'gray'; $badgeLabel = 'TDS'; }
+                            if($payment['payment_type'] === 'tax_refund') { $badgeClass = 'green'; $badgeLabel = 'Tax Refund'; }
+                            if($payment['payment_type'] === 'expense') { $badgeClass = 'red'; $badgeLabel = 'Expense'; }
                     ?>
                     <tr>
                         <td>
@@ -442,11 +449,15 @@ include __DIR__ . '/../../includes/header.php';
                         <td><span class="pill <?= $badgeClass ?>"><?= $badgeLabel ?></span></td>
                         <td>
                             <div style="display:flex;align-items:center">
-                                <span style="font-weight:600"><?= htmlspecialchars($payment['party_name']) ?></span>
+                                <span style="font-weight:600"><?= htmlspecialchars($payment['party_name'] ?? 'N/A') ?></span>
                             </div>
                         </td>
                         <td>
-                            <?= renderProjectBadge($payment['project_name'], $payment['project_id']) ?>
+                            <?php if (!empty($payment['project_name'])): ?>
+                                <?= renderProjectBadge($payment['project_name'], $payment['project_id']) ?>
+                            <?php else: ?>
+                                <span style="color:var(--border)">—</span>
+                            <?php endif; ?>
                         </td>
                         <td><span style="font-size:0.82rem;text-transform:capitalize;color:var(--ink-soft)"><?= htmlspecialchars($payment['payment_mode']) ?></span></td>
                         <td><span style="font-family:monospace;color:var(--ink-mute);font-size:0.82rem"><?= htmlspecialchars($payment['reference_no'] ?: '—') ?></span></td>

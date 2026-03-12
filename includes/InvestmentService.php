@@ -12,7 +12,7 @@ class InvestmentService {
         // Removing action field if present
         if (isset($data['action'])) unset($data['action']);
         
-        $fields = ['project_id', 'investor_name', 'investment_type', 'amount', 'investment_date', 'remarks'];
+        $fields = ['project_id', 'investor_name', 'investment_type', 'amount', 'investment_date', 'remarks', 'manual_equity_percentage', 'source'];
         $insertData = [];
         foreach ($fields as $field) {
             if (isset($data[$field])) {
@@ -43,7 +43,7 @@ class InvestmentService {
     }
 
     public function updateInvestment($id, $data) {
-        $fields = ['project_id', 'investor_name', 'investment_type', 'amount', 'investment_date', 'remarks'];
+        $fields = ['project_id', 'investor_name', 'investment_type', 'amount', 'investment_date', 'remarks', 'manual_equity_percentage', 'source'];
         $updateData = [];
         foreach ($fields as $field) {
             if (isset($data[$field])) {
@@ -112,17 +112,14 @@ class InvestmentService {
             $inv['is_equity'] = in_array($inv['investment_type'], ['partner', 'personal']);
             
             // Share % (Ownership) - Only for Equity types, based on Equity Base
-            if ($inv['is_equity'] && $stats['total_equity_base'] > 0) {
-                $inv['share_percentage'] = ($inv['amount'] / $stats['total_equity_base']) * 100;
+            $manualPct = $inv['manual_equity_percentage'] ?? 0;
+
+            if ($inv['is_equity']) {
+                $inv['share_percentage'] = $manualPct;
+                $inv['capital_mix_percentage'] = 0;
             } else {
                 $inv['share_percentage'] = 0;
-            }
-
-            // Capital Mix % (Leverage context) - Based on Total Capital
-            if ($stats['total_capital'] > 0) {
-                $inv['capital_mix_percentage'] = ($inv['amount'] / $stats['total_capital']) * 100;
-            } else {
-                $inv['capital_mix_percentage'] = 0;
+                $inv['capital_mix_percentage'] = $manualPct;
             }
 
             $inv['project_stats'] = $stats; // Attach stats for context if needed
@@ -154,16 +151,14 @@ class InvestmentService {
 
             $investment['is_equity'] = in_array($investment['investment_type'], ['partner', 'personal']);
 
-            if ($investment['is_equity'] && $stats['total_equity_base'] > 0) {
-                $investment['share_percentage'] = ($investment['amount'] / $stats['total_equity_base']) * 100;
+            $manualPct = $investment['manual_equity_percentage'] ?? 0;
+
+            if ($investment['is_equity']) {
+                $investment['share_percentage'] = $manualPct;
+                $investment['capital_mix_percentage'] = 0;
             } else {
                 $investment['share_percentage'] = 0;
-            }
-
-            if ($stats['total_capital'] > 0) {
-                $investment['capital_mix_percentage'] = ($investment['amount'] / $stats['total_capital']) * 100;
-            } else {
-                $investment['capital_mix_percentage'] = 0;
+                $investment['capital_mix_percentage'] = $manualPct;
             }
             
             $investment['project_stats'] = $stats;
@@ -180,8 +175,11 @@ class InvestmentService {
         $data['investment_id'] = $investmentId;
         $data['created_at'] = date('Y-m-d H:i:s');
         
-        // Allowed fields
-        $fields = ['investment_id', 'amount', 'return_date', 'remarks', 'created_at'];
+        // Ensure amount is float for accurate math
+        $amount = (float)($data['amount'] ?? 0);
+        
+        // Insert return record
+        $fields = ['investment_id', 'amount', 'return_date', 'remarks', 'created_at', 'payment_mode', 'company_account_id'];
         $insertData = [];
         foreach ($fields as $field) {
             if (isset($data[$field])) {
@@ -191,9 +189,15 @@ class InvestmentService {
         
         $returnId = $this->db->insert('investment_returns', $insertData);
 
-        // Link to Financial Transactions
         if ($returnId) {
-            // Fetch investor name for description
+            // Deduct from company account balance if an account is selected
+            $accountId = $data['company_account_id'] ?? null;
+            if ($accountId && $amount > 0) {
+                // Returns pull money OUT of the company account
+                $this->db->query("UPDATE company_accounts SET current_balance = current_balance - ? WHERE id = ?", [$amount, $accountId]);
+            }
+
+            // Link to Financial Transactions
             $inv = $this->getInvestmentById($investmentId);
             $investorName = $inv['investor_name'] ?? 'Investor';
 
@@ -204,7 +208,7 @@ class InvestmentService {
                 'reference_id' => $returnId,
                 'project_id' => $inv['project_id'] ?? null,
                 'transaction_date' => $data['return_date'] ?? date('Y-m-d'),
-                'amount' => $data['amount'] ?? 0,
+                'amount' => $amount,
                 'description' => "Return to " . $investorName . " - " . ($data['remarks'] ?? ''),
                 'created_at' => date('Y-m-d H:i:s')
             ];
@@ -216,5 +220,25 @@ class InvestmentService {
 
     public function getInvestmentReturns($investmentId) {
         return $this->db->select('investment_returns', 'investment_id = ? ORDER BY return_date DESC', [$investmentId])->fetchAll();
+    }
+
+    public function deleteReturn($returnId, $investmentId) {
+        // Fetch the return record to get the amount and account details
+        $returnRec = $this->db->select('investment_returns', 'id = ? AND investment_id = ?', [$returnId, $investmentId])->fetch();
+        
+        if ($returnRec) {
+            $amount = (float)$returnRec['amount'];
+            $accountId = $returnRec['company_account_id'] ?? null;
+            
+            // Refund the balance to the company account since the return is cancelled
+            if ($accountId && $amount > 0) {
+                $this->db->query("UPDATE company_accounts SET current_balance = current_balance + ? WHERE id = ?", [$amount, $accountId]);
+            }
+        }
+        
+        // Delete linked financial transaction
+        $this->db->delete('financial_transactions', "reference_type = 'investment_return' AND reference_id = ?", [$returnId]);
+        // Delete the return record
+        return $this->db->delete('investment_returns', 'id = ? AND investment_id = ?', [$returnId, $investmentId]);
     }
 }

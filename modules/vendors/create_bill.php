@@ -687,6 +687,9 @@ input:checked + .slider:before { transform: translate(19px, -50%); }
                             <ul id="material_suggestions" class="autocomplete-list"></ul>
                         </div>
                         <input type="hidden" id="material_id_hidden">
+                        <input type="hidden" id="item_id_hidden">
+                        <input type="hidden" id="material_size_hidden">
+                        <input type="hidden" id="material_work_type_hidden">
                     </div>
                     <div class="sf">
                         <label>Unit</label>
@@ -797,9 +800,9 @@ $(function () {
     });
     $('#challan_ids').select2({ placeholder: 'Select challans', allowClear: false });
 
-    /* ── Load challans on vendor change ── */
     $('#vendor_id').on('change', function () {
         const vid = $(this).val();
+        const vname = $(this).find('option:selected').text().split('(')[0].trim();
         const $ch = $('#challan_ids');
 
         $ch.prop('disabled', true).empty().append('<option>Loading…</option>');
@@ -810,7 +813,7 @@ $(function () {
                 $ch.empty();
                 if (data.length) {
                     data.forEach(c => $ch.append(
-                        new Option(`Challan #${c.challan_no}  (${c.challan_date})  —  <?= CURRENCY_SYMBOL ?>${parseFloat(c.total_amount).toFixed(2)}`, c.id)
+                        new Option(`Challan #${c.challan_no}  (${c.challan_date})  —  ${vname}`, c.id)
                     ));
                     $ch.prop('disabled', false);
                 } else {
@@ -912,6 +915,9 @@ document.addEventListener('click', e => {
 function selectItem(item) {
     document.getElementById('material_name_input').value = item.material_name;
     document.getElementById('material_id_hidden').value  = item.material_id;
+    document.getElementById('item_id_hidden').value      = item.item_id || '';
+    document.getElementById('material_size_hidden').value= item.size || '';
+    document.getElementById('material_work_type_hidden').value = item.work_type || '';
     document.getElementById('material_challan').value    = item.challan_no;
     document.getElementById('item_challan_id').value     = item.challan_id;
     document.getElementById('material_unit').value       = item.unit.toLowerCase();
@@ -924,7 +930,7 @@ function selectItem(item) {
 function clearItemFields() {
     ['material_name_input','material_challan','material_quantity','material_rate'].forEach(id =>
         document.getElementById(id).value = '');
-    ['material_id_hidden','item_challan_id'].forEach(id =>
+    ['material_id_hidden','item_challan_id','item_id_hidden','material_size_hidden','material_work_type_hidden'].forEach(id =>
         document.getElementById(id).value = '');
     document.getElementById('material_unit').value = '';
     document.getElementById('material_gst').value  = '0';
@@ -936,7 +942,10 @@ function addMaterial() {
     const cid  = document.getElementById('item_challan_id').value;
     const cno  = document.getElementById('material_challan').value;
     const mid  = document.getElementById('material_id_hidden').value;
+    const iid  = document.getElementById('item_id_hidden').value;
     const name = document.getElementById('material_name_input').value;
+    const size = document.getElementById('material_size_hidden').value;
+    const wtype = document.getElementById('material_work_type_hidden').value;
     const unit = document.getElementById('material_unit').value;
     const qty  = parseFloat(document.getElementById('material_quantity').value);
     const rate = parseFloat(document.getElementById('material_rate').value);
@@ -944,13 +953,18 @@ function addMaterial() {
 
     if (!isManual && (!cid || !mid)) { showToast('Please search and select a material from the list.', 'error'); return; }
     if (!rate || rate <= 0)          { flashField('material_rate');     return; }
-    if (cid && mid && materialsData.find(m => m.challan_id == cid && m.material_id == mid)) {
+    
+    const isDup = isManual ? 
+        (cid && mid && materialsData.find(m => m.challan_id == cid && m.material_id == mid)) :
+        (iid && materialsData.find(m => m.item_id == iid));
+
+    if (isDup) {
         showToast('This item is already added.', 'warning'); return;
     }
 
     materialsData.push({ 
-        challan_id: cid, challan_no: cno, material_id: mid, material_name: name, unit, 
-        quantity: qty, rate, gst_percent: gst, 
+        item_id: iid, challan_id: cid, challan_no: cno, material_id: mid, material_name: name, unit, 
+        size, work_type: wtype, quantity: qty, rate, gst_percent: gst, 
         total: (qty * rate) + ((qty * rate * gst) / 100) 
     });
     renderMaterials();
@@ -978,7 +992,10 @@ function renderMaterials() {
         <tr class="row-in">
             <td class="al-c"><span class="row-num">${i + 1}</span></td>
             <td>${m.challan_no ? `<span class="challan-pill">${esc(m.challan_no)}</span>` : '<span style="color:var(--ink-mute)">—</span>'}</td>
-            <td><span class="mat-name">${esc(m.material_name)}</span></td>
+            <td>
+                <span class="mat-name">${esc(m.material_name)}</span>
+                ${m.size || m.work_type ? `<div style="font-size:0.75rem;color:var(--ink-mute);margin-top:2px;">${esc(m.size||'')}${m.size&&m.work_type?' | ':''}${esc(m.work_type||'')}</div>` : ''}
+            </td>
             <td><span class="unit-pill">${esc(m.unit)}</span></td>
             <td class="al-c">
                 <select class="rate-input" style="width:65px;padding:0 0.3rem; text-align:center" onchange="updateItemGST(${i}, this.value)">
@@ -1069,13 +1086,16 @@ $(function () {
                 .then(items => {
                     let added = 0;
                     items.forEach(item => {
-                        if (!materialsData.find(m => m.challan_id == id && m.material_id == item.material_id)) {
+                        if (!materialsData.find(m => m.item_id == item.item_id)) {
                             materialsData.push({
+                                item_id:       item.item_id,
                                 challan_id:    item.challan_id,
                                 challan_no:    item.challan_no || id,
                                 material_id:   item.material_id,
                                 material_name: item.material_name,
                                 unit:          item.unit.toLowerCase(),
+                                size:          item.size || '',
+                                work_type:     item.work_type || '',
                                 quantity:      parseFloat(item.quantity) || 0,
                                 rate:          parseFloat(item.rate) || 0,
                                 total:         (parseFloat(item.rate) || 0) * (parseFloat(item.quantity) || 0),

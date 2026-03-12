@@ -214,7 +214,7 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
                 $time_str  = date('h:i A', strtotime($n['created_at']));
                 $delay    += 30;
             ?>
-                <div class="notif-item <?= $is_unread ? 'unread' : '' ?>" style="display:flex; cursor:pointer;" onclick="markReadAndRedirect(<?= $n['id'] ?>, '<?= $n['link'] ?>')">
+                <div class="notif-item <?= $is_unread ? 'unread' : '' ?>" style="display:flex; cursor:pointer;" onclick="markReadAndRedirect('<?= $n['id'] ?>', '<?= $n['link'] ?>')">
                     <div class="notif-ic-wrap">
                         <div class="notif-ic <?= htmlspecialchars($type) ?>">
                             <i class="fas <?= $icon ?>"></i>

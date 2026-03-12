@@ -175,7 +175,9 @@ include __DIR__ . '/../../includes/header.php';
         background: var(--surface); border: 1.5px solid var(--border);
         border-radius: 14px; overflow: hidden; margin-bottom: 1.25rem;
         opacity: 0; animation: fadeUp 0.35s 0.12s ease both;
+        display: flex; flex-direction: column;
     }
+    .info-grid .wo-card { margin-bottom: 0; height: 100%; }
     .wo-card-head {
         display: flex; align-items: center; gap: 0.65rem;
         padding: 1rem 1.5rem; border-bottom: 1.5px solid var(--border-lt);
@@ -189,10 +191,11 @@ include __DIR__ . '/../../includes/header.php';
     .icon-contractor { background: #eef2ff; color: #4f63d2; }
     .icon-project { background: #ecfdf5; color: #059669; }
     .icon-financial { background: var(--accent-lt); color: var(--accent); }
+    .icon-notes { background: #fffbeb; color: #d97706; }
     .wo-card-head h2 {
         font-family: 'Fraunces', serif; font-size: 0.95rem; font-weight: 600; color: var(--ink); margin: 0;
     }
-    .wo-card-body { padding: 1.4rem 1.5rem; }
+    .wo-card-body { padding: 1.4rem 1.5rem; flex: 1; }
 
     .detail-row {
         display: flex; justify-content: space-between; align-items: flex-start;
@@ -203,6 +206,101 @@ include __DIR__ . '/../../includes/header.php';
     .dl { font-size: 0.78rem; font-weight: 600; color: var(--ink-soft); letter-spacing: 0.02em; flex-shrink: 0; }
     .dv { font-size: 0.875rem; font-weight: 600; color: var(--ink); text-align: right; word-break: break-word; }
     .dv.muted { color: var(--ink-mute); font-weight: 400; }
+
+    /* ── Quotation Card ──────────────────────── */
+    .quot-body {
+        padding: 1.4rem 1.5rem;
+        display: flex; flex-direction: column; gap: 1.4rem;
+    }
+
+    .quot-section-label {
+        font-size: 0.67rem; font-weight: 700; letter-spacing: 0.1em;
+        text-transform: uppercase; color: var(--ink-mute);
+        display: flex; align-items: center; gap: 0.35rem;
+        margin-bottom: 0.75rem;
+    }
+
+    /* Scope text */
+    .quot-text-body {
+        font-size: 0.875rem; line-height: 1.7; color: var(--ink-soft);
+        white-space: pre-wrap; font-family: 'DM Sans', sans-serif;
+        background: var(--cream); border-radius: 8px; padding: 1rem 1.1rem;
+        border: 1px solid var(--border-lt);
+        max-height: 260px; overflow-y: auto;
+    }
+    .quot-text-body::-webkit-scrollbar { width: 4px; }
+    .quot-text-body::-webkit-scrollbar-track { background: transparent; }
+    .quot-text-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    /* ── Attached Document — Option 3 ───────── */
+    .att-row {
+        display: flex; align-items: center; gap: 1rem;
+    }
+
+    /* Thumbnail */
+    .att-thumb-box {
+        position: relative;
+        width: 80px; height: 60px; flex-shrink: 0;
+        border-radius: 7px; overflow: hidden;
+        border: 1.5px solid var(--border);
+        cursor: pointer;
+        background: var(--cream);
+    }
+    .att-thumb-box img {
+        width: 100%; height: 100%;
+        object-fit: cover; display: block;
+    }
+    .att-thumb-icon {
+        width: 100%; height: 100%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.5rem;
+    }
+    .att-thumb-icon.pdf   { background: #fff1f0; color: #c0392b; }
+    .att-thumb-icon.doc   { background: #eef2ff; color: #4f63d2; }
+    .att-thumb-icon.other { background: var(--cream); color: var(--ink-mute); }
+    .att-thumb-overlay {
+        position: absolute; inset: 0;
+        background: rgba(42,88,181,0);
+        display: flex; align-items: center; justify-content: center;
+        transition: background 0.2s;
+    }
+    .att-thumb-box:hover .att-thumb-overlay { background: rgba(42,88,181,0.55); }
+    .att-thumb-overlay i {
+        color: white; font-size: 0.85rem;
+        opacity: 0; transform: scale(0.7);
+        transition: opacity 0.2s, transform 0.2s;
+    }
+    .att-thumb-box:hover .att-thumb-overlay i { opacity: 1; transform: scale(1); }
+
+    /* File info */
+    .att-info { flex: 1; min-width: 0; }
+    .att-name {
+        font-size: 0.875rem; font-weight: 600; color: var(--ink);
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        margin-bottom: 0.22rem;
+    }
+    .att-meta {
+        font-size: 0.72rem; color: var(--ink-mute);
+        display: flex; align-items: center; gap: 0.45rem;
+    }
+    .att-pill {
+        background: var(--accent-bg); color: var(--accent);
+        padding: 0.15rem 0.5rem; border-radius: 4px;
+        font-size: 0.62rem; font-weight: 700;
+        letter-spacing: 0.07em; text-transform: uppercase;
+    }
+
+    /* View Full button */
+    .att-btn {
+        display: inline-flex; align-items: center; gap: 0.45rem;
+        padding: 0.6rem 1.15rem; border-radius: 7px;
+        font-family: 'DM Sans', sans-serif; font-size: 0.8rem; font-weight: 600;
+        border: 1.5px solid var(--border); background: var(--surface); color: var(--ink-soft);
+        cursor: pointer; text-decoration: none; flex-shrink: 0;
+        transition: border-color 0.15s, color 0.15s, background 0.15s;
+        white-space: nowrap;
+    }
+    .att-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
 
     /* ── Challans Table ──────────────────────── */
     .items-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
@@ -356,6 +454,83 @@ include __DIR__ . '/../../includes/header.php';
         </div>
     </div>
 
+    <!-- ── Quotation & Scope of Work ────────── -->
+    <?php if (!empty($wo['quotation_text']) || !empty($wo['quotation_file'])): 
+        $has_text      = !empty($wo['quotation_text']);
+        $has_file      = !empty($wo['quotation_file']);
+        $file_ext      = $has_file ? strtolower(pathinfo($wo['quotation_file'], PATHINFO_EXTENSION)) : '';
+        $file_path     = $has_file ? BASE_URL . $wo['quotation_file'] : '';
+        $file_basename = $has_file ? basename($wo['quotation_file']) : '';
+        $is_image      = in_array($file_ext, ['jpg', 'jpeg', 'png', 'gif', 'webp']);
+    ?>
+    <div class="wo-card">
+        <div class="wo-card-head">
+            <div class="card-head-icon icon-notes"><i class="fas fa-file-signature"></i></div>
+            <h2>Quotation &amp; Scope of Work</h2>
+        </div>
+
+        <div class="quot-body">
+
+            <!-- Scope text -->
+            <?php if ($has_text): ?>
+            <div>
+                <div class="quot-section-label"><i class="fas fa-align-left"></i> Scope Details</div>
+                <div class="quot-text-body"><?= htmlspecialchars($wo['quotation_text']) ?></div>
+            </div>
+            <?php endif; ?>
+
+            <!-- Attached document -->
+            <?php if ($has_file): ?>
+            <div>
+                <div class="quot-section-label"><i class="fas fa-paperclip"></i> Attached Document</div>
+
+                <div class="att-row">
+
+                    <!-- Thumbnail -->
+                    <?php if ($is_image): ?>
+                        <div class="att-thumb-box" onclick="viewAttachment('<?= htmlspecialchars($file_path) ?>')">
+                            <img src="<?= htmlspecialchars($file_path) ?>" alt="Document preview" loading="lazy">
+                            <div class="att-thumb-overlay"><i class="fas fa-expand-alt"></i></div>
+                        </div>
+                    <?php else: ?>
+                        <?php
+                            $icon_class = 'other'; $icon_glyph = 'fa-file';
+                            if ($file_ext === 'pdf')                        { $icon_class = 'pdf'; $icon_glyph = 'fa-file-pdf'; }
+                            elseif (in_array($file_ext, ['doc','docx']))    { $icon_class = 'doc'; $icon_glyph = 'fa-file-word'; }
+                        ?>
+                        <div class="att-thumb-box" style="cursor:default;">
+                            <div class="att-thumb-icon <?= $icon_class ?>"><i class="fas <?= $icon_glyph ?>"></i></div>
+                        </div>
+                    <?php endif; ?>
+
+                    <!-- File info -->
+                    <div class="att-info">
+                        <div class="att-name"><?= htmlspecialchars($file_basename) ?></div>
+                        <div class="att-meta">
+                            <span class="att-pill"><?= strtoupper($file_ext) ?></span>
+                            Attached Document
+                        </div>
+                    </div>
+
+                    <!-- View Full button -->
+                    <?php if ($is_image): ?>
+                        <button type="button" class="att-btn" onclick="viewAttachment('<?= htmlspecialchars($file_path) ?>')">
+                            <i class="fas fa-expand-alt"></i> View Full
+                        </button>
+                    <?php else: ?>
+                        <a href="<?= htmlspecialchars($file_path) ?>" target="_blank" class="att-btn">
+                            <i class="fas fa-external-link-alt"></i> View Full
+                        </a>
+                    <?php endif; ?>
+
+                </div>
+            </div>
+            <?php endif; ?>
+
+        </div>
+    </div>
+    <?php endif; ?>
+
     <!-- ── Linked Challans ──────────────────── -->
     <?php if (!empty($challans)): ?>
     <div class="wo-card">
@@ -397,5 +572,77 @@ include __DIR__ . '/../../includes/header.php';
     <?php endif; ?>
 
 </div>
+
+<!-- ── Fullscreen Image Modal ──────────────── -->
+<div id="attachModal">
+    <div class="attach-modal-inner">
+        <button class="attach-modal-close" onclick="closeAttachModal()" aria-label="Close">
+            <i class="fas fa-times"></i>
+        </button>
+        <img id="attachImage" src="" alt="Attachment preview">
+    </div>
+</div>
+
+<style>
+#attachModal {
+    position: fixed; inset: 0;
+    background: rgba(15,12,10,0.75);
+    backdrop-filter: blur(6px);
+    z-index: 9999;
+    display: none; align-items: center; justify-content: center;
+    opacity: 0; visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+    padding: 2rem;
+}
+#attachModal.is-open { display: flex; opacity: 1; visibility: visible; }
+.attach-modal-inner {
+    position: relative;
+    max-width: min(88vw, 900px);
+    max-height: 90vh;
+    display: flex; align-items: center; justify-content: center;
+}
+#attachImage {
+    display: block;
+    max-width: 100%; max-height: 88vh;
+    border-radius: 10px;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.55);
+    background: white; object-fit: contain;
+}
+.attach-modal-close {
+    position: absolute; top: -14px; right: -14px;
+    width: 32px; height: 32px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.25);
+    background: rgba(26,23,20,0.9); color: white;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem; z-index: 10;
+    transition: background 0.15s, transform 0.15s;
+}
+.attach-modal-close:hover { background: #c0392b; transform: scale(1.08); }
+</style>
+
+<script>
+function viewAttachment(url) {
+    const modal = document.getElementById('attachModal');
+    const img   = document.getElementById('attachImage');
+    img.src = url;
+    modal.style.display = 'flex';
+    requestAnimationFrame(() => modal.classList.add('is-open'));
+}
+
+function closeAttachModal() {
+    const modal = document.getElementById('attachModal');
+    const img   = document.getElementById('attachImage');
+    modal.classList.remove('is-open');
+    setTimeout(() => { modal.style.display = 'none'; img.src = ''; }, 260);
+}
+
+document.getElementById('attachModal').addEventListener('click', function(e) {
+    if (e.target === this) closeAttachModal();
+});
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeAttachModal();
+});
+</script>
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>

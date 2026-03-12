@@ -49,6 +49,7 @@ class ReportService {
         FROM financial_transactions ft
         LEFT JOIN projects pr ON ft.project_id = pr.id
         WHERE ft.transaction_type = 'income'
+        AND ft.category = 'cancellation_charges'
         AND ft.transaction_date BETWEEN ? AND ?
         " . ($project_filter ? " AND ft.project_id = ?" : "") . "
 
@@ -498,7 +499,7 @@ class ReportService {
                    COALESCE(pr_booking.project_name, pr_challan.project_name, pr_bill.project_name, pr_cbill.project_name) as project_name,
                    COALESCE(pr_booking.id, pr_challan.id, pr_bill.id, pr_cbill.id) as project_id
             FROM payments p
-            JOIN parties pt ON p.party_id = pt.id
+            LEFT JOIN parties pt ON p.party_id = pt.id
             LEFT JOIN users u ON p.created_by = u.id
             
             -- Join for Bookings (Customer Receipts)
@@ -514,8 +515,8 @@ class ReportService {
             LEFT JOIN (SELECT bill_id, MAX(project_id) as project_id FROM challans GROUP BY bill_id) ch_link ON vb.id = ch_link.bill_id
             LEFT JOIN projects pr_bill ON ch_link.project_id = pr_bill.id
             
-            -- Join for Contractor Payments
-            LEFT JOIN contractor_bills cb ON p.payment_type = 'contractor_payment' AND p.reference_id = cb.id
+            -- Join for Contractor/TDS/GST Payments
+            LEFT JOIN contractor_bills cb ON p.payment_type IN ('contractor_payment', 'tds_payment', 'gst_payment') AND p.reference_id = cb.id
             LEFT JOIN projects pr_cbill ON cb.project_id = pr_cbill.id
             
             WHERE $where
@@ -589,7 +590,11 @@ class ReportService {
                 $totals['counts']['contractor']++;
             } elseif ($payment['payment_type'] === 'expense') {
                 $totals['payments'] += $payment['amount'];
-                // We'll count expenses in 'vendor' or strict 'other' for now, or just add to total count
+            } elseif (in_array($payment['payment_type'], ['gst_payment', 'tds_payment'])) {
+                $totals['payments'] += $payment['amount'];
+            } elseif ($payment['payment_type'] === 'tax_refund') {
+                $totals['receipts'] += $payment['amount'];
+                $totals['counts']['receipts']++;
             }
         }
 

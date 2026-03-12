@@ -9,6 +9,60 @@ class NotificationService {
     }
 
     /**
+     * Fetch pending CRM follow-ups dynamically as notifications
+     */
+    private function getDynamicCrmNotifications($userId) {
+        // Ensure the dismissed table exists
+        $this->db->query("CREATE TABLE IF NOT EXISTS user_dismissed_notifications (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            notification_id VARCHAR(50) NOT NULL,
+            dismissed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY unique_user_notif (user_id, notification_id)
+        )");
+
+        $sql = "SELECT f.*, l.full_name 
+                FROM lead_followups f 
+                JOIN leads l ON f.lead_id = l.id 
+                LEFT JOIN user_dismissed_notifications udn 
+                    ON udn.user_id = :uid AND udn.notification_id = CONCAT('crm_', f.id)
+                WHERE f.is_completed = 0 
+                AND DATE(f.followup_date) <= DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+                AND udn.id IS NULL
+                ORDER BY f.followup_date DESC";
+        $followups = $this->db->query($sql, ['uid' => $userId])->fetchAll();
+        
+        $dynamic = [];
+        $currentTime = time();
+        foreach ($followups as $pf) {
+            $fDate = substr($pf['followup_date'], 0, 10);
+            $timeStr = date('h:i A', strtotime($pf['followup_date']));
+            
+            // Check if the current timestamp has passed the scheduled exact timestamp
+            $isOverdue = strtotime($pf['followup_date']) < $currentTime;
+            
+            $title = $isOverdue ? "Overdue: {$pf['full_name']}" : "Follow-up: {$pf['full_name']}";
+            $type  = $isOverdue ? "error" : "warning";
+            $msg   = $isOverdue ? "You missed a scheduled {$pf['interaction_type']} with {$pf['full_name']}."
+                                : "You have a scheduled {$pf['interaction_type']} with {$pf['full_name']} at {$timeStr}.";
+                                
+            $dynamic[] = [
+                'id' => 'crm_' . $pf['id'], // String ID so it cannot be dismissed via standard markAsRead
+                'user_id' => $userId,
+                'title' => $title,
+                'message' => $msg,
+                'type' => $type,
+                'link' => BASE_URL . "modules/crm/view.php?id=" . $pf['lead_id'],
+                'is_read' => 0, 
+                'created_at' => $pf['followup_date'],
+                'is_dynamic' => true,
+                'due_date' => $pf['followup_date']
+            ];
+        }
+        return $dynamic;
+    }
+
+    /**
      * Create a new notification
      * 
      * @param int|null $userId Target user ID (null for system-wide/broadcast if needed later)
@@ -38,7 +92,10 @@ class NotificationService {
     public function getUnreadCount($userId) {
         $sql = "SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0";
         $stmt = $this->db->query($sql, [$userId]);
-        return (int)$stmt->fetchColumn();
+        $count = (int)$stmt->fetchColumn();
+        
+        $dynamic = $this->getDynamicCrmNotifications($userId);
+        return $count + count($dynamic);
     }
 
     /**
@@ -49,26 +106,52 @@ class NotificationService {
      * @return array
      */
     public function getRecent($userId, $limit = 5) {
-        $sql = "SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT ?";
-        // PDO limit parameter needs to be integer, but sometimes bound as string. 
-        // Safer to interpolate or bind explicitly if driver supports. 
-        // Our DB wrapper might just pass it. Let's try standard binding.
-        // Actually, limit in MySQL via PDO often requires bindValue with INT type.
-        // For simplicity with our wrapper:
         $sql = "SELECT * FROM notifications WHERE user_id = :uid ORDER BY created_at DESC LIMIT " . (int)$limit;
         $stmt = $this->db->query($sql, ['uid' => $userId]);
-        return $stmt->fetchAll();
+        $standard = $stmt->fetchAll();
+        
+        // Inject dynamic CRM notifications and sort
+        $dynamic = $this->getDynamicCrmNotifications($userId);
+        $merged = array_merge($dynamic, $standard);
+        
+        usort($merged, function($a, $b) {
+            return strtotime($b['created_at']) - strtotime($a['created_at']);
+        });
+        
+        return array_slice($merged, 0, $limit);
     }
 
     /**
      * Mark a notification as read
      * 
-     * @param int $notificationId
+     * @param int|string $notificationId
      * @param int $userId Security check to ensure user owns notification
      * @return bool
      */
     public function markAsRead($notificationId, $userId) {
-        return $this->db->update('notifications', ['is_read' => 1], "id = :id AND user_id = :uid", ['id' => $notificationId, 'uid' => $userId]);
+        if (is_numeric($notificationId)) {
+            return $this->db->update('notifications', ['is_read' => 1], "id = :id AND user_id = :uid", ['id' => $notificationId, 'uid' => $userId]);
+        }
+        
+        // Handle dynamic CRM notification dismissal
+        if (strpos($notificationId, 'crm_') === 0) {
+            $followupId = str_replace('crm_', '', $notificationId);
+            // Only allow dismissal if it's currently due (NOW() >= followup_date)
+            $sql = "SELECT followup_date FROM lead_followups WHERE id = :id";
+            $stmt = $this->db->query($sql, ['id' => $followupId]);
+            $followup = $stmt->fetch();
+            
+            if ($followup && strtotime($followup['followup_date']) <= time()) {
+                try {
+                    $this->db->query("INSERT IGNORE INTO user_dismissed_notifications (user_id, notification_id) VALUES (:uid, :nid)", 
+                        ['uid' => $userId, 'nid' => $notificationId]);
+                    return true;
+                } catch (Exception $e) {
+                    // Table might not exist yet if getDynamic was never called, though unlikely
+                }
+            }
+        }
+        return false;
     }
 
     /**
@@ -78,7 +161,20 @@ class NotificationService {
      * @return bool
      */
     public function markAllAsRead($userId) {
-        return $this->db->update('notifications', ['is_read' => 1], "user_id = :uid AND is_read = 0", ['uid' => $userId]);
+        $this->db->update('notifications', ['is_read' => 1], "user_id = :uid AND is_read = 0", ['uid' => $userId]);
+        
+        // Also wipe all currently due dynamic notifications
+        $dynamic = $this->getDynamicCrmNotifications($userId);
+        $currentTime = time();
+        foreach ($dynamic as $notif) {
+            if (isset($notif['due_date']) && strtotime($notif['due_date']) <= $currentTime) {
+                try {
+                    $this->db->query("INSERT IGNORE INTO user_dismissed_notifications (user_id, notification_id) VALUES (:uid, :nid)", 
+                        ['uid' => $userId, 'nid' => $notif['id']]);
+                } catch (Exception $e) {}
+            }
+        }
+        return true;
     }
 
     /**
@@ -92,7 +188,15 @@ class NotificationService {
     public function getAll($userId, $limit = 20, $offset = 0) {
         $sql = "SELECT * FROM notifications WHERE user_id = :uid ORDER BY created_at DESC LIMIT " . (int)$limit . " OFFSET " . (int)$offset;
         $stmt = $this->db->query($sql, ['uid' => $userId]);
-        return $stmt->fetchAll();
+        $standard = $stmt->fetchAll();
+        
+        // Inject dynamic notifications at the top of the first page
+        if ($offset == 0) {
+            $dynamic = $this->getDynamicCrmNotifications($userId);
+            $standard = array_merge($dynamic, $standard);
+        }
+        
+        return $standard;
     }
 
     /**
@@ -102,7 +206,20 @@ class NotificationService {
      * @return bool
      */
     public function clearAll($userId) {
-        return $this->db->delete('notifications', "user_id = :uid", ['uid' => $userId]);
+        $this->db->delete('notifications', "user_id = :uid", ['uid' => $userId]);
+        
+        // Also wipe all currently due dynamic notifications
+        $dynamic = $this->getDynamicCrmNotifications($userId);
+        $currentTime = time();
+        foreach ($dynamic as $notif) {
+            if (isset($notif['due_date']) && strtotime($notif['due_date']) <= $currentTime) {
+                try {
+                    $this->db->query("INSERT IGNORE INTO user_dismissed_notifications (user_id, notification_id) VALUES (:uid, :nid)", 
+                        ['uid' => $userId, 'nid' => $notif['id']]);
+                } catch (Exception $e) {}
+            }
+        }
+        return true;
     }
     /**
      * Notify all users who have a specific permission (or are admin)

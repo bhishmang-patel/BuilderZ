@@ -348,6 +348,9 @@ body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(
 
                             <!-- Action -->
                             <td class="al-c">
+                                <a href="edit.php?id=<?= $lead['id'] ?>" class="act-btn" style="color:var(--ink-mute);" title="Edit Lead">
+                                    <i class="fas fa-edit"></i>
+                                </a>
                                 <a href="view.php?id=<?= $lead['id'] ?>" class="act-btn" title="View Details">
                                     <i class="fas fa-eye"></i>
                                 </a>

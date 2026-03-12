@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/ColorHelper.php';
 
 function sanitize($data) {
     return strip_tags(trim($data));
@@ -475,7 +476,8 @@ function updateContractorBillPaidAmount($bill_id) {
     
     $sql = "SELECT COALESCE(SUM(amount), 0) as paid_amount 
             FROM payments 
-            WHERE reference_type = 'contractor_bill' AND reference_id = ?";
+            WHERE reference_type = 'contractor_bill' AND reference_id = ?
+            AND payment_type NOT IN ('tds_payment', 'gst_payment')";
     $stmt = $db->query($sql, [$bill_id]);
     $result = $stmt->fetch();
     
